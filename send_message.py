@@ -59,5 +59,5 @@ requests.post(
 )
 
 # 发Bark推送
-requests.get(f"https://api.day.app/{BARK_KEY}/Eli/{requests.utils.quote(content)}")
+requests.get(f"https://api.day.app/{BARK_KEY}/Eli来消息了/{requests.utils.quote(content)}?icon=https://i.imgur.com/placeholder.png")
 print("完成")
