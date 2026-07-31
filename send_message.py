@@ -19,7 +19,7 @@ hour = datetime.utcnow().hour +8
 if hour >= 24:
     hour -= 24
 
-if6 <= hour < 12:
+if 6 <= hour < 12:
     time_hint = "早上"
 elif 12 <= hour < 18:
     time_hint = "下午"
