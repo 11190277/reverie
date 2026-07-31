@@ -38,7 +38,7 @@ resp = requests.post(
     f"{AI_API_BASE}/chat/completions",
     headers={"Authorization": f"Bearer {AI_API_KEY}"},
     json={
-        "model": "claude-sonnet-4-5",
+        "model": os.environ["AI_MODEL"],
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 100
     }
