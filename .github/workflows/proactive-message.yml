@@ -18,6 +18,7 @@ jobs:
         env:
           AI_API_BASE: ${{ secrets.AI_API_BASE }}
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           BARK_KEY: ${{ secrets.BARK_KEY }}
