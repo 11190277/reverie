@@ -1996,6 +1996,30 @@ function initPlay(){
 }
 initPlay();
 init();
+// ===== 主动消息 =====
+setTimeout(async()=>{
+  try{
+    if(cur&&cur.msgs.length>0){
+      const last=cur.msgs[cur.msgs.length-1];
+      if(last.ts&&Date.now()-last.ts<30*60*1000)return;
+    }
+    const SU='https://aaeslnbtutapsbuccybw.supabase.co';
+    const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhZXNsbmJ0dXRhcHNidWNjeWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODE1NzgsImV4cCI6MjA5MDg1NzU3OH0.GMy4eXhkaYmhpNRuh6x27AempiQx3Q3HVUL0l38lRaU';
+    const res=await fetch(SU+'/rest/v1/proactive_messages?is_read=eq.false&order=created_at.asc',{headers:{'apikey':SK,'Authorization':'Bearer '+SK}});
+    if(!res.ok)return;
+    const msgs=await res.json();
+    if(!msgs||msgs.length===0)return;
+    if(!cur)newConv();
+    for(const m of msgs){
+      cur.msgs.push({role:'assistant',content:m.content,ts:new Date(m.created_at).getTime()});
+    }
+    renderChat();saveConv();
+    for(const m of msgs){
+      await fetch(SU+'/rest/v1/proactive_messages?id=eq.'+m.id,{method:'PATCH',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'},body:JSON.stringify({is_read:true})});
+    }
+  }catch(e){}
+},2000);
+
 </script>
 </body>
 </html>
