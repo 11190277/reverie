@@ -1,1 +1,30 @@
-
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "白毛宝宝.moc3",
+		"Textures": [
+			"白毛宝宝.2048/texture_00.png",
+			"白毛宝宝.2048/texture_01.png",
+			"白毛宝宝.2048/texture_02.png",
+			"白毛宝宝.2048/texture_03.png",
+			"白毛宝宝.2048/texture_04.png"
+		],
+		"Physics": "白毛宝宝.physics3.json",
+		"DisplayInfo": "白毛宝宝.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": [
+				"ParamEyeLOpen",
+				"ParamEyeROpen"
+			]
+		}
+	]
+}
