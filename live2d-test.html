@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Live2D 测试</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    height:100vh;
+    background:linear-gradient(180deg,#fdf6f8,#eef2f7);
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    font-family:-apple-system,"PingFang SC",sans-serif;
+    overflow:hidden;
+  }
+  #stage { width:100%; flex:1; display:block; }
+  #status {
+    position:fixed; top:12px; left:12px;
+    font-size:12px; color:#888;
+    background:rgba(255,255,255,.8);
+    padding:6px 10px; border-radius:10px;
+  }
+  #bar {
+    padding:12px; display:flex; gap:8px; flex-wrap:wrap;
+    justify-content:center;
+  }
+  button {
+    border:none; background:#fff; color:#555;
+    padding:8px 14px; border-radius:14px; font-size:13px;
+    box-shadow:0 1px 4px rgba(0,0,0,.08);
+  }
+  button:active { background:#f3e8ec; }
+</style>
+</head>
+<body>
+
+<div id="status">加载中…</div>
+<canvas id="stage"></canvas>
+<div id="bar">
+  <button onclick="playMotion()">随机动作</button>
+  <button onclick="playExpr()">随机表情</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+<script>
+const statusEl = document.getElementById('status');
+let model = null;
+
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/test/assets/hiyori/hiyori_pro_t11.model3.json';
+
+(async function init(){
+  try {
+    const app = new PIXI.Application({
+      view: document.getElementById('stage'),
+      autoStart: true,
+      resizeTo: document.getElementById('stage'),
+      backgroundAlpha: 0,
+      antialias: true
+    });
+
+    statusEl.textContent = '正在下载模型…';
+    model = await PIXI.live2d.Live2DModel.from(MODEL_URL);
+    app.stage.addChild(model);
+
+    // 自适应大小和居中
+    function layout(){
+      const w = app.renderer.width, h = app.renderer.height;
+      const scale = Math.min(w / model.width, h / model.height) * 0.9;
+      model.scale.set(scale);
+      model.x = w / 2;
+      model.y = h / 2;
+      model.anchor.set(0.5, 0.5);
+    }
+    layout();
+    window.addEventListener('resize', () => setTimeout(layout, 100));
+
+    // 点击模型触发动作
+    model.on('pointerdown', () => {
+      statusEl.textContent = '你摸了他一下';
+      playMotion();
+    });
+
+    statusEl.textContent = '加载成功 ✓';
+    setTimeout(()=> statusEl.textContent = '试试点他，或按下面的按钮', 1500);
+
+  } catch (e) {
+    statusEl.textContent = '失败：' + e.message;
+    console.error(e);
+  }
+})();
+
+function playMotion(){
+  if(!model) return;
+  const groups = Object.keys(model.internalModel.motionManager.definitions || {});
+  if(!groups.length){ statusEl.textContent='这个模型没有动作组'; return; }
+  const g = groups[Math.floor(Math.random()*groups.length)];
+  model.motion(g);
+  statusEl.textContent = '动作：' + g;
+}
+
+function playExpr(){
+  if(!model) return;
+  const em = model.internalModel.motionManager.expressionManager;
+  if(!em || !em.definitions.length){ statusEl.textContent='这个模型没有表情'; return; }
+  const i = Math.floor(Math.random()*em.definitions.length);
+  em.setExpression(i);
+  statusEl.textContent = '表情：' + (em.definitions[i].Name || i);
+}
+</script>
+</body>
+</html>
