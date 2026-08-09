@@ -59,6 +59,11 @@
     <button onclick="zoom(1.15)">放大</button>
     <button onclick="zoom(0.87)">缩小</button>
     <button id="idleBtn" onclick="toggleIdle()">自动待机：关</button>
+       <button onclick="move(-20,0)">←</button>
+    <button onclick="move(20,0)">→</button>
+    <button onclick="move(0,-20)">↑</button>
+    <button onclick="move(0,20)">↓</button>
+
   </div>
 </div>
 
@@ -215,14 +220,23 @@ function loopIdle(){
   idleTimer = setTimeout(loopIdle, 4000 + Math.random() * 4000);
 }
 
+let offsetX = 0, offsetY = 0;
+
 function layout(){
   if(!model || !app) return;
   const w = app.screen.width, h = app.screen.height;
   const im = model.internalModel;
   const base = Math.min(w / im.originalWidth, h / im.originalHeight);
   model.scale.set(base * 0.95 * userScale);
-  model.x = w / 2;
-  model.y = h / 2;
+  model.x = w / 2 + offsetX;
+  model.y = h / 2 + offsetY;
+}
+
+function move(dx, dy){
+  offsetX += dx;
+  offsetY += dy;
+  layout();
+  statusEl.textContent = '位置：' + offsetX + ', ' + offsetY;
 }
 
 function zoom(f){
