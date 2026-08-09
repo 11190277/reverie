@@ -1,0 +1,20 @@
+{
+  "Version": 3,
+  "FileReferences": {
+    "Moc": "Shiba Inu.moc3",
+    "Textures": [
+      "texture_00.png",
+      "texture_01.png",
+      "texture_02.png",
+      "texture_03.png",
+      "texture_04.png",
+      "texture_05.png"
+    ],
+    "Physics": "Shiba Inu.physics3.json",
+    "DisplayInfo": "Shiba Inu.cdi3.json"
+  },
+  "Groups": [
+    { "Target": "Parameter", "Name": "LipSync", "Ids": [] },
+    { "Target": "Parameter", "Name": "EyeBlink", "Ids": ["ParamEyeLOpen", "ParamEyeROpen"] }
+  ]
+}
