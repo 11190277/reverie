@@ -11,10 +11,61 @@
       "texture_05.png"
     ],
     "Physics": "Shiba Inu.physics3.json",
-    "DisplayInfo": "Shiba Inu.cdi3.json"
+    "DisplayInfo": "Shiba Inu.cdi3.json",
+    "Expressions": [
+      {"Name":"脸红","File":"blush.exp3.json"},
+      {"Name":"哭","File":"Cry.exp3.json"},
+      {"Name":"爱心眼","File":"love.exp3.json"},
+      {"Name":"星星眼","File":"Star.exp3.json"},
+      {"Name":"笑","File":"-w-.exp3.json"},
+      {"Name":"生气","File":"Angry.exp3.json"},
+      {"Name":"黑脸","File":"black face.exp3.json"},
+      {"Name":"晕","File":"dizzy.exp3.json"},
+      {"Name":"流汗","File":"sweating.exp3.json"},
+      {"Name":"思考","File":"Thinking.exp3.json"},
+      {"Name":"害羞","File":"shy.exp3.json"},
+      {"Name":"墨镜","File":"Sunglasses.exp3.json"},
+      {"Name":"墨镜2","File":"Sunglasses1.exp3.json"},
+      {"Name":"拿墨镜","File":"Take the sunglasses.exp3.json"},
+      {"Name":"短发","File":"Short hair.exp3.json"},
+      {"Name":"长发","File":"Long hair.exp3.json"},
+      {"Name":"发色","File":"Hair color.exp3.json"},
+      {"Name":"左辫","File":"Left ponytail.exp3.json"},
+      {"Name":"右辫","File":"Right ponytail.exp3.json"},
+      {"Name":"鬓发","File":"sideburns.exp3.json"},
+      {"Name":"呆毛","File":"ahoge.exp3.json"},
+      {"Name":"耳尾","File":"Ear and tail.exp3.json"},
+      {"Name":"发夹","File":"Hair clip.exp3.json"},
+      {"Name":"发夹1","File":"Hair clip1.exp3.json"},
+      {"Name":"发夹2","File":"Hair clip2.exp3.json"},
+      {"Name":"发夹3","File":"Hair clip3.exp3.json"},
+      {"Name":"发夹4","File":"Hair clip4.exp3.json"},
+      {"Name":"外套","File":"coat.exp3.json"},
+      {"Name":"背心","File":"Vest.exp3.json"},
+      {"Name":"蓝背心","File":"Blue vest.exp3.json"},
+      {"Name":"长裤","File":"Long pants.exp3.json"},
+      {"Name":"肤色","File":"Skin color.exp3.json"},
+      {"Name":"项链","File":"Necklace.exp3.json"},
+      {"Name":"配饰","File":"Accessories.exp3.json"},
+      {"Name":"腰包","File":"fanny pack.exp3.json"},
+      {"Name":"水印","File":"Watermark.exp3.json"},
+      {"Name":"啃骨头","File":"Chomping on a bone.exp3.json"},
+      {"Name":"打游戏","File":"Playing video games.exp3.json"},
+      {"Name":"麦克风","File":"Microphone.exp3.json"},
+      {"Name":"喇叭","File":"trumpet.exp3.json"},
+      {"Name":"前倾","File":"lean forward.exp3.json"},
+      {"Name":"飞头","File":"Flying Head.exp3.json"},
+      {"Name":"飞头1","File":"Flying Head1.exp3.json"},
+      {"Name":"柴犬","File":"Shiba Inu.exp3.json"},
+      {"Name":"柴犬1","File":"Shiba Inu1.exp3.json"}
+    ],
+    "Motions": {
+      "Idle": [{"File":"Scene1.motion3.json"}]
+    }
   },
   "Groups": [
-    { "Target": "Parameter", "Name": "LipSync", "Ids": [] },
-    { "Target": "Parameter", "Name": "EyeBlink", "Ids": ["ParamEyeLOpen", "ParamEyeROpen"] }
+    {"Target":"Parameter","Name":"LipSync","Ids":[]},
+    {"Target":"Parameter","Name":"EyeBlink","Ids":["ParamEyeLOpen","ParamEyeROpen"]}
   ]
 }
+
