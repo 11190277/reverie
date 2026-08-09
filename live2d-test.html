@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Live2D 测试</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body {
     height:100vh;
     background:linear-gradient(180deg,#fdf6f8,#eef2f7);
@@ -13,30 +13,53 @@
     font-family:-apple-system,"PingFang SC",sans-serif;
     overflow:hidden;
   }
-  #stage { width:100%; flex:1; display:block; }
+  #stage { width:100%; flex:1; display:block; touch-action:none; }
   #status {
     position:fixed; top:10px; left:10px; right:10px;
-    font-size:12px; color:#555; line-height:1.6;
-    background:rgba(255,255,255,.9);
-    padding:8px 10px; border-radius:10px;
+    font-size:12px; color:#666; line-height:1.6;
+    background:rgba(255,255,255,.85);
+    backdrop-filter:blur(10px);
+    padding:8px 12px; border-radius:12px;
     white-space:pre-wrap; z-index:10;
   }
-  #bar { padding:12px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+  #panel {
+    max-height:38vh; overflow-y:auto;
+    padding:10px 12px 16px;
+    background:rgba(255,255,255,.7);
+    backdrop-filter:blur(10px);
+  }
+  .row { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+  .label { width:100%; font-size:11px; color:#999; margin-bottom:2px; }
   button {
     border:none; background:#fff; color:#555;
-    padding:8px 14px; border-radius:14px; font-size:13px;
-    box-shadow:0 1px 4px rgba(0,0,0,.08);
+    padding:7px 12px; border-radius:12px; font-size:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);
   }
+  button:active { background:#f5e6ec; }
+  button.on { background:#f3c9d8; color:#fff; }
 </style>
 </head>
 <body>
 
-<div id="status">检查中…</div>
+<div id="status">加载中…</div>
 <canvas id="stage"></canvas>
-<div id="bar">
-  <button onclick="zoom(1.15)">放大</button>
-  <button onclick="zoom(0.87)">缩小</button>
-  <button onclick="showInfo()">模型信息</button>
+
+<div id="panel">
+  <div class="row">
+    <div class="label">表情</div>
+    <div id="exprBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
+  <div class="row">
+    <div class="label">动作</div>
+    <div id="motionBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
+  <div class="row">
+    <div class="label">控制</div>
+    <button onclick="clearExpr()">清空表情</button>
+    <button onclick="zoom(1.15)">放大</button>
+    <button onclick="zoom(0.87)">缩小</button>
+    <button id="idleBtn" onclick="toggleIdle()">自动待机：关</button>
+  </div>
 </div>
 
 <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
@@ -44,41 +67,91 @@
 <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
 <script>
 const statusEl = document.getElementById('status');
+const BASE = 'live2d/';
 let model = null, app = null, userScale = 1;
+let idleOn = false, idleTimer = null;
 
-const MODEL_URL = encodeURI('live2d/白毛宝宝.model3.json');
+// 表情列表：文件名 → 显示名
+const EXPRESSIONS = [
+  ['shy',        '害羞'],
+  ['cry',        '哭'],
+  ['eye_heart',  '爱心眼'],
+  ['black_face', '黑脸'],
+  ['mouth',      '嘴'],
+  ['night',      '夜1'],
+  ['night_2',    '夜2'],
+  ['hand_1',     '手1'],
+  ['hand_2',     '手2'],
+  ['hand_3',     '手3'],
+  ['hand_all',   '手全'],
+  ['hand_left',  '左手'],
+  ['hand_game',  '游戏手']
+];
+
+// 待机动作文件名
+const MOTIONS = ['1','2','3','4','5','6','7','8','9','A2-1','A2-2','A2-3'];
+
+const modelJson = {
+  Version: 3,
+  FileReferences: {
+    Moc: '白毛宝宝.moc3',
+    Textures: [
+      '白毛宝宝.2048/texture_00.png',
+      '白毛宝宝.2048/texture_01.png',
+      '白毛宝宝.2048/texture_02.png',
+      '白毛宝宝.2048/texture_03.png',
+      '白毛宝宝.2048/texture_04.png'
+    ],
+    Physics: '白毛宝宝.physics3.json',
+    DisplayInfo: '白毛宝宝.cdi3.json',
+    Expressions: EXPRESSIONS.map(([f, n]) => ({
+      Name: n,
+      File: '按键/' + f + '.exp3.json'
+    })),
+    Motions: {
+      Idle: MOTIONS.map(f => ({ File: '待机动画/' + f + '.motion3.json' }))
+    }
+  },
+  Groups: [
+    { Target:'Parameter', Name:'LipSync', Ids:[] },
+    { Target:'Parameter', Name:'EyeBlink', Ids:['ParamEyeLOpen','ParamEyeROpen'] }
+  ],
+  url: BASE + 'model.generated.json'
+};
 
 window.addEventListener('load', async () => {
   const canvas = document.getElementById('stage');
   app = new PIXI.Application({
-    view: canvas, autoStart: true, resizeTo: canvas,
-    backgroundAlpha: 0, antialias: true
+    view: canvas,
+    autoStart: true,
+    resizeTo: canvas,
+    backgroundAlpha: 0,
+    antialias: true,
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true
   });
 
-  statusEl.textContent = '正在加载模型…\n（贴图有点大，等一下）';
+  statusEl.textContent = '正在加载模型…';
 
   try {
-    const r = await fetch(MODEL_URL);
-    if (!r.ok) throw new Error('model3.json 读不到，HTTP ' + r.status);
-
-    model = await PIXI.live2d.Live2DModel.from(MODEL_URL, { autoInteract: false });
+    model = await PIXI.live2d.Live2DModel.from(modelJson, { autoInteract: false });
     app.stage.addChild(model);
     model.anchor.set(0.5, 0.5);
     layout();
-    window.addEventListener('resize', () => setTimeout(layout, 100));
+    window.addEventListener('resize', () => setTimeout(layout, 150));
 
-    // 点/拖动时让他看向手指
     canvas.addEventListener('pointermove', e => {
-      const rect = canvas.getBoundingClientRect();
-      model.focus(e.clientX - rect.left, e.clientY - rect.top);
+      const r = canvas.getBoundingClientRect();
+      model.focus(e.clientX - r.left, e.clientY - r.top);
     });
     canvas.addEventListener('pointerdown', e => {
-      const rect = canvas.getBoundingClientRect();
-      model.focus(e.clientX - rect.left, e.clientY - rect.top);
+      const r = canvas.getBoundingClientRect();
+      model.focus(e.clientX - r.left, e.clientY - r.top);
       statusEl.textContent = '你摸了他一下';
     });
 
-    statusEl.textContent = '加载成功 ✓\n手指划一划，他的眼睛会跟着走';
+    buildButtons();
+    statusEl.textContent = '加载成功 ✓ 试试下面的表情和动作';
 
   } catch (e) {
     statusEl.textContent = '失败：\n' + (e && e.message ? e.message : e);
@@ -86,11 +159,68 @@ window.addEventListener('load', async () => {
   }
 });
 
+function buildButtons(){
+  const ex = document.getElementById('exprBtns');
+  EXPRESSIONS.forEach(([file, name], i) => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.onclick = () => setExpr(i, name);
+    ex.appendChild(b);
+  });
+
+  const mo = document.getElementById('motionBtns');
+  MOTIONS.forEach((f, i) => {
+    const b = document.createElement('button');
+    b.textContent = f;
+    b.onclick = () => playMotion(i, f);
+    mo.appendChild(b);
+  });
+}
+
+function setExpr(i, name){
+  if(!model) return;
+  model.expression(i);
+  statusEl.textContent = '表情：' + name;
+}
+
+function clearExpr(){
+  if(!model) return;
+  const em = model.internalModel.motionManager.expressionManager;
+  if(em) em.resetExpression();
+  statusEl.textContent = '表情已清空';
+}
+
+function playMotion(i, name){
+  if(!model) return;
+  model.motion('Idle', i, PIXI.live2d.MotionPriority.FORCE);
+  statusEl.textContent = '动作：' + name;
+}
+
+function toggleIdle(){
+  idleOn = !idleOn;
+  const btn = document.getElementById('idleBtn');
+  btn.textContent = '自动待机：' + (idleOn ? '开' : '关');
+  btn.classList.toggle('on', idleOn);
+  if(idleOn){
+    loopIdle();
+  } else {
+    clearTimeout(idleTimer);
+  }
+}
+
+function loopIdle(){
+  if(!idleOn || !model) return;
+  const i = Math.floor(Math.random() * MOTIONS.length);
+  model.motion('Idle', i, PIXI.live2d.MotionPriority.IDLE);
+  idleTimer = setTimeout(loopIdle, 4000 + Math.random() * 4000);
+}
+
 function layout(){
   if(!model || !app) return;
-  const w = app.renderer.width, h = app.renderer.height;
-  const base = Math.min(w / model.internalModel.originalWidth, h / model.internalModel.originalHeight);
-  model.scale.set(base * 0.9 * userScale);
+  const w = app.screen.width, h = app.screen.height;
+  const im = model.internalModel;
+  const base = Math.min(w / im.originalWidth, h / im.originalHeight);
+  model.scale.set(base * 0.95 * userScale);
   model.x = w / 2;
   model.y = h / 2;
 }
@@ -99,19 +229,6 @@ function zoom(f){
   userScale *= f;
   layout();
   statusEl.textContent = '缩放：' + userScale.toFixed(2);
-}
-
-function showInfo(){
-  if(!model){ statusEl.textContent='模型还没加载'; return; }
-  const im = model.internalModel;
-  const mm = im.motionManager;
-  const groups = Object.keys(mm.definitions || {});
-  const em = mm.expressionManager;
-  statusEl.textContent =
-    '尺寸：' + im.originalWidth + ' x ' + im.originalHeight + '\n' +
-    '动作组：' + (groups.length ? groups.join(', ') : '无') + '\n' +
-    '表情数：' + (em && em.definitions ? em.definitions.length : 0) + '\n' +
-    '参数数：' + im.coreModel.getParameterCount();
 }
 </script>
 </body>
