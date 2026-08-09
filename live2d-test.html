@@ -10,93 +10,104 @@
     height:100vh;
     background:linear-gradient(180deg,#fdf6f8,#eef2f7);
     display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
     font-family:-apple-system,"PingFang SC",sans-serif;
     overflow:hidden;
   }
   #stage { width:100%; flex:1; display:block; }
   #status {
-    position:fixed; top:12px; left:12px;
-    font-size:12px; color:#888;
-    background:rgba(255,255,255,.8);
-    padding:6px 10px; border-radius:10px;
+    position:fixed; top:10px; left:10px; right:10px;
+    font-size:12px; color:#555; line-height:1.6;
+    background:rgba(255,255,255,.9);
+    padding:8px 10px; border-radius:10px;
+    white-space:pre-wrap;
   }
-  #bar {
-    padding:12px; display:flex; gap:8px; flex-wrap:wrap;
-    justify-content:center;
-  }
+  #bar { padding:12px; display:flex; gap:8px; justify-content:center; }
   button {
     border:none; background:#fff; color:#555;
     padding:8px 14px; border-radius:14px; font-size:13px;
     box-shadow:0 1px 4px rgba(0,0,0,.08);
   }
-  button:active { background:#f3e8ec; }
 </style>
 </head>
 <body>
 
-<div id="status">加载中…</div>
+<div id="status">检查中…</div>
 <canvas id="stage"></canvas>
 <div id="bar">
   <button onclick="playMotion()">随机动作</button>
   <button onclick="playExpr()">随机表情</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/core/live2dcubismcore.min.js"></script>
+<script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
-
 <script>
 const statusEl = document.getElementById('status');
 let model = null;
 
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display/test/assets/hiyori/hiyori_pro_t11.model3.json';
+function diag(){
+  const lines = [];
+  lines.push('Cubism Core: ' + (typeof Live2DCubismCore !== 'undefined' ? 'OK' : '✗ 没加载'));
+  lines.push('PIXI: ' + (typeof PIXI !== 'undefined' ? 'OK v' + (PIXI.VERSION||'?') : '✗ 没加载'));
+  lines.push('PIXI.live2d: ' + (typeof PIXI !== 'undefined' && PIXI.live2d ? 'OK' : '✗ 没加载'));
+  const gl = document.createElement('canvas').getContext('webgl');
+  lines.push('WebGL: ' + (gl ? 'OK' : '✗ 不支持'));
+  return lines.join('\n');
+}
 
-(async function init(){
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/guansss/pixi-live2d-display@master/test/assets/hiyori/hiyori_pro_t11.model3.json';
+
+window.addEventListener('load', async () => {
+  const report = diag();
+  statusEl.textContent = report;
+
+  if (typeof PIXI === 'undefined' || !PIXI.live2d || typeof Live2DCubismCore === 'undefined') {
+    statusEl.textContent = report + '\n\n→ 库没加载全，先解决上面打✗的那项';
+    return;
+  }
+
   try {
+    const canvas = document.getElementById('stage');
     const app = new PIXI.Application({
-      view: document.getElementById('stage'),
+      view: canvas,
       autoStart: true,
-      resizeTo: document.getElementById('stage'),
+      resizeTo: canvas,
       backgroundAlpha: 0,
       antialias: true
     });
 
-    statusEl.textContent = '正在下载模型…';
+    statusEl.textContent = report + '\n\n正在下载模型…';
     model = await PIXI.live2d.Live2DModel.from(MODEL_URL);
     app.stage.addChild(model);
+    model.anchor.set(0.5, 0.5);
 
-    // 自适应大小和居中
     function layout(){
       const w = app.renderer.width, h = app.renderer.height;
-      const scale = Math.min(w / model.width, h / model.height) * 0.9;
-      model.scale.set(scale);
+      model.scale.set(Math.min(w / model.width, h / model.height) * 0.9);
       model.x = w / 2;
       model.y = h / 2;
-      model.anchor.set(0.5, 0.5);
     }
     layout();
     window.addEventListener('resize', () => setTimeout(layout, 100));
 
-    // 点击模型触发动作
     model.on('pointerdown', () => {
       statusEl.textContent = '你摸了他一下';
       playMotion();
     });
 
-    statusEl.textContent = '加载成功 ✓';
-    setTimeout(()=> statusEl.textContent = '试试点他，或按下面的按钮', 1500);
+    statusEl.textContent = '加载成功 ✓ 试试点他';
 
   } catch (e) {
-    statusEl.textContent = '失败：' + e.message;
+    statusEl.textContent = report + '\n\n模型加载失败：\n' + (e && e.message ? e.message : e);
     console.error(e);
   }
-})();
+});
 
 function playMotion(){
   if(!model) return;
-  const groups = Object.keys(model.internalModel.motionManager.definitions || {});
-  if(!groups.length){ statusEl.textContent='这个模型没有动作组'; return; }
+  const defs = model.internalModel.motionManager.definitions || {};
+  const groups = Object.keys(defs);
+  if(!groups.length){ statusEl.textContent='没有动作组'; return; }
   const g = groups[Math.floor(Math.random()*groups.length)];
   model.motion(g);
   statusEl.textContent = '动作：' + g;
@@ -105,7 +116,7 @@ function playMotion(){
 function playExpr(){
   if(!model) return;
   const em = model.internalModel.motionManager.expressionManager;
-  if(!em || !em.definitions.length){ statusEl.textContent='这个模型没有表情'; return; }
+  if(!em || !em.definitions.length){ statusEl.textContent='没有表情'; return; }
   const i = Math.floor(Math.random()*em.definitions.length);
   em.setExpression(i);
   statusEl.textContent = '表情：' + (em.definitions[i].Name || i);
