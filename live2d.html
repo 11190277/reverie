@@ -5,220 +5,93 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Eli</title>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body {
-    height:100vh;
-    background:linear-gradient(180deg,#fdf6f8,#eef2f7);
-    display:flex; flex-direction:column;
-    font-family:-apple-system,"PingFang SC",sans-serif;
-    overflow:hidden;
-  }
-  #stage { width:100%; flex:1; display:block; touch-action:none; }
-  #status {
-    position:fixed; top:10px; left:10px; right:10px;
-    font-size:12px; color:#666; line-height:1.5;
-    background:rgba(255,255,255,.85);
-    backdrop-filter:blur(10px);
-    padding:8px 12px; border-radius:12px;
-    white-space:pre-wrap; z-index:10;
-  }
-  #panel {
-    max-height:40vh; overflow-y:auto;
-    padding:10px 12px 20px;
-    background:rgba(255,255,255,.75);
-    backdrop-filter:blur(12px);
-    border-top:1px solid rgba(0,0,0,.05);
-  }
-  .sec { margin-bottom:10px; }
-  .label { font-size:11px; color:#aaa; margin-bottom:5px; }
-  .btns { display:flex; gap:5px; flex-wrap:wrap; }
-  button {
-    border:none; background:#fff; color:#555;
-    padding:6px 11px; border-radius:11px; font-size:12px;
-    box-shadow:0 1px 3px rgba(0,0,0,.07);
-  }
-  button:active { background:#f5e6ec; }
-  button.on { background:#e8a0bd; color:#fff; }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{height:100vh;background:linear-gradient(180deg,#fdf6f8,#eef2f7);display:flex;flex-direction:column;font-family:-apple-system,"PingFang SC",sans-serif;overflow:hidden}
+#stage{width:100%;flex:1;display:block;touch-action:none}
+#status{position:fixed;top:10px;left:10px;right:10px;font-size:12px;color:#666;line-height:1.5;background:rgba(255,255,255,.85);backdrop-filter:blur(10px);padding:8px 12px;border-radius:12px;white-space:pre-wrap;z-index:10}
+#panel{max-height:40vh;overflow-y:auto;padding:10px 12px 20px;background:rgba(255,255,255,.75);backdrop-filter:blur(12px);border-top:1px solid rgba(0,0,0,.05)}
+.sec{margin-bottom:10px}.label{font-size:11px;color:#aaa;margin-bottom:5px}
+.btns{display:flex;gap:5px;flex-wrap:wrap}
+button{border:none;background:#fff;color:#555;padding:6px 11px;border-radius:11px;font-size:12px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+button:active{background:#f5e6ec}
 </style>
 </head>
 <body>
-
 <div id="status">加载中…</div>
 <canvas id="stage"></canvas>
-
 <div id="panel">
-  <div class="sec">
-    <div class="label">表情</div>
-    <div class="btns" id="exprBtns"></div>
-  </div>
-  <div class="sec">
-    <div class="label">动作</div>
-    <div class="btns" id="motionBtns"></div>
-  </div>
-  <div class="sec">
-    <div class="label">控制</div>
-    <div class="btns">
-      <button onclick="clearExpr()">清空表情</button>
-      <button onclick="zoom(1.15)">放大</button>
-      <button onclick="zoom(0.87)">缩小</button>
-      <button onclick="move(-20,0)">←</button>
-      <button onclick="move(20,0)">→</button>
-      <button onclick="move(0,-20)">↑</button>
-      <button onclick="move(0,20)">↓</button>
-    </div>
-  </div>
+  <div class="sec"><div class="label">表情</div><div class="btns" id="exprBtns"></div></div>
+  <div class="sec"><div class="label">控制</div><div class="btns">
+    <button onclick="clearExpr()">清空表情</button>
+    <button onclick="zoom(1.15)">放大</button>
+    <button onclick="zoom(0.87)">缩小</button>
+    <button onclick="move(0,-20)">↑</button>
+    <button onclick="move(0,20)">↓</button>
+  </div></div>
 </div>
 
 <script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
 <script>
-const statusEl = document.getElementById('status');
-let app = null, model = null;
-let userScale = 1, offsetX = 0, offsetY = 0;
+const S = document.getElementById('status');
+let app,model,uScale=1,oX=0,oY=0;
 
-const DIR = 'eli/';
-
-const EXPRESSIONS = [
-  ['blush','脸红'], ['Cry','哭'], ['love','爱心眼'], ['Star','星星眼'],
-  ['shy','害羞'], ['Angry','生气'], ['black face','黑脸'], ['dizzy','晕'],
-  ['sweating','流汗'], ['Thinking','思考'], ['-w-','笑'],
-  ['Sunglasses','墨镜'], ['Sunglasses1','墨镜2'], ['Take the sunglasses','拿墨镜'],
-  ['Short hair','短发'], ['Long hair','长发'], ['Hair color','发色'],
-  ['Left ponytail','左辫'], ['Right ponytail','右辫'], ['sideburns','鬓发'],
-  ['ahoge','呆毛'], ['Ear and tail','耳尾'],
-  ['Hair clip','发夹'], ['Hair clip1','发夹1'], ['Hair clip2','发夹2'],
-  ['Hair clip3','发夹3'], ['Hair clip4','发夹4'],
-  ['coat','外套'], ['Vest','背心'], ['Blue vest','蓝背心'], ['Long pants','长裤'],
-  ['Skin color','肤色'], ['Necklace','项链'], ['Accessories','配饰'],
-  ['fanny pack','腰包'], ['Watermark','水印'],
-  ['Chomping on a bone','啃骨头'], ['Playing video games','打游戏'],
-  ['Microphone','麦克风'], ['trumpet','喇叭'],
-  ['lean forward','前倾'], ['Flying Head','飞头'], ['Flying Head1','飞头1'],
-  ['Shiba Inu','柴犬'], ['Shiba Inu1','柴犬1']
+const EXPR = [
+  ['blush','脸红'],['Cry','哭'],['love','爱心眼'],['Star','星星眼'],
+  ['-w-','笑'],['Angry','生气'],['black face','黑脸'],['dizzy','晕'],
+  ['sweating','流汗'],['Thinking','思考'],['shy','害羞'],
+  ['Sunglasses','墨镜'],['Sunglasses1','墨镜2'],['Take the sunglasses','拿墨镜'],
+  ['Short hair','短发'],['Long hair','长发'],['Hair color','发色'],
+  ['Left ponytail','左辫'],['Right ponytail','右辫'],['sideburns','鬓发'],
+  ['ahoge','呆毛'],['Ear and tail','耳尾'],
+  ['Hair clip','发夹'],['Hair clip1','发夹1'],['Hair clip2','发夹2'],
+  ['Hair clip3','发夹3'],['Hair clip4','发夹4'],
+  ['coat','外套'],['Vest','背心'],['Blue vest','蓝背心'],['Long pants','长裤'],
+  ['Skin color','肤色'],['Necklace','项链'],['Accessories','配饰'],
+  ['fanny pack','腰包'],['Watermark','水印'],
+  ['Chomping on a bone','啃骨头'],['Playing video games','打游戏'],
+  ['Microphone','麦克风'],['trumpet','喇叭'],
+  ['lean forward','前倾'],['Flying Head','飞头'],['Flying Head1','飞头1'],
+  ['Shiba Inu','柴犬'],['Shiba Inu1','柴犬1']
 ];
 
-const MOTIONS = [['Scene1','场景1']];
+const MODEL_URL = 'eli/m.model3.json';
 
-const modelJson = {
-  Version: 3,
-  FileReferences: {
-        Moc: 'Shiba%20Inu.moc3',
-    textures: [
-      'texture_00.png',
-      'texture_01.png',
-      'texture_02.png',
-      'texture_03.png',
-      'texture_04.png',
-      'texture_05.png'
-    ],
-       Physics: 'Shiba%20Inu.physics3.json',
-    DisplayInfo: 'Shiba%20Inu.cdi3.json',
-    Expressions: EXPRESSIONS.map(([f, n]) => ({ Name: n, File: f + '.exp3.json' })),
-    Motions: {
-      Idle: MOTIONS.map(([f]) => ({ File: f + '.motion3.json' }))
-    }
-  },
-  Groups: [
-    { Target:'Parameter', Name:'LipSync', Ids:[] },
-    { Target:'Parameter', Name:'EyeBlink', Ids:['ParamEyeLOpen','ParamEyeROpen'] }
-  ],
-  url: DIR + 'model.generated.json'
-};
+window.addEventListener('load', async()=>{
+  const c = document.getElementById('stage');
+  app = new PIXI.Application({view:c,autoStart:true,resizeTo:c,backgroundAlpha:0,antialias:true,resolution:window.devicePixelRatio||1,autoDensity:true});
 
-window.addEventListener('load', async () => {
-  const canvas = document.getElementById('stage');
-  app = new PIXI.Application({
-    view: canvas,
-    autoStart: true,
-    resizeTo: canvas,
-    backgroundAlpha: 0,
-    antialias: true,
-    resolution: window.devicePixelRatio || 1,
-    autoDensity: true
-  });
-
-  statusEl.textContent = '正在加载…\n模型比较大，第一次要等一会儿';
-
-  try {
-    model = await PIXI.live2d.Live2DModel.from(modelJson, { autoInteract: false });
+  S.textContent='正在加载模型…（15MB，要等一会儿）';
+  try{
+    model = await PIXI.live2d.Live2DModel.from(MODEL_URL,{autoInteract:false});
     app.stage.addChild(model);
-    model.anchor.set(0.5, 0.5);
+    model.anchor.set(0.5,0.5);
     layout();
-    window.addEventListener('resize', () => setTimeout(layout, 150));
-
-    canvas.addEventListener('pointermove', e => {
-      const r = canvas.getBoundingClientRect();
-      model.focus(e.clientX - r.left, e.clientY - r.top);
-    });
-    canvas.addEventListener('pointerdown', e => {
-      const r = canvas.getBoundingClientRect();
-      model.focus(e.clientX - r.left, e.clientY - r.top);
-      statusEl.textContent = '你摸了我一下';
-    });
-
-    buildButtons();
-    statusEl.textContent = '加载成功 ✓';
-
-  } catch (e) {
-    statusEl.textContent = '失败：\n' + (e && e.message ? e.message : e);
+    window.addEventListener('resize',()=>setTimeout(layout,150));
+    c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect();model.focus(e.clientX-r.left,e.clientY-r.top)});
+    c.addEventListener('pointerdown',()=>{S.textContent='你摸了我一下'});
+    buildBtns();
+    S.textContent='加载成功 ✓';
+  }catch(e){
+    S.textContent='失败：\n'+(e&&e.message?e.message:e);
     console.error(e);
   }
 });
 
-function buildButtons(){
-  const ex = document.getElementById('exprBtns');
-  EXPRESSIONS.forEach(([f, name], i) => {
-    const b = document.createElement('button');
-    b.textContent = name;
-    b.onclick = () => {
-      model.expression(i);
-      statusEl.textContent = '表情：' + name;
-    };
-    ex.appendChild(b);
-  });
-
-  const mo = document.getElementById('motionBtns');
-  MOTIONS.forEach(([f, name], i) => {
-    const b = document.createElement('button');
-    b.textContent = name;
-    b.onclick = () => {
-      model.motion('Idle', i, PIXI.live2d.MotionPriority.FORCE);
-      statusEl.textContent = '动作：' + name;
-    };
-    mo.appendChild(b);
+function buildBtns(){
+  const box=document.getElementById('exprBtns');
+  EXPR.forEach(([f,n],i)=>{
+    const b=document.createElement('button');
+    b.textContent=n;
+    b.onclick=()=>{model.expression(i);S.textContent='表情：'+n};
+    box.appendChild(b);
   });
 }
-
-function clearExpr(){
-  if(!model) return;
-  const em = model.internalModel.motionManager.expressionManager;
-  if(em) em.resetExpression();
-  statusEl.textContent = '表情已清空';
-}
-
-function layout(){
-  if(!model || !app) return;
-  const w = app.screen.width, h = app.screen.height;
-  const im = model.internalModel;
-  const base = Math.min(w / im.originalWidth, h / im.originalHeight);
-  model.scale.set(base * 0.95 * userScale);
-  model.x = w / 2 + offsetX;
-  model.y = h / 2 + offsetY;
-}
-
-function zoom(f){
-  userScale *= f;
-  layout();
-  statusEl.textContent = '缩放：' + userScale.toFixed(2);
-}
-
-function move(dx, dy){
-  offsetX += dx;
-  offsetY += dy;
-  layout();
-  statusEl.textContent = '位置：' + offsetX + ', ' + offsetY;
-}
+function clearExpr(){if(!model)return;const e=model.internalModel.motionManager.expressionManager;if(e)e.resetExpression();S.textContent='已清空'}
+function layout(){if(!model||!app)return;const w=app.screen.width,h=app.screen.height,im=model.internalModel;model.scale.set(Math.min(w/im.originalWidth,h/im.originalHeight)*0.95*uScale);model.x=w/2+oX;model.y=h/2+oY}
+function zoom(f){uScale*=f;layout()}
+function move(dx,dy){oX+=dx;oY+=dy;layout()}
 </script>
 </body>
 </html>
