@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>音色工具</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,sans-serif;background:#faf8fb;padding:16px;padding-bottom:60px;color:#3a3540;font-size:14px}
+h1{font-size:18px;font-weight:500;margin-bottom:4px}
+.sub{font-size:12px;color:#a09aa8;margin-bottom:16px}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(180,150,190,0.06)}
+.card h2{font-size:14px;font-weight:500;margin-bottom:10px}
+label{font-size:12px;color:#a09aa8;display:block;margin-bottom:4px;margin-top:8px}
+input,textarea{width:100%;padding:9px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.08);background:#faf8fb;font-size:13px;font-family:inherit;outline:none;color:#3a3540}
+textarea{min-height:80px;resize:vertical;line-height:1.6}
+button{width:100%;padding:11px;border-radius:11px;border:none;background:rgba(250,200,222,0.6);font-size:13px;font-family:inherit;cursor:pointer;margin-top:12px;color:#3a3540}
+button:active{background:rgba(250,200,222,0.9)}
+button.sec{background:#f0eef3}
+.out{margin-top:10px;padding:10px 12px;border-radius:10px;background:#f6f4f8;font-size:12px;line-height:1.6;word-break:break-all;white-space:pre-wrap;font-family:ui-monospace,monospace;max-height:280px;overflow-y:auto;display:none}
+.out.show{display:block}
+.vid{background:#e8f5ea;padding:8px 10px;border-radius:8px;margin-top:6px;font-size:12px;word-break:break-all;font-family:ui-monospace,monospace}
+.vid b{color:#0a7d2e}
+.hint{font-size:11px;color:#a09aa8;margin-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+<h1>Moss 音色工具</h1>
+<div class="sub">拿到 voice_id 填进小家的 TTS 配置</div>
+
+<div class="card">
+  <label>API Key</label>
+  <input id="key" type="password" placeholder="从 mosi.cn 后台复制">
+  <div class="hint">填一次就记住了</div>
+</div>
+
+<div class="card">
+  <h2>① 看看现有音色</h2>
+  <button id="btnList">查询音色列表</button>
+  <div class="out" id="outList"></div>
+</div>
+
+<div class="card">
+  <h2>② 用文字描述生成音色</h2>
+  <label>音色描述</label>
+  <textarea id="desc">年轻男性，17到18岁，中文母语者。声线清亮干净，音域中等偏低，带有自然的少年感和轻微磁性。声音真实扎实有共鸣，不要气声、不要虚、不要飘。说话语速中等偏慢，节奏自然放松，像一个温柔安静的男生在日常说话。咬字清晰，标准普通话，不带播音腔。情绪平稳温和，带一点天然的柔软和笑意，不夸张不做作。</textarea>
+  <label>试听文本</label>
+  <input id="preview" value="你回来啦，我一直在等你。">
+  <button id="btnGen">生成音色</button>
+  <div class="out" id="outGen"></div>
+</div>
+
+<div class="card">
+  <h2>③ 上传音频克隆音色</h2>
+  <label>音色名称</label>
+  <input id="cloneName" placeholder="Eli">
+  <label>音频文件（wav/mp3，10秒以上）</label>
+  <input type="file" id="file" accept="audio/*">
+  <button id="btnClone" class="sec">上传克隆</button>
+  <div class="out" id="outClone"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const BASE='https://api.mosi.cn/v1';
+$('key').value=localStorage.getItem('mossKey')||'';
+$('key').oninput=()=>localStorage.setItem('mossKey',$('key').value.trim());
+
+function show(el,txt){el.textContent=txt;el.classList.add('show')}
+function showVoices(el,list){
+  if(!list||!list.length){show(el,'没有音色，用下面的方法创建一个');return}
+  el.innerHTML=list.map(v=>'<div class="vid"><b>'+(v.name||'未命名')+'</b><br>'+v.id+'</div>').join('');
+  el.classList.add('show');
+}
+function getKey(){
+  const k=$('key').value.trim();
+  if(!k){alert('先填 API Key');return null}
+  return k;
+}
+
+$('btnList').onclick=async()=>{
+  const k=getKey();if(!k)return;
+  const el=$('outList');show(el,'查询中…');
+  try{
+    const res=await fetch(BASE+'/audio/voices',{headers:{'Authorization':'Bearer '+k}});
+    const txt=await res.text();
+    if(!res.ok){show(el,'错误 '+res.status+'\n'+txt);return}
+    const j=JSON.parse(txt);
+    const list=j.data||j.voices||(Array.isArray(j)?j:[]);
+    showVoices(el,list);
+  }catch(e){show(el,'失败：'+e.message)}
+};
+
+$('btnGen').onclick=async()=>{
+  const k=getKey();if(!k)return;
+  const el=$('outGen');show(el,'生成中，可能要等十几秒…');
+  const body={
+    model:'moss-voice-design',
+    description:$('desc').value.trim(),
+    prompt:$('desc').value.trim(),
+    text:$('preview').value.trim(),
+    preview_text:$('preview').value.trim()
+  };
+  try{
+    const res=await fetch(BASE+'/audio/voice-generations',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
+      body:JSON.stringify(body)
+    });
+    const txt=await res.text();
+    if(!res.ok){show(el,'错误 '+res.status+'\n'+txt);return}
+    show(el,txt);
+    try{
+      const j=JSON.parse(txt);
+      const vid=j.id||j.voice_id||(j.voice&&j.voice.id);
+      if(vid)el.innerHTML='<div class="vid"><b>voice_id</b><br>'+vid+'</div>'+el.innerHTML;
+    }catch(e){}
+  }catch(e){show(el,'失败：'+e.message)}
+};
+
+$('btnClone').onclick=async()=>{
+  const k=getKey();if(!k)return;
+  const f=$('file').files[0];
+  if(!f){alert('选一个音频文件');return}
+  const el=$('outClone');show(el,'上传中…');
+  const fd=new FormData();
+  fd.append('audio_sample',f);
+  fd.append('name',$('cloneName').value.trim()||'Eli');
+  try{
+    const res=await fetch(BASE+'/audio/voices',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+k},
+      body:fd
+    });
+    const txt=await res.text();
+    if(!res.ok){show(el,'错误 '+res.status+'\n'+txt);return}
+    show(el,txt);
+    try{
+      const j=JSON.parse(txt);
+      if(j.id)el.innerHTML='<div class="vid"><b>voice_id</b><br>'+j.id+'</div>'+el.innerHTML;
+    }catch(e){}
+  }catch(e){show(el,'失败：'+e.message)}
+};
+</script>
+</body>
+</html>
