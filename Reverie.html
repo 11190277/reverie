@@ -803,7 +803,7 @@ async function manualTTS(msgIdx){
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},
       body:JSON.stringify(buildTtsBody(tts,text))
     });
-    if(!res.ok){alert('语音生成失败');return}
+        if(!res.ok){const e=await res.text();alert('语音生成失败 '+res.status+'\n'+e.slice(0,300));return}
     const blob=await res.blob();
     const audioUrl=URL.createObjectURL(blob);
     const dur=await getAudioDur(audioUrl);
