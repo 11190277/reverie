@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Worker 部署</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,sans-serif;background:#faf8fb;padding:16px;padding-bottom:60px;color:#3a3540;font-size:14px}
+h1{font-size:18px;font-weight:500;margin-bottom:4px}
+.sub{font-size:12px;color:#a09aa8;margin-bottom:16px;line-height:1.6}
+.card{background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(180,150,190,0.06)}
+label{font-size:12px;color:#a09aa8;display:block;margin-bottom:4px;margin-top:10px}
+label:first-child{margin-top:0}
+input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(0,0,0,0.08);background:#faf8fb;font-size:13px;font-family:inherit;outline:none;color:#3a3540}
+button{width:100%;padding:13px;border-radius:12px;border:none;background:rgba(250,200,222,0.65);font-size:14px;font-family:inherit;cursor:pointer;margin-top:14px;color:#3a3540}
+button:active{background:rgba(250,200,222,1)}
+.out{margin-top:12px;padding:11px 13px;border-radius:10px;background:#f6f4f8;font-size:12px;line-height:1.6;word-break:break-all;white-space:pre-wrap;font-family:ui-monospace,monospace;max-height:240px;overflow-y:auto;display:none}
+.out.show{display:block}
+.ok{background:#e8f5ea;color:#0a6b28}
+.err{background:#fdecef;color:#b52348}
+.url{margin-top:10px;padding:11px 13px;border-radius:10px;background:#e8f5ea;font-size:12px;word-break:break-all;font-family:ui-monospace,monospace;display:none}
+.url.show{display:block}
+.hint{font-size:11px;color:#a09aa8;margin-top:8px;line-height:1.6}
+</style>
+</head>
+<body>
+<h1>部署转发 Worker</h1>
+<div class="sub">填一次就记住。点部署，代码自动上传。</div>
+
+<div class="card">
+  <label>Account ID</label>
+  <input id="acc" placeholder="一串字母数字">
+  <label>API Token</label>
+  <input id="tok" type="password" placeholder="创建令牌时复制的那串">
+  <label>Worker 名称</label>
+  <input id="name" value="ttttstts">
+  <div class="hint">就是你之前建的那个 worker 的名字，不要改错</div>
+</div>
+
+<div class="card">
+  <button id="btn">上传并部署</button>
+  <div class="out" id="out"></div>
+  <div class="url" id="url"></div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+['acc','tok','name'].forEach(k=>{
+  const v=localStorage.getItem('cf_'+k);
+  if(v)$(k).value=v;
+  $(k).oninput=()=>localStorage.setItem('cf_'+k,$(k).value.trim());
+});
+
+const WORKER_CODE = `export default {
+  async fetch(request) {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Max-Age': '86400'
+        }
+      });
+    }
+    const url = new URL(request.url);
+    let target;
+    if (url.pathname.startsWith('/moss/')) {
+      target = 'https://api.mosi.cn' + url.pathname.slice(5) + url.search;
+    } else {
+      return new Response('add /moss/ prefix', {
+        status: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    const headers = new Headers(request.headers);
+    headers.delete('host');
+    headers.delete('origin');
+    headers.delete('referer');
+    const resp = await fetch(target, {
+      method: request.method,
+      headers,
+      body: (request.method === 'GET' || request.method === 'HEAD') ? undefined : request.body
+    });
+    const out = new Response(resp.body, resp);
+    out.headers.set('Access-Control-Allow-Origin', '*');
+    out.headers.set('Access-Control-Expose-Headers', '*');
+    return out;
+  }
+};`;
+
+function show(txt,cls){
+  const el=$('out');
+  el.textContent=txt;
+  el.className='out show '+(cls||'');
+}
+
+$('btn').onclick=async()=>{
+  const acc=$('acc').value.trim();
+  const tok=$('tok').value.trim();
+  const name=$('name').value.trim();
+  if(!acc||!tok||!name){show('三个都要填','err');return}
+  show('上传中…');
+
+  const meta={main_module:'worker.js',compatibility_date:'2026-01-01'};
+  const fd=new FormData();
+  fd.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+  fd.append('worker.js',new Blob([WORKER_CODE],{type:'application/javascript+module'}),'worker.js');
+
+  const api='https://api.cloudflare.com/client/v4/accounts/'+acc+'/workers/scripts/'+name;
+  try{
+    const res=await fetch(api,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+tok},
+      body:fd
+    });
+    const txt=await res.text();
+    let j=null;
+    try{j=JSON.parse(txt)}catch(e){}
+    if(res.ok&&j&&j.success){
+      show('部署成功','ok');
+      const u=$('url');
+      u.textContent='你的中转地址：\nhttps://'+name+'.reverie-eli.workers.dev/moss/v1';
+      u.classList.add('show');
+    }else{
+      const msg=j&&j.errors?j.errors.map(e=>e.message).join('\n'):txt;
+      show('失败 '+res.status+'\n'+msg,'err');
+    }
+  }catch(e){show('请求失败：'+e.message,'err')}
+};
+</script>
+</body>
+</html>
