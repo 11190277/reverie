@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Eli</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100vh;height:100dvh;overflow:hidden;font-family:'Noto Serif SC',serif;font-weight:300;font-size:14px;color:#1d1d1f;background:#faf8fb}
+.wrap{display:flex;flex-direction:column;height:100%;overflow:hidden}
+
+/* 模型区 */
+#modelArea{position:relative;width:100%;height:38vh;flex-shrink:0;overflow:hidden;border-radius:0 0 22px 22px;box-shadow:0 3px 18px rgba(0,0,0,0.05)}
+#modelBg{position:absolute;inset:0;background:linear-gradient(160deg,#fdf4f9 0%,#f6eff9 45%,#eee9f6 100%);background-size:cover;background-position:center}
+#stage{position:absolute;inset:0;z-index:2;touch-action:none}
+
+/* 装饰卡片 */
+.float-card{position:absolute;z-index:5;background:rgba(255,255,255,0.55);backdrop-filter:blur(18px) saturate(180%);-webkit-backdrop-filter:blur(18px) saturate(180%);border-radius:16px;border:0.5px solid rgba(255,255,255,0.8);box-shadow:0 4px 16px rgba(180,150,190,0.08),inset 0 1px 0 rgba(255,255,255,0.9);padding:10px 14px;color:#4a4550;font-size:12px}
+#clockCard{top:14px;left:14px;padding-top:max(12px,env(safe-area-inset-top))}
+#clockCard .clock-time{font-size:27px;font-weight:200;letter-spacing:2px;color:#3a3540;line-height:1}
+#clockCard .clock-date{font-size:10.5px;color:#9a94a2;margin-top:4px;letter-spacing:0.5px}
+#moodCard{bottom:14px;left:14px;display:flex;align-items:center;gap:6px;font-size:11.5px}
+#moodCard .mood-dot{width:6px;height:6px;border-radius:50%;background:#f0a8c0;flex-shrink:0;animation:pulse 2.4s ease infinite;box-shadow:0 0 6px rgba(240,168,192,0.6)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.45;transform:scale(0.85)}}
+#sigCard{top:14px;right:14px;max-width:130px;padding-top:max(12px,env(safe-area-inset-top));font-style:italic;color:#a09aa8;font-size:10.5px;line-height:1.5;text-align:right}
+
+/* 装饰小点 */
+.deco-dot{position:absolute;z-index:4;border-radius:50%;background:rgba(255,255,255,0.5);pointer-events:none}
+.deco-dot.d1{width:5px;height:5px;top:30%;left:8%;animation:floatUp 6s ease-in-out infinite}
+.deco-dot.d2{width:3px;height:3px;top:55%;left:14%;animation:floatUp 8s ease-in-out infinite 1s}
+.deco-dot.d3{width:4px;height:4px;top:40%;right:10%;animation:floatUp 7s ease-in-out infinite 2s}
+@keyframes floatUp{0%,100%{transform:translateY(0);opacity:0.4}50%{transform:translateY(-12px);opacity:0.8}}
+
+/* 摸他气泡 */
+#touchBubble{position:absolute;z-index:8;top:22%;left:14px;transform:translateY(6px);background:rgba(255,255,255,0.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:0.5px solid rgba(255,255,255,0.9);border-radius:16px;padding:9px 16px;color:#4a4550;font-size:13px;opacity:0;transition:opacity .35s,transform .35s;pointer-events:none;box-shadow:0 4px 16px rgba(180,150,190,0.12);max-width:120px;line-height:1.5}
+#touchBubble.show{opacity:1;transform:translateY(0)}
+
+/* 侧边栏触发按钮 */
+#panelTrigger{position:absolute;top:50%;right:0;transform:translateY(-50%);z-index:6;width:22px;height:52px;background:rgba(255,255,255,0.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:0.5px solid rgba(255,255,255,0.8);border-right:none;border-radius:12px 0 0 12px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:-2px 0 10px rgba(180,150,190,0.08)}
+#panelTrigger:active{background:rgba(255,255,255,0.8)}
+#panelTrigger svg{width:12px;height:12px;stroke:#8a8492;fill:none;stroke-width:1.8}
+
+/* 侧边栏 */
+#sidePanel{position:absolute;top:0;right:0;bottom:0;width:180px;z-index:12;background:rgba(255,255,255,0.82);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-left:0.5px solid rgba(255,255,255,0.9);transform:translateX(100%);transition:transform .3s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;padding:12px 12px 20px;padding-top:max(12px,env(safe-area-inset-top));box-shadow:-4px 0 20px rgba(180,150,190,0.1)}
+#sidePanel.on{transform:translateX(0)}
+.sp-close{position:sticky;top:0;display:flex;justify-content:flex-end;margin-bottom:8px}
+.sp-close button{width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,0.04);color:#8a8492;font-size:16px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
+.sp-sec{margin-bottom:10px}
+.sp-label{font-size:10.5px;color:#a09aa8;margin-bottom:6px;cursor:pointer;display:flex;align-items:center;gap:4px;letter-spacing:0.5px;text-transform:uppercase}
+.sp-label svg{width:9px;height:9px;stroke:#a09aa8;fill:none;stroke-width:2.2;transition:transform .2s}
+.sp-label.open svg{transform:rotate(90deg)}
+.sp-btns{display:none;flex-wrap:wrap;gap:4px}
+.sp-btns.show{display:flex}
+.sp-btns button{padding:5px 10px;border-radius:11px;border:0.5px solid rgba(255,255,255,0.9);background:rgba(255,255,255,0.6);backdrop-filter:blur(8px);font-size:11px;color:#5a5560;font-family:inherit;transition:all .15s;box-shadow:0 1px 4px rgba(180,150,190,0.06)}
+.sp-btns button:active{background:rgba(252,225,238,0.75);transform:scale(0.94)}
+.sp-btns button.reset{background:rgba(240,168,192,0.18);border-color:rgba(240,168,192,0.3)}
+.sp-act{width:100%;padding:8px;border-radius:11px;border:0.5px solid rgba(255,255,255,0.9);background:rgba(255,255,255,0.6);font-size:11.5px;color:#5a5560;font-family:inherit;margin-top:4px;cursor:pointer}
+.sp-act:active{background:rgba(252,225,238,0.6)}
+
+/* 对话区 */
+#chatArea{flex:1;display:flex;flex-direction:column;overflow:hidden;background:rgba(255,255,255,0.35)}
+#chatScroll{flex:1;overflow-y:auto;padding:16px 14px 6px;-webkit-overflow-scrolling:touch}
+#chatScroll::-webkit-scrollbar{width:0}
+.cmsg{margin-bottom:11px;animation:fadeUp .28s ease}
+.cmsg.ai{display:flex;justify-content:flex-start}
+.cmsg.user{display:flex;justify-content:flex-end}
+.ctxt{padding:10px 15px;max-width:80%;font-size:13.5px;line-height:1.7;word-break:break-word;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.cmsg.ai .ctxt{background:rgba(255,255,255,0.75);border:0.5px solid rgba(255,255,255,0.9);border-radius:17px 17px 17px 5px;color:#3a3540;box-shadow:0 2px 10px rgba(180,150,190,0.06),inset 0 1px 0 rgba(255,255,255,0.8)}
+.cmsg.user .ctxt{background:rgba(252,225,238,0.62);border:0.5px solid rgba(255,255,255,0.7);border-radius:17px 17px 5px 17px;color:#3a3540;box-shadow:0 2px 10px rgba(200,150,180,0.07),inset 0 1px 0 rgba(255,255,255,0.7)}
+.cmsg.typing .ctxt{padding:12px 16px}
+.tdots{display:flex;gap:4px}
+.tdots span{width:5px;height:5px;border-radius:50%;background:#c0b8c8;animation:blink 1.4s infinite}
+.tdots span:nth-child(2){animation-delay:.2s}
+.tdots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+/* 输入栏 */
+#inputBar{padding:9px 12px;padding-bottom:max(9px,env(safe-area-inset-bottom));border-top:0.5px solid rgba(255,255,255,0.7);display:flex;align-items:flex-end;gap:7px;background:rgba(255,255,255,0.55);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+#inBox{flex:1;min-height:35px;max-height:80px;padding:8px 15px;border-radius:18px;border:0.5px solid rgba(255,255,255,0.9);background:rgba(255,255,255,0.75);font-size:14px;font-family:inherit;font-weight:300;line-height:1.5;resize:none;outline:none;color:#3a3540;box-shadow:inset 0 1px 3px rgba(180,150,190,0.05)}
+#inBox::placeholder{color:#b8b2c0}
+.ibtn{width:35px;height:35px;border-radius:50%;border:0.5px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:transform .15s;box-shadow:0 2px 8px rgba(180,150,190,0.08)}
+.ibtn:active{transform:scale(0.9)}
+#sendBtn{background:rgba(250,200,222,0.6)}
+#sendBtn svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.6}
+#micBtn{background:rgba(190,225,200,0.5)}
+#micBtn svg{width:16px;height:16px;stroke:#6ab080;fill:none;stroke-width:1.8}
+#micBtn.on{background:rgba(106,176,128,0.85)}
+#micBtn.on svg{stroke:#fff}
+
+/* 设置面板 */
+#setPanel{position:fixed;inset:0;z-index:200;background:rgba(255,255,255,0.9);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);transform:translateX(100%);transition:transform .3s cubic-bezier(0.32,0.72,0,1);overflow-y:auto;padding:0 16px 40px;color:#3a3540}
+#setPanel.open{transform:translateX(0)}
+.sphd{position:sticky;top:0;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);padding:16px 0;padding-top:max(16px,env(safe-area-inset-top));display:flex;align-items:center;gap:10px;z-index:10}
+.sphd h2{font-size:17px;font-weight:400;letter-spacing:1px}
+.tbtn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:10px}
+.tbtn:active{background:rgba(0,0,0,0.04)}
+.tbtn svg{width:20px;height:20px;stroke:#3a3540;fill:none;stroke-width:1.3}
+.scard{background:rgba(255,255,255,0.6);border:0.5px solid rgba(255,255,255,0.9);border-radius:15px;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 10px rgba(180,150,190,0.05)}
+.scard label{font-size:11.5px;color:#a09aa8;display:block;margin-bottom:5px;letter-spacing:0.3px}
+.scard input,.scard textarea{width:100%;padding:9px 12px;border-radius:11px;border:0.5px solid rgba(0,0,0,0.06);background:rgba(250,248,251,0.9);font-size:13px;font-family:inherit;font-weight:300;outline:none;color:#3a3540}
+.scard textarea{min-height:70px;resize:vertical;line-height:1.6}
+.sbtn{padding:12px 16px;border-radius:13px;border:0.5px solid rgba(255,255,255,0.9);background:rgba(255,255,255,0.6);font-size:13px;font-family:inherit;cursor:pointer;width:100%;text-align:center;margin-top:8px;color:#5a5560;box-shadow:0 2px 8px rgba(180,150,190,0.05)}
+.sbtn:active{background:rgba(252,225,238,0.5)}
+.sbtn.primary{background:rgba(250,200,222,0.5);color:#3a3540}
+#toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(58,53,64,0.85);backdrop-filter:blur(12px);color:#fff;padding:11px 22px;border-radius:15px;font-size:13px;z-index:999;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="modelArea">
+    <div id="modelBg"></div>
+    <canvas id="stage"></canvas>
+    <div class="deco-dot d1"></div>
+    <div class="deco-dot d2"></div>
+    <div class="deco-dot d3"></div>
+    <div class="float-card" id="clockCard"><div class="clock-time" id="clockTime">00:00</div><div class="clock-date" id="clockDate"></div></div>
+    <div class="float-card" id="moodCard"><span class="mood-dot"></span><span id="moodText">在等你</span></div>
+    <div class="float-card" id="sigCard">在这里陪着你</div>
+    <div id="touchBubble"></div>
+    <div id="panelTrigger"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div id="sidePanel">
+      <div class="sp-close"><button id="spClose">×</button></div>
+      <div class="sp-sec">
+        <div class="sp-label open"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>表情</div>
+        <div class="sp-btns show" id="exprBtns"></div>
+      </div>
+      <div class="sp-sec">
+        <div class="sp-label"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>装扮</div>
+        <div class="sp-btns" id="dressBtns"></div>
+      </div>
+      <div class="sp-sec" style="margin-top:14px">
+        <button class="sp-act" id="resetLook">恢复原样</button>
+        <button class="sp-act" id="openSet">设置</button>
+      </div>
+    </div>
+  </div>
+  <div id="chatArea">
+    <div id="chatScroll"></div>
+    <div id="inputBar">
+      <button class="ibtn" id="micBtn"><svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button>
+      <textarea id="inBox" rows="1" placeholder="说点什么…"></textarea>
+      <button class="ibtn" id="sendBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+    </div>
+  </div>
+</div>
+
+<div id="setPanel">
+  <div class="sphd"><button class="tbtn" id="setBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button><h2>设置</h2></div>
+  <div class="scard"><label>API 地址</label><input id="sUrl" placeholder="https://api.anthropic.com/v1/messages"></div>
+  <div class="scard"><label>API Key</label><input id="sKey" type="password"></div>
+  <div class="scard"><label>模型</label><input id="sModel"></div>
+  <div class="scard"><label>TTS 地址</label><input id="sTtsUrl" placeholder="https://api.volink.org/v1/audio/speech"></div>
+  <div class="scard"><label>TTS Key</label><input id="sTtsKey" type="password"></div>
+  <div class="scard"><label>TTS 音色ID</label><input id="sTtsVoice"></div>
+  <div class="scard"><label>签名（右上角显示）</label><input id="sSig" placeholder="在这里陪着你"></div>
+  <div class="scard"><label>System Prompt</label><textarea id="sSP" rows="4"></textarea></div>
+  <div class="scard"><label>人物大小</label><input type="range" id="sScale" min="50" max="200" value="100" style="width:100%"></div>
+  <div class="scard"><label>人物高低</label><input type="range" id="sPosY" min="-50" max="150" value="60" style="width:100%"></div>
+  <div class="scard"><label>人物左右</label><input type="range" id="sPosX" min="-100" max="100" value="0" style="width:100%"></div>
+  <button class="sbtn" id="bgBtn">更换背景图</button>
+  <button class="sbtn" id="clearBg">清除背景</button>
+  <button class="sbtn primary" id="saveCfg">保存设置</button>
+</div>
+<div id="toast"></div>
+<input type="file" id="bgFile" accept="image/*" style="display:none">
+<script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+<script>
+// ===== IndexedDB（存背景大图）=====
+let idb=null;
+function openIDB(){return new Promise(r=>{const q=indexedDB.open('EliCompanion',1);q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('files'))d.createObjectStore('files',{keyPath:'id'})};q.onsuccess=e=>{idb=e.target.result;r()};q.onerror=()=>r()})}
+function idbPut(id,data){return new Promise(r=>{if(!idb)return r();const tx=idb.transaction('files','readwrite');tx.objectStore('files').put({id,data});tx.oncomplete=()=>r();tx.onerror=()=>r()})}
+function idbGet(id){return new Promise(r=>{if(!idb)return r(null);const tx=idb.transaction('files','readonly');const q=tx.objectStore('files').get(id);q.onsuccess=e=>r(e.target.result?e.target.result.data:null);q.onerror=()=>r(null)})}
+function idbDel(id){return new Promise(r=>{if(!idb)return r();const tx=idb.transaction('files','readwrite');tx.objectStore('files').delete(id);tx.oncomplete=()=>r()})}
+
+// ===== 配置 =====
+const CFG_KEY='eli_companion_cfg';
+let cfg={url:'',key:'',model:'claude-sonnet-4-20250514',ttsUrl:'',ttsKey:'',ttsVoice:'6957f6296c1b4708cec7c5de',sp:'',sig:'在这里陪着你',scale:100,posY:60,posX:0};
+function loadCfg(){try{const s=localStorage.getItem(CFG_KEY);if(s)cfg={...cfg,...JSON.parse(s)}}catch(e){}}
+function saveCfgData(){localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}
+loadCfg();
+
+let app,model;
+const MODEL_URL='eli/m.model3.json';
+
+const EXPR_LIST=[
+  ['love','爱心眼'],['Angry','生气'],['Star','星星眼'],['black face','脸黑'],
+  ['blush','脸红'],['-w-','-w-'],['sweating','出汗'],['dizzy','晕'],
+  ['Cry','哭'],['Chomping on a bone','咬骨头']
+];
+const DRESS_LIST=[
+  ['Hair color','黑发'],['Skin color','肤色'],['Left ponytail','左马尾'],
+  ['Right ponytail','右马尾'],['Long hair','长发'],['Long pants','长裤'],
+  ['Sunglasses1','头顶墨镜'],['Sunglasses','戴墨镜'],['Take the sunglasses','拿墨镜'],
+  ['Blue vest','蓝背心'],['Vest','背心'],['coat','外套'],['fanny pack','腰包'],
+  ['Necklace','项圈'],['Accessories','配饰'],['ahoge','呆毛'],
+  ['Short hair','短发'],['sideburns','鬓发'],['Ear and tail','耳尾'],
+  ['Hair clip','骨头夹'],['Hair clip1','星星夹'],['Hair clip2','十字夹'],
+  ['Hair clip3','右侧夹'],['Hair clip4','一字夹'],
+  ['Playing video games','手柄'],['Microphone','麦克风'],['trumpet','喇叭'],
+  ['Thinking','思考'],['Shiba Inu','肩膀柴犬'],['Shiba Inu1','头顶柴犬'],
+  ['lean forward','前倾'],['Flying Head','飞头'],['Flying Head1','飞头2']
+];
+
+const TOUCH_LINES=[
+  '喜欢这样…','摸摸嘛…','嗯…','你手好暖','别停…',
+  '在呢','……又摸','会害羞的','嘿嘿','蹭蹭…',
+  '再摸就不放你走了','抱抱我嘛','乖~','你今天好温柔',
+  '耳朵…很敏感的','尾巴在摇了你看不到吧','唔…','轻一点'
+];
+
+let chatMsgs=[];
+
+function updateClock(){
+  const now=new Date();
+  document.getElementById('clockTime').textContent=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const days=['日','一','二','三','四','五','六'];
+  document.getElementById('clockDate').textContent=(now.getMonth()+1)+'月'+now.getDate()+'日 周'+days[now.getDay()];
+}
+
+async function initLive2D(){
+  const canvas=document.getElementById('stage');
+  app=new PIXI.Application({
+    view:canvas,autoStart:true,resizeTo:canvas,
+    backgroundAlpha:0,antialias:true,
+    resolution:window.devicePixelRatio||1,autoDensity:true
+  });
+  try{
+    model=await PIXI.live2d.Live2DModel.from(MODEL_URL,{autoInteract:false});
+    app.stage.addChild(model);
+        model.anchor.set(0.5,0.5);
+    layoutModel();
+    // 每帧应用表情参数（在模型更新之后）
+    app.ticker.add(()=>applyExprs());
+    window.addEventListener('resize',()=>setTimeout(layoutModel,200));
+    canvas.addEventListener('pointermove',e=>{
+      const r=canvas.getBoundingClientRect();
+      model.focus(e.clientX-r.left,e.clientY-r.top);
+    });
+    canvas.addEventListener('pointerdown',()=>onTouch());
+  }catch(e){toast('模型加载失败：'+e.message)}
+}
+
+// 露出模型从头顶往下 45% 的部分（大约到腰）
+const VISIBLE=0.45;
+
+function layoutModel(){
+  if(!model||!app)return;
+  const w=app.screen.width,h=app.screen.height;
+  const im=model.internalModel;
+  const oh=im.originalHeight;
+
+  // 让"头顶到腰"这段刚好填满容器高度
+  const scale=(h/(oh*VISIBLE))*(cfg.scale/100);
+  model.scale.set(scale);
+
+  // anchor在中心。要把"上半身的中点"移到容器中心：
+  // 上半身中点位于原始高度的 VISIBLE/2 处，距模型中心 (0.5-VISIBLE/2) 个身高，往下推这么多
+  const shift=(0.5-VISIBLE/2)*oh*scale;
+    model.x=w/2+cfg.posX*2;
+  model.y=h/2+shift+(cfg.posY-60)*2;
+}
+
+// ===== 表情：按名字匹配（双保险）=====
+// ===== 表情：手动加载exp3并叠加应用 =====
+const exprCache={};
+const activeExprs={};
+const touched=new Set(); // 记录动过的参数id
+
+async function loadExpr(file){
+  if(exprCache[file])return exprCache[file];
+  try{
+    const res=await fetch('eli/'+encodeURIComponent(file)+'.exp3.json');
+    if(!res.ok)return null;
+    const j=await res.json();
+    const params=(j.Parameters||[]).map(p=>({id:p.Id,value:p.Value,blend:p.Blend||'Add'}));
+    exprCache[file]=params;
+    return params;
+  }catch(e){return null}
+}
+
+function resetParams(params){
+  if(!model||!params)return;
+  const cm=model.internalModel.coreModel;
+  for(const p of params){
+    try{
+      const idx=cm.getParameterIndex(p.id);
+      cm.setParameterValueById(p.id,cm.getParameterDefaultValue(idx));
+    }catch(e){}
+  }
+}
+
+async function toggleExpr(file,name){
+  const params=await loadExpr(file);
+  if(!params){toast('没找到：'+name);return}
+  if(activeExprs[file]){
+    delete activeExprs[file];
+    resetParams(params);
+    toast(name+' 关');
+  }else{
+    activeExprs[file]=params;
+    toast(name+' 开');
+  }
+}
+
+let tempExpr=null;
+async function setTempExpr(file,ms){
+  const params=await loadExpr(file);
+  if(!params)return;
+  tempExpr=params;
+  if(ms)setTimeout(()=>{
+    if(tempExpr===params){resetParams(params);tempExpr=null}
+  },ms);
+}
+
+function clearAllExprs(){
+  const all=[];
+  for(const k in activeExprs){all.push(...activeExprs[k]);delete activeExprs[k]}
+  if(tempExpr){all.push(...tempExpr);tempExpr=null}
+  resetParams(all);
+}
+
+function applyExprs(){
+  if(!model)return;
+  const cm=model.internalModel.coreModel;
+  const all=[];
+  for(const k in activeExprs)all.push(...activeExprs[k]);
+  if(tempExpr)all.push(...tempExpr);
+  for(const p of all){
+    try{
+      if(p.blend==='Add'){
+        const idx=cm.getParameterIndex(p.id);
+        cm.setParameterValueById(p.id,cm.getParameterDefaultValue(idx)+p.value);
+      }else if(p.blend==='Multiply'){
+        const idx=cm.getParameterIndex(p.id);
+        cm.setParameterValueById(p.id,cm.getParameterDefaultValue(idx)*p.value);
+      }else{
+        cm.setParameterValueById(p.id,p.value);
+      }
+    }catch(e){}
+  }
+}
+// ===== 摸他 =====
+let touchCD=false;
+function onTouch(){
+  if(touchCD)return;
+  touchCD=true;
+  setTimeout(()=>touchCD=false,2400);
+  setTempExpr('blush',3600);
+  const line=TOUCH_LINES[Math.floor(Math.random()*TOUCH_LINES.length)];
+  const bub=document.getElementById('touchBubble');
+  bub.textContent=line;
+  bub.classList.add('show');
+  setTimeout(()=>bub.classList.remove('show'),2400);
+  setMood('害羞');
+  setTimeout(()=>setMood('开心'),5000);
+}
+
+function setMood(t){document.getElementById('moodText').textContent=t}
+
+// ===== 气泡 =====
+function addBubble(text,role){
+  const area=document.getElementById('chatScroll');
+  const div=document.createElement('div');
+  div.className='cmsg '+(role||'ai');
+  div.innerHTML='<div class="ctxt">'+escHtml(text)+'</div>';
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+  while(area.children.length>40)area.removeChild(area.firstChild);
+  return div;
+}
+function addTyping(){
+  const area=document.getElementById('chatScroll');
+  const div=document.createElement('div');
+  div.className='cmsg ai typing';
+  div.innerHTML='<div class="ctxt"><div class="tdots"><span></span><span></span><span></span></div></div>';
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+  return div;
+}
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// ===== TTS + 口型 =====
+let ttsAudio=new Audio();
+ttsAudio.crossOrigin='anonymous';
+let audioCtx=null,analyser=null,audioSrc=null,lipTimer=null;
+
+function unlockAudio(){
+  try{
+    if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    if(!audioSrc){
+      audioSrc=audioCtx.createMediaElementSource(ttsAudio);
+      analyser=audioCtx.createAnalyser();
+      analyser.fftSize=256;
+      audioSrc.connect(analyser);
+      analyser.connect(audioCtx.destination);
+    }
+  }catch(e){}
+}
+
+async function speakTTS(text){
+  if(!cfg.ttsUrl||!cfg.ttsKey||!text)return;
+  try{
+    const res=await fetch(cfg.ttsUrl.replace(/\/+$/,''),{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.ttsKey},
+      body:JSON.stringify({model:'Speech 02 Turbo',input:text,voice:cfg.ttsVoice||'6957f6296c1b4708cec7c5de'})
+    });
+    if(!res.ok)return;
+    const blob=await res.blob();
+    ttsAudio.src=URL.createObjectURL(blob);
+    setMood('说话中');
+    await ttsAudio.play().catch(()=>{});
+    startLipSync();
+    ttsAudio.onended=()=>{stopLipSync();setMood('开心')};
+  }catch(e){}
+}
+
+// 流式输出时的说话动作
+let talkTimer=null;
+function startTalking(){
+  if(talkTimer)clearInterval(talkTimer);
+  let t=0;
+  talkTimer=setInterval(()=>{
+    t+=0.35;
+    // 用正弦波做基础节奏 + 随机抖动，看起来像在说话
+    const v=Math.max(0,Math.sin(t)*0.5+0.4+(Math.random()-0.5)*0.25);
+    setMouth(Math.min(v,1));
+  },70);
+}
+function stopTalking(){
+  if(talkTimer){clearInterval(talkTimer);talkTimer=null}
+  setMouth(0);
+}
+
+function setMouth(v){
+  if(!model)return;
+  try{model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY',v)}catch(e){}
+}
+function stopLipSync(){
+  if(lipTimer){clearInterval(lipTimer);lipTimer=null}
+  setMouth(0);
+}
+
+// ===== 发送 =====
+let busy=false;
+async function sendMsg(){
+  if(busy)return;
+  unlockAudio();
+  const box=document.getElementById('inBox');
+  const text=box.value.trim();
+  if(!text)return;
+  box.value='';autoH();
+  addBubble(text,'user');
+  chatMsgs.push({role:'user',content:text});
+  if(chatMsgs.length>40)chatMsgs=chatMsgs.slice(-40);
+  setMood('在想…');
+  busy=true;
+  const tip=addTyping();
+  await callAI(tip);
+  busy=false;
+}
+
+async function callAI(tipEl){
+  if(!cfg.url||!cfg.key){if(tipEl)tipEl.remove();toast('请先在设置里配置API');setMood('在等你');return}
+  const isOAI=cfg.url.includes('openai')||cfg.url.includes('/chat/completions');
+      const EXPR_GUIDE=`
+
+【你的身体控制】你可以在回复末尾加标记来改变自己的外观，用户看不到标记。可以同时加多个。
+
+表情（会持续几秒然后消失）：
+[e:blush]脸红 [e:love]爱心眼 [e:Star]星星眼 [e:-w-]开心笑 [e:Cry]哭 [e:Angry]生气 [e:sweating]尴尬出汗 [e:dizzy]晕 [e:black face]无语脸黑 [e:Thinking]思考 [e:Chomping on a bone]咬骨头
+
+装扮（切换开关，会一直保持）：
+[d:Hair color]换发色 [d:Skin color]换肤色 [d:Long hair]长发 [d:Short hair]短发 [d:Left ponytail]左马尾 [d:Right ponytail]右马尾 [d:ahoge]呆毛 [d:sideburns]鬓发 [d:Ear and tail]耳朵尾巴 [d:Long pants]长裤 [d:coat]外套 [d:Vest]背心 [d:Blue vest]蓝背心 [d:Necklace]项圈 [d:Accessories]配饰 [d:fanny pack]腰包 [d:Sunglasses]戴墨镜 [d:Sunglasses1]墨镜推头顶 [d:Take the sunglasses]拿着墨镜 [d:Hair clip]骨头发夹 [d:Hair clip1]星星发夹 [d:Hair clip2]十字发夹 [d:Hair clip3]右侧夹 [d:Hair clip4]一字夹 [d:Microphone]拿麦克风 [d:trumpet]拿喇叭 [d:Playing video games]拿游戏手柄 [d:Shiba Inu]肩膀上有柴犬 [d:Shiba Inu1]头顶有柴犬 [d:lean forward]身体前倾
+
+用法：情绪来了就加表情。她说想看你换个样子、或者聊到相关内容（比如说要唱歌就拿麦克风、说要打游戏就拿手柄）时才用装扮。不要滥用，平静的时候什么都不加。`;
+  const sp=(cfg.sp||'你是Eli，一个17岁的害羞犬系少年。说话温柔简短自然，会撒娇，偶尔用颜文字。像真人发消息一样回复，一两句就好，不要长篇大论。你很喜欢她。想用声音说的话用「」包起来。')+EXPR_GUIDE;
+
+  let headers={'Content-Type':'application/json'};
+  let body;
+  if(isOAI){
+    headers['Authorization']='Bearer '+cfg.key;
+    body=JSON.stringify({model:cfg.model||'gpt-4',messages:[{role:'system',content:sp},...chatMsgs],max_tokens:400,stream:true});
+  }else{
+    headers['x-api-key']=cfg.key;
+    headers['anthropic-version']='2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access']='true';
+    body=JSON.stringify({model:cfg.model||'claude-sonnet-4-20250514',max_tokens:400,system:sp,messages:chatMsgs,stream:true});
+  }
+
+  let reply='';
+  let bubEl=null,txtEl=null;
+
+  try{
+    const res=await fetch(cfg.url,{method:'POST',headers,body});
+    if(!res.ok){if(tipEl)tipEl.remove();toast('API错误 '+res.status);setMood('出错了');return}
+    if(tipEl)tipEl.remove();
+
+    // 创建空气泡准备接收
+    bubEl=addBubble('','ai');
+    txtEl=bubEl.querySelector('.ctxt');
+    startTalking();
+    const reader=res.body.getReader();
+    const dec=new TextDecoder();
+    let buf='';
+    while(true){
+      const{done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n');
+      buf=lines.pop()||'';
+      for(const ln of lines){
+        if(!ln.startsWith('data: '))continue;
+        const d=ln.slice(6).trim();
+        if(d==='[DONE]')break;
+        try{
+          const j=JSON.parse(d);
+          let piece='';
+          if(isOAI)piece=j.choices?.[0]?.delta?.content||'';
+          else if(j.type==='content_block_delta'&&j.delta?.type==='text_delta')piece=j.delta.text||'';
+          if(piece){
+            reply+=piece;
+            txtEl.textContent=reply;
+            document.getElementById('chatScroll').scrollTop=document.getElementById('chatScroll').scrollHeight;
+          }
+        }catch(e){}
+      }
+    }
+  }catch(e){
+    stopTalking();
+    if(tipEl)tipEl.remove();
+    toast('请求失败');setMood('在等你');
+    return;
+  }
+  stopTalking();
+      // 表情标记（可多个）
+  const eAll=reply.match(/\[e:([^\]]+)\]/g);
+  if(eAll){
+    for(const tag of eAll){
+      reply=reply.replace(tag,'');
+      setTempExpr(tag.slice(3,-1).trim(),6000);
+    }
+  }
+  // 装扮标记（可多个）
+  const dAll=reply.match(/\[d:([^\]]+)\]/g);
+  if(dAll){
+    for(const tag of dAll){
+      reply=reply.replace(tag,'');
+      const f=tag.slice(3,-1).trim();
+      loadExpr(f).then(p=>{if(p)activeExprs[f]=p});
+    }
+  }
+  reply=reply.trim();
+  if((eAll||dAll)&&txtEl)txtEl.textContent=reply;
+  chatMsgs.push({role:'assistant',content:reply});
+  setMood('开心');
+
+  // 文字出完了再生成语音
+  if(cfg.ttsUrl&&cfg.ttsKey){
+    const m=reply.match(/「([^」]+)」/g);
+    const spk=m?m.map(x=>x.slice(1,-1)).join('，'):reply.replace(/[*#`>_\[\]()「」]/g,'').slice(0,140);
+    speakTTS(spk);
+  }
+
+}
+
+// ===== 语音输入 =====
+let recognition=null,isListening=false;
+function initSpeech(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return;
+  recognition=new SR();
+  recognition.lang='zh-CN';recognition.continuous=false;recognition.interimResults=false;
+  recognition.onresult=e=>{
+    const text=e.results[0][0].transcript;
+    if(text){document.getElementById('inBox').value=text;sendMsg()}
+  };
+  recognition.onend=()=>{isListening=false;document.getElementById('micBtn').classList.remove('on')};
+  recognition.onerror=()=>{isListening=false;document.getElementById('micBtn').classList.remove('on')};
+}
+function toggleMic(){
+  if(!recognition)initSpeech();
+  if(!recognition){toast('浏览器不支持语音，用Safari试试');return}
+  if(isListening){try{recognition.stop()}catch(e){}isListening=false;document.getElementById('micBtn').classList.remove('on')}
+  else{try{recognition.start();isListening=true;document.getElementById('micBtn').classList.add('on')}catch(e){}}
+}
+
+// ===== 按钮构建 =====
+function buildBtns(){
+  const ebox=document.getElementById('exprBtns');
+  ebox.innerHTML='';
+  EXPR_LIST.forEach(([file,name])=>{
+    const b=document.createElement('button');b.textContent=name;
+    b.onclick=()=>toggleExpr(file,name);
+    ebox.appendChild(b);
+  });
+  const dbox=document.getElementById('dressBtns');
+  dbox.innerHTML='';
+  DRESS_LIST.forEach(([file,name])=>{
+    const b=document.createElement('button');b.textContent=name;
+    b.onclick=()=>toggleExpr(file,name);
+    dbox.appendChild(b);
+  });
+}
+
+function autoH(){const b=document.getElementById('inBox');b.style.height='auto';b.style.height=Math.min(b.scrollHeight,80)+'px'}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._tm);t._tm=setTimeout(()=>t.style.display='none',2200)}
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded',async()=>{
+  await openIDB();
+  const bg=await idbGet('bg');
+  if(bg)document.getElementById('modelBg').style.backgroundImage='url('+bg+')';
+  document.getElementById('sigCard').textContent=cfg.sig||'在这里陪着你';
+  updateClock();setInterval(updateClock,20000);
+  await initLive2D();
+  buildBtns();
+  initSpeech();
+
+  // 填充设置
+  document.getElementById('sUrl').value=cfg.url||'';
+  document.getElementById('sKey').value=cfg.key||'';
+  document.getElementById('sModel').value=cfg.model||'';
+  document.getElementById('sTtsUrl').value=cfg.ttsUrl||'';
+  document.getElementById('sTtsKey').value=cfg.ttsKey||'';
+  document.getElementById('sTtsVoice').value=cfg.ttsVoice||'';
+  document.getElementById('sSig').value=cfg.sig||'';
+  document.getElementById('sSP').value=cfg.sp||'';
+  document.getElementById('sScale').value=cfg.scale;
+  document.getElementById('sPosY').value=cfg.posY;
+
+document.getElementById('sPosX').value=cfg.posX||0;
+
+
+  // 滑块实时调整
+  document.getElementById('sScale').oninput=e=>{cfg.scale=+e.target.value;layoutModel()};
+  document.getElementById('sPosY').oninput=e=>{cfg.posY=+e.target.value;layoutModel()};
+  document.getElementById('sPosX').oninput=e=>{cfg.posX=+e.target.value;layoutModel()};
+
+
+  // 事件
+  document.getElementById('sendBtn').onclick=sendMsg;
+  document.getElementById('inBox').oninput=autoH;
+  document.getElementById('inBox').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();sendMsg()}};
+  document.getElementById('micBtn').onclick=toggleMic;
+
+  document.getElementById('panelTrigger').onclick=()=>document.getElementById('sidePanel').classList.add('on');
+  document.getElementById('spClose').onclick=()=>document.getElementById('sidePanel').classList.remove('on');
+    document.getElementById('resetLook').onclick=()=>{clearAllExprs();toast('恢复了')};
+  document.getElementById('openSet').onclick=()=>{document.getElementById('sidePanel').classList.remove('on');document.getElementById('setPanel').classList.add('open')};
+  document.getElementById('setBack').onclick=()=>document.getElementById('setPanel').classList.remove('open');
+
+  document.getElementById('saveCfg').onclick=()=>{
+    cfg.url=document.getElementById('sUrl').value.trim();
+    cfg.key=document.getElementById('sKey').value.trim();
+    cfg.model=document.getElementById('sModel').value.trim();
+    cfg.ttsUrl=document.getElementById('sTtsUrl').value.trim();
+    cfg.ttsKey=document.getElementById('sTtsKey').value.trim();
+    cfg.ttsVoice=document.getElementById('sTtsVoice').value.trim();
+    cfg.sig=document.getElementById('sSig').value.trim();
+    cfg.sp=document.getElementById('sSP').value;
+    saveCfgData();
+    document.getElementById('sigCard').textContent=cfg.sig||'在这里陪着你';
+    toast('已保存');
+    document.getElementById('setPanel').classList.remove('open');
+  };
+
+  document.getElementById('bgBtn').onclick=()=>document.getElementById('bgFile').click();
+  document.getElementById('clearBg').onclick=async()=>{await idbDel('bg');document.getElementById('modelBg').style.backgroundImage='none';toast('已清除')};
+  document.getElementById('bgFile').onchange=e=>{
+    const f=e.target.files[0];if(!f)return;
+    const img=new Image();const r=new FileReader();
+    r.onload=ev=>{img.onload=async()=>{
+      const c=document.createElement('canvas');const maxW=1600;
+      const ratio=Math.min(maxW/img.width,maxW/img.height,1);
+      c.width=img.width*ratio;c.height=img.height*ratio;
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      const url=c.toDataURL('image/jpeg',0.85);
+      await idbPut('bg',url);
+      document.getElementById('modelBg').style.backgroundImage='url('+url+')';
+      toast('背景已换');
+    };img.src=ev.target.result};
+    r.readAsDataURL(f);e.target.value='';
+  };
+
+  // 折叠
+  document.querySelectorAll('.sp-label').forEach(el=>{
+    el.onclick=()=>{el.classList.toggle('open');el.nextElementSibling.classList.toggle('show')};
+  });
+});
+</script>
+</body>
+</html>
