@@ -696,7 +696,7 @@ function renderVoice(url,dur,idx){
 function scrollEnd(){requestAnimationFrame(()=>chatArea.scrollTop=chatArea.scrollHeight)}
 // ===== TTS 语音生成 =====
 // ===== TTS 格式适配 =====
-function isMoss(t){return (t.url||'').includes('mosi.cn')}
+function isMoss(t){const u=t.url||'';return u.includes('mosi.cn')||u.includes('/moss/')}
 function buildTtsUrl(t){
   let u=(t.url||'').replace(/\/+$/,'');
   if(isMoss(t)&&!u.includes('/audio/speech'))u+='/audio/speech';
