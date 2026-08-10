@@ -62,7 +62,7 @@ button.sec{background:#f0eef3}
 
 <script>
 const $=id=>document.getElementById(id);
-const BASE='https://api.mosi.cn/v1';
+const BASE='https://reverie.reverie-eli.workers.dev/moss/v1';
 $('key').value=localStorage.getItem('mossKey')||'';
 $('key').oninput=()=>localStorage.setItem('mossKey',$('key').value.trim());
 
