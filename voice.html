@@ -95,26 +95,31 @@ $('btnGen').onclick=async()=>{
   const k=getKey();if(!k)return;
   const el=$('outGen');show(el,'生成中，可能要等十几秒…');
   const body={
-    model:'moss-voice-design',
-    description:$('desc').value.trim(),
-    prompt:$('desc').value.trim(),
-    text:$('preview').value.trim(),
-    preview_text:$('preview').value.trim()
+    model:'moss-voice-generator',
+    input:$('preview').value.trim(),
+    instruction:$('desc').value.trim(),
+    delivery_method:'url',
+    response_format:'mp3'
   };
   try{
-    const res=await fetch(BASE+'/audio/voice-generations',{
+    const res=await fetch(BASE+'/audio/voice/generations',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},
       body:JSON.stringify(body)
     });
     const txt=await res.text();
     if(!res.ok){show(el,'错误 '+res.status+'\n'+txt);return}
-    show(el,txt);
-    try{
-      const j=JSON.parse(txt);
-      const vid=j.id||j.voice_id||(j.voice&&j.voice.id);
-      if(vid)el.innerHTML='<div class="vid"><b>voice_id</b><br>'+vid+'</div>'+el.innerHTML;
-    }catch(e){}
+    let j=null;
+    try{j=JSON.parse(txt)}catch(e){}
+    const au=j&&(j.url||j.audio_url||(j.data&&j.data.url)||(j.audio&&j.audio.url));
+    if(au){
+      el.innerHTML='<audio controls src="'+au+'" style="width:100%;margin-bottom:8px"></audio>'
+        +'<div class="hint">满意就长按播放器保存音频，再用下面③上传克隆成固定音色</div>'
+        +'<div style="margin-top:8px;font-size:11px;word-break:break-all">'+au+'</div>';
+      el.classList.add('show');
+    }else{
+      show(el,txt);
+    }
   }catch(e){show(el,'失败：'+e.message)}
 };
 
