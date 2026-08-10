@@ -95,6 +95,8 @@ html,body{height:100vh;height:100dvh;overflow:hidden;font-family:'Noto Serif SC'
 .hist-prev{font-size:11.5px;color:#a09aa8;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist-time{font-size:10.5px;color:#b8b2c0;margin-top:3px}
 .empty-tip{padding:40px 20px;text-align:center;color:#b8b2c0;font-size:13px}
+#loadTip{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.5);backdrop-filter:blur(6px);font-size:12px;color:#8a8492;letter-spacing:1px;transition:opacity .4s}
+#loadTip.hide{opacity:0;pointer-events:none}
 #toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(58,53,64,0.85);backdrop-filter:blur(12px);color:#fff;padding:11px 22px;border-radius:15px;font-size:13px;z-index:999;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
 </style>
 </head>
@@ -109,6 +111,7 @@ html,body{height:100vh;height:100dvh;overflow:hidden;font-family:'Noto Serif SC'
     <div class="float-card" id="clockCard"><div class="clock-time" id="clockTime">00:00</div><div class="clock-date" id="clockDate"></div></div>
     <div class="float-card" id="moodCard"><span class="mood-dot"></span><span id="moodText">在等你</span></div>
     <div class="float-card" id="sigCard">在这里陪着你</div>
+    <div id="loadTip">正在醒来…</div>
     <div id="touchBubble"></div>
     <div id="panelTrigger"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
     <div class="corner-btns">
@@ -233,6 +236,19 @@ function newSession(){
   toast('新的陪伴');
 }
 function saveSession(){if(cur){cur.ts=Date.now();homePut('companion',cur)}}
+
+function renderChat(){
+  const area=document.getElementById('chatScroll');
+  if(!area)return;
+  area.innerHTML='';
+  if(!cur||!cur.msgs.length)return;
+  for(const m of cur.msgs){
+    if(!m.content)continue;
+    addBubble(m.content,m.role==='user'?'user':'ai');
+  }
+  area.scrollTop=area.scrollHeight;
+}
+
 function renderHistList(){
   const list=document.getElementById('histList');
   if(!sessions.length){list.innerHTML='<div class="empty-tip">还没有陪伴记录</div>';return}
@@ -371,8 +387,14 @@ async function initLive2D(){
     app.ticker.add(()=>applyExprs());
     window.addEventListener('resize',()=>setTimeout(layoutModel,200));
     canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();model.focus(e.clientX-r.left,e.clientY-r.top)});
-    canvas.addEventListener('pointerdown',()=>onTouch());
-  }catch(e){toast('模型加载失败：'+e.message)}
+        canvas.addEventListener('pointerdown',()=>onTouch());
+    const tip=document.getElementById('loadTip');
+    if(tip)tip.classList.add('hide');
+  }catch(e){
+    toast('模型加载失败：'+e.message);
+    const tip=document.getElementById('loadTip');
+    if(tip){tip.textContent='加载失败，刷新试试';tip.style.color='#d05a70'}
+  }
 }
 
 const VISIBLE=0.42;
@@ -526,12 +548,17 @@ function isMoss(t){const u=t.url||'';return u.includes('mosi.cn')||u.includes('/
 async function speakTTS(text){
   if(!tts||!tts.url||!tts.key||!text)return;
   try{
-    let url=tts.url.replace(/\/+$/,'');
-    let payload;
-    if(isMoss(tts)){
-      if(!url.includes('/audio/speech'))url+='/audio/speech';
+        const base=tts.url.replace(/\/+$/,'');
+    const useGen=(tts.voice||'').startsWith('desc:');
+    let url,payload;
+    if(useGen){
+      url=base+'/audio/voice/generations';
+      payload={model:'moss-voice-generator',input:text,instruction:tts.voice.slice(5),delivery_method:'url',response_format:'mp3'};
+    }else if(isMoss(tts)){
+      url=base.includes('/audio/speech')?base:base+'/audio/speech';
       payload={model:tts.model||'moss-tts',input:text,voice_id:tts.voice||'',response_format:'mp3',delivery_method:'audio'};
     }else{
+      url=base;
       payload={model:tts.model||'Speech 02 Turbo',input:text,voice:tts.voice||''};
     }
     const res=await fetch(url,{
@@ -540,7 +567,15 @@ async function speakTTS(text){
       body:JSON.stringify(payload)
     });
     if(!res.ok)return;
-    const blob=await res.blob();
+    let blob;
+    if(useGen){
+      const j=await res.json();
+      const au=j.url||j.audio_url||(j.data&&j.data.url)||(j.audio&&j.audio.url);
+      if(!au)return;
+      blob=await (await fetch(au)).blob();
+    }else{
+      blob=await res.blob();
+    }
     ttsAudio.src=URL.createObjectURL(blob);
     setMood('说话中');
     await ttsAudio.play().catch(()=>{});
@@ -670,21 +705,22 @@ async function callAI(tipEl){
     }
     reply=reply.trim();
   }
-  if(txtEl)txtEl.textContent=reply;
-  cur.msgs.push({role:'assistant',content:reply,ts:Date.now()});
-
-  const bMatch=reply.match(/\[body:([^\]]+)\]/);
-  if(bMatch){
-    reply=reply.replace(bMatch[0],'').trim();
-    if(txtEl)txtEl.textContent=reply;
+    const bAll=reply.match(/\[body:[^\]]+\]/g);
+  if(bAll){
     const deltas={};
-    bMatch[1].split(',').forEach(part=>{
-      const r=part.trim().match(/^(\w+)([+-]\d+)$/);
-      if(r)deltas[r[1]]=parseInt(r[2]);
-    });
+    for(const tag of bAll){
+      reply=reply.replace(tag,'');
+      tag.slice(6,-1).split(',').forEach(part=>{
+        const r=part.trim().match(/^(\w+)\s*([+-]\d+)$/);
+        if(r)deltas[r[1]]=(deltas[r[1]]||0)+parseInt(r[2]);
+      });
+    }
+    reply=reply.trim();
     try{if(typeof Eventide!=='undefined'&&Object.keys(deltas).length)Eventide.applyDelta(deltas)}catch(e){}
     applyBodyLook();
   }
+  if(txtEl)txtEl.textContent=reply;
+  cur.msgs.push({role:'assistant',content:reply,ts:Date.now()});
 
   saveSession();
   setMood('开心');
