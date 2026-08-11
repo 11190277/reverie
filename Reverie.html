@@ -1242,7 +1242,7 @@ function renderMemList(){
 
 function getBuiltinPrompt(){
   return `【系统指令·请遵守】
-1. 表情包：想发表情包时加 [sticker:含义关键词] 从库里匹配，或 [sticker:图片链接] 直接发图
+1. 表情包：想发表情包时加 [sticker:含义关键词] 从库里匹配。可用表情包：${stickers.length>0?stickers.map(s=>s.label).filter(l=>l).join('、'):'（暂无）'}
 2. 记忆：想记住重要信息时加 [memory:要记住的内容]
 3. 打电话：非常想念/开心/担心时，回复末尾加 [call:接通后你说的第一句话]，不要常用
 4. 语音：${ttsAutoOn?'用「」包住想用声音说的话，如「你好呀」':'不要使用「」符号，不要发语音'}
