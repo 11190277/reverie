@@ -415,6 +415,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <h2>设置</h2>
   </div>
   <div class="set-sec"><div class="set-card">
+    <div class="set-item" id="goTheme"><label>外观主题</label><span class="arrow">›</span></div>
     <div class="set-item" id="goApi"><label>API 配置</label><span class="arrow">›</span></div>
     <div class="set-item" id="goSp"><label>System Prompt</label><span class="arrow">›</span></div>
     <div class="set-item" id="goTts"><label>语音 TTS</label><span class="arrow">›</span></div>
@@ -445,7 +446,14 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <div class="set-item" id="doImport"><label>导入数据</label><span class="arrow">›</span></div>
   </div></div>
 </div>
-
+<!-- 外观主题页 -->
+<div class="page" id="themePage">
+  <div class="page-hd">
+    <button class="page-back" id="themeBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>外观主题</h2>
+  </div>
+  <div class="theme-grid" id="themeGrid"></div>
+</div>
 <!-- API卡片列表页 -->
 <div class="page" id="apiListPage">
   <div class="page-hd">
@@ -1113,6 +1121,39 @@ function hexToRgba(hex,alpha){
   const b=parseInt(hex.slice(5,7),16);
   return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
+// ===== 主题系统 =====
+const THEMES={
+  fog:{name:'雾白',dots:['#fce4ec','#ffffff','#f7f7f7'],v:{'--bg':'#f7f7f7','--sidebar-bg':'rgba(255,240,245,0.55)','--glass':'rgba(255,255,255,0.4)','--glass2':'rgba(255,255,255,0.55)','--text':'#1d1d1f','--text2':'#86868b','--border':'rgba(0,0,0,0.06)','--input-bg':'#ffffff','--send-bg':'#c8c8c8','--hl':'rgba(255,255,255,0.4)','--soft':'rgba(0,0,0,0.04)'},bu:'#fce4ec',ba:'#ffffff'},
+  cream:{name:'暖奶油',dots:['#f5e6d3','#fffaf3','#a8896c'],v:{'--bg':'#faf5ee','--sidebar-bg':'rgba(245,230,211,0.6)','--glass':'rgba(255,250,243,0.5)','--glass2':'rgba(255,250,243,0.65)','--text':'#4a3f35','--text2':'#a08b76','--border':'rgba(120,90,60,0.1)','--input-bg':'#fffaf3','--send-bg':'#c9a986','--hl':'rgba(255,255,255,0.5)','--soft':'rgba(120,90,60,0.06)'},bu:'#f3e0c8',ba:'#fffaf3'},
+  mint:{name:'薄荷',dots:['#d4ede4','#f5fbf8','#7fb59e'],v:{'--bg':'#f2f9f6','--sidebar-bg':'rgba(212,237,228,0.6)','--glass':'rgba(245,251,248,0.5)','--glass2':'rgba(245,251,248,0.65)','--text':'#33463f','--text2':'#7d9b90','--border':'rgba(60,120,90,0.1)','--input-bg':'#f5fbf8','--send-bg':'#8fc4ac','--hl':'rgba(255,255,255,0.5)','--soft':'rgba(60,120,90,0.06)'},bu:'#d4ede4',ba:'#f5fbf8'},
+  violet:{name:'雾紫',dots:['#e6ddf2','#f8f5fc','#a893c9'],v:{'--bg':'#f6f2fb','--sidebar-bg':'rgba(230,221,242,0.6)','--glass':'rgba(248,245,252,0.5)','--glass2':'rgba(248,245,252,0.65)','--text':'#413950','--text2':'#948aa8','--border':'rgba(100,80,140,0.1)','--input-bg':'#f8f5fc','--send-bg':'#b0a0d0','--hl':'rgba(255,255,255,0.5)','--soft':'rgba(100,80,140,0.06)'},bu:'#e6ddf2',ba:'#f8f5fc'},
+  sky:{name:'浅蓝',dots:['#d6e8f5','#f4f9fd','#89b4d9'],v:{'--bg':'#f2f8fc','--sidebar-bg':'rgba(214,232,245,0.6)','--glass':'rgba(244,249,253,0.5)','--glass2':'rgba(244,249,253,0.65)','--text':'#334554','--text2':'#7d97ac','--border':'rgba(60,100,140,0.1)','--input-bg':'#f4f9fd','--send-bg':'#93bbde','--hl':'rgba(255,255,255,0.5)','--soft':'rgba(60,100,140,0.06)'},bu:'#d6e8f5',ba:'#f4f9fd'},
+  night:{name:'深夜',dots:['#3a4a5e','#2a3441','#8fa3b8'],v:{'--bg':'#222a35','--sidebar-bg':'rgba(42,52,65,0.85)','--glass':'rgba(48,60,75,0.55)','--glass2':'rgba(40,50,63,0.9)','--text':'#e4e9f0','--text2':'#8a97a8','--border':'rgba(255,255,255,0.08)','--input-bg':'rgba(60,72,88,0.8)','--send-bg':'#5a7a9e','--hl':'rgba(255,255,255,0.05)','--soft':'rgba(255,255,255,0.06)'},bu:'#3a4a5e',ba:'#323d4b'},
+  ink:{name:'墨黑',dots:['#333333','#1a1a1a','#888888'],v:{'--bg':'#161616','--sidebar-bg':'rgba(28,28,28,0.85)','--glass':'rgba(38,38,38,0.55)','--glass2':'rgba(26,26,26,0.9)','--text':'#e8e8e8','--text2':'#888888','--border':'rgba(255,255,255,0.08)','--input-bg':'rgba(48,48,48,0.8)','--send-bg':'#555555','--hl':'rgba(255,255,255,0.04)','--soft':'rgba(255,255,255,0.05)'},bu:'#3a2a30',ba:'#2a2a2a'}
+};
+let activeTheme=localStorage.getItem('theme')||'fog';
+
+function applyTheme(key){
+  const t=THEMES[key]||THEMES.fog;
+  const root=document.documentElement;
+  for(const k in t.v)root.style.setProperty(k,t.v[k]);
+  $('cUser').value=t.bu;$('cAi').value=t.ba;
+  activeTheme=key;localStorage.setItem('theme',key);
+  applyColors();saveCfg();
+}
+
+function renderThemeGrid(){
+  const grid=$('themeGrid');
+  grid.innerHTML=Object.keys(THEMES).map(k=>{
+    const t=THEMES[k];
+    const dots=t.dots.map(c=>`<i style="background:${c}"></i>`).join('');
+    return `<div class="theme-card${k===activeTheme?' on':''}" data-k="${k}"><div class="theme-dots">${dots}</div><div class="theme-nm">${t.name}</div></div>`;
+  }).join('');
+  grid.querySelectorAll('.theme-card').forEach(el=>{
+    el.onclick=()=>{applyTheme(el.dataset.k);renderThemeGrid()};
+  });
+}
+
 function applyColors(){
   document.documentElement.style.setProperty('--bubble-user',hexToRgba($('cUser').value,0.55));
   document.documentElement.style.setProperty('--bubble-ai',hexToRgba($('cAi').value,0.55));
@@ -1774,8 +1815,8 @@ async function init(){
   await loadCallRecords();
 
   }
-  await loadPlayData();
-  applyColors();
+    await loadPlayData();
+  applyTheme(activeTheme);
 // 加载背景
 const bgData=await dbGet('cfg','_chatBg');
 if(bgData&&bgData.data){$('chatBg').style.backgroundImage='url('+bgData.data+')'}
@@ -1818,7 +1859,8 @@ let bodyTimer=null;
 $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');closeSB();bodyTimer=setInterval(renderBodyPanel,3000)};
 $('bodyBack').onclick=()=>{$('bodyPage').classList.remove('open');if(bodyTimer){clearInterval(bodyTimer);bodyTimer=null}};
   $('setBack').onclick=()=>{$('setPage').classList.remove('open');saveCfg()};
-
+  $('goTheme').onclick=()=>{renderThemeGrid();$('themePage').classList.add('open')};
+  $('themeBack').onclick=()=>$('themePage').classList.remove('open');
   $('goApi').onclick=()=>{renderApiCards();$('apiListPage').classList.add('open')};
   $('goSp').onclick=()=>{renderSpCards();$('spListPage').classList.add('open')};
   $('goTts').onclick=()=>{renderTtsCards();$('ttsListPage').classList.add('open')};
