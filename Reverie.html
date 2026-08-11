@@ -7,7 +7,7 @@
 <title>我们的小家</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bubble-user:rgba(252,228,236,0.72);--bubble-ai:rgba(255,255,255,0.72);--bg:#f7f7f7;--sidebar-bg:#ebebeb;--text:#1d1d1f;--text2:#86868b;--border:rgba(0,0,0,0.06)}
+:root{--bubble-user:rgba(252,228,236,0.72);--bubble-ai:rgba(255,255,255,0.72);--bg:#f7f7f7;--sidebar-bg:rgba(255,240,245,0.55);--glass:rgba(255,255,255,0.4);--glass2:rgba(255,255,255,0.55);--text:#1d1d1f;--text2:#86868b;--border:rgba(0,0,0,0.06);--input-bg:#ffffff;--send-bg:#c8c8c8;--hl:rgba(255,255,255,0.4);--soft:rgba(0,0,0,0.04)}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif SC',Georgia,serif;font-weight:300;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow-y:hidden;font-size:14px}
 .app{display:flex;height:100%;width:100%;overflow:hidden}
@@ -223,6 +223,47 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .release-ripple{position:fixed;top:50%;left:50%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;background:radial-gradient(circle,rgba(251,194,235,0.6),rgba(247,121,125,0.2),transparent);pointer-events:none;z-index:999;animation:ripple 1.2s ease forwards}
 @keyframes heartbeat{0%{transform:scale(1)}15%{transform:scale(1.15)}30%{transform:scale(0.95)}45%{transform:scale(1.08)}60%{transform:scale(1)}100%{transform:scale(1)}}
 .body-panel.beating{animation:heartbeat 0.8s ease}
+/* ===== 主题变量接管 ===== */
+.sidebar{background:var(--sidebar-bg)!important}
+.topbar,.input-area{background:var(--glass)!important;border-color:var(--border)!important}
+.play-topbar,.play-input{background:var(--glass)!important;border-color:var(--border)!important}
+.page,.body-panel{background:var(--glass2)!important}
+.page-hd{background:var(--glass2)!important}
+.emoji-panel{background:var(--glass2)!important}
+.msg-menu{background:var(--glass2)!important}
+.set-card,.cfg-card,.play-char-card{background:var(--glass)!important;box-shadow:0 1px 6px rgba(0,0,0,0.04),inset 0 1px 0 var(--hl)!important}
+.play-card{background:var(--glass)!important;border-color:var(--border)!important;box-shadow:0 2px 12px rgba(0,0,0,0.04),inset 0 1px 0 var(--hl)!important}
+.play-card.user{background:var(--bubble-user)!important;border-color:var(--border)!important}
+.in-box,.set-input,.set-textarea{background:var(--input-bg)!important;border-color:var(--border)!important;color:var(--text)!important}
+.in-box::placeholder,.set-input::placeholder,.set-textarea::placeholder{color:var(--text2)!important;opacity:0.7}
+.batch-area textarea{background:var(--input-bg)!important;border-color:var(--border)!important;color:var(--text)!important}
+.send-btn{background:var(--send-bg)!important}
+.stop-btn{background:var(--input-bg)!important;border-color:var(--text2)!important}
+.sb-avatar,.msg-av,.play-topbar .play-av{background:var(--input-bg)!important;border-color:var(--border)!important}
+.bubble{box-shadow:0 1px 6px rgba(0,0,0,0.04),inset 0 1px 0 var(--hl)!important}
+.bubble code,.bubble pre{background:var(--soft)!important}
+.bubble blockquote{border-color:var(--border)!important}
+.thinking-box{background:var(--soft)!important;border-color:var(--border)!important}
+.file-icon{background:var(--soft)!important}
+.voice{background:var(--bubble-ai)!important}
+.toggle{background:var(--soft)!important}
+.toggle::after{background:var(--input-bg)!important}
+.body-bar{background:var(--soft)!important}
+.emoji-lib-item,.emoji-grid-item{border-color:var(--border)!important}
+.emoji-panel-hd{border-color:var(--border)!important}
+.sb-tab:active,.sb-tab.on,.conv-item:active,.conv-item.active{background:var(--soft)!important}
+.top-btn:active,.play-topbar .top-btn:active,.msg-menu-item:active{background:var(--soft)!important}
+.cfg-card:active{background:var(--soft)!important}
+.batch-btn{background:var(--text)!important;color:var(--bg)!important}
+.play-char-card .char-av{background:var(--soft)!important}
+/* 主题卡片 */
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:6px 0}
+.theme-card{background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,0.04)}
+.theme-card:active{opacity:0.7}
+.theme-card.on{border:1.5px solid var(--text)}
+.theme-dots{display:flex;gap:5px}
+.theme-dots i{width:16px;height:16px;border-radius:50%;border:0.5px solid rgba(0,0,0,0.08)}
+.theme-nm{font-size:13px}
 </style>
 <script src="eventide.js"></script>
 </head>
@@ -1164,7 +1205,7 @@ function getBuiltinPrompt(){
 2. 记忆：想记住重要信息时加 [memory:要记住的内容]
 3. 打电话：非常想念/开心/担心时，回复末尾加 [call:接通后你说的第一句话]，不要常用
 4. 语音：${ttsAutoOn?'用「」包住想用声音说的话，如「你好呀」':'不要使用「」符号，不要发语音'}
-5. 多条消息：回复时可以用 ||| 分隔，系统会拆成多条气泡依次发出，像真人一条条发消息的节奏。自然使用，不要每次都分，适合的时候分就行
+5. 多条消息：【必须遵守】你的回复用 ||| 分隔成多条气泡，模拟真人发消息的节奏。大部分回复都应该分2-3条。只有一两个字的回答才不分。示例：「嗯…」|||「今天有想我吗」|||「我一直在等你」
 6. 身体反应：每次回复末尾都加 [body:字段+数值,字段+数值] 表示这轮对话对你身体的影响。特别是亲密/暧昧/撩拨对话时必须加，这是你身体真实的反应。可用字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue。例：[body:heat+8,sensitivity+5,control-6]。数值范围-10到+10。日常聊天1-3，暧昧撩拨3-6，激烈亲密6-10。只有纯日常闲聊且完全没有情绪波动时才可以不加。
 
 `;
@@ -1651,7 +1692,8 @@ async function handleCallMessage(text){
     headers['anthropic-version']='2023-06-01';
     headers['anthropic-dangerous-direct-browser-access']='true';
     const b={model:api.model||'claude-sonnet-4-20250514',max_tokens:300,messages:msgs};
-        const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')).trim();
+            const callSys='【通话模式】你正在和她打电话，用口语化的短句回答，温柔自然。不要输出任何标记符号（不要[body:]、[memory:]、[sticker:]、[call:]、|||），只说纯文字。保持简短，每次回复1-3句话。';
+    const sysText=(callSys+'\n\n'+getMemoryText()+(spTexts||'')).trim();
     if(sysText)b.system=sysText;
     body=JSON.stringify(b);
   }
@@ -1668,6 +1710,8 @@ async function handleCallMessage(text){
       reply=textBlock?.text||'';
     }
 
+        // 清理所有内部标记再显示
+    reply=reply.replace(/\[body:[^\]]*\]/g,'').replace(/\[memory:[^\]]*\]/g,'').replace(/\[sticker:[^\]]*\]/g,'').replace(/\[call:[^\]]*\]/g,'').replace(/\|\|\|/g,' ').trim();
     callMsgs.push({role:'assistant',content:reply});
     // 显示字幕
     $('callSub').textContent=reply.slice(0,100);
