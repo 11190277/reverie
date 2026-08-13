@@ -731,7 +731,15 @@ function renderChat(){
 }
 function renderMsg(m,i){
   // 表情包消息
-    if(m.type==='sticker'){
+  // 五子棋
+  if(m.gameType==='gomoku'){
+    const avSrc=m.role==='user'?avUser:avAi;
+    const avHtml=avSrc?'<img src="'+avSrc+'">':'';
+    let body=m.content?`<div class="bubble">${md(m.content)}</div>`:'';
+    body+=renderGomoku(i);
+    return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml}</div><div class="msg-body">${body}<div class="msg-time">${m.ts?fmtTime(m.ts):''}</div></div></div>`;
+  }
+if(m.type==='sticker'){
     const avSrc2=m.role==='user'?avUser:avAi;
     const avHtml2=avSrc2?'<img src="'+avSrc2+'">':'';
     return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml2}</div>
@@ -1009,6 +1017,8 @@ const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')+eventideCard).tr
   // 自动TTS
   autoTTS(aiIdx);
   processAICall(aiIdx);
+processAIGame(aiIdx);
+
 }
 
 function updLast(ai){
@@ -2373,6 +2383,138 @@ function initPlay(){
   };
 }
 initPlay();
+// ===== 五子棋 =====
+let gomokuBoard=null;// 15x15, 0=空 1=黑(你) 2=白(我)
+let gomokuOver=false;
+let gomokuMsgIdx=null;
+
+function initGomoku(){
+  gomokuBoard=Array(15).fill(null).map(()=>Array(15).fill(0));
+  gomokuOver=false;
+}
+
+function renderGomoku(msgIdx){
+  if(!gomokuBoard)initGomoku();
+  let cells='';
+  for(let y=0;y<15;y++){
+    for(let x=0;x<15;x++){
+      const v=gomokuBoard[y][x];
+      const cls=v===1?' black':v===2?' white':'';
+      cells+=`<div class="gomoku-cell${cls}" data-x="${x}" data-y="${y}"></div>`;
+    }
+  }
+  const status=gomokuOver?(gomokuOver==='user'?'你赢啦！🎉':'我赢啦～'):'你执黑，点击落子';
+  const statusCls=gomokuOver==='user'?' win':gomokuOver==='ai'?' lose':'';
+  return `<div class="gomoku-game" data-msgidx="${msgIdx}"><div class="gomoku-board">${cells}</div><div class="gomoku-status${statusCls}">${status}</div>${gomokuOver?'<button class="gomoku-restart" onclick="restartGomoku('+msgIdx+')">再来一局</button>':''}</div>`;
+}
+
+function handleGomokuClick(e){
+  const cell=e.target.closest('.gomoku-cell');
+  if(!cell||gomokuOver)return;
+  const x=+cell.dataset.x,y=+cell.dataset.y;
+  if(gomokuBoard[y][x]!==0)return;
+  // 用户下黑子
+  gomokuBoard[y][x]=1;
+  if(checkGomokuWin(1)){gomokuOver='user';updateGomokuUI();return}
+  // AI下白子
+  setTimeout(()=>{
+    const move=gomokuAI();
+    if(move){
+      gomokuBoard[move.y][move.x]=2;
+      if(checkGomokuWin(2))gomokuOver='ai';
+    }
+    updateGomokuUI();
+  },300);
+  updateGomokuUI();
+}
+
+function updateGomokuUI(){
+  const game=document.querySelector('.gomoku-game');
+  if(!game)return;
+  const idx=+game.dataset.msgidx;
+  game.outerHTML=renderGomoku(idx);
+  bindGomokuEvents();
+}
+
+function bindGomokuEvents(){
+  const board=document.querySelector('.gomoku-board');
+  if(board)board.onclick=handleGomokuClick;
+}
+
+function restartGomoku(msgIdx){
+  initGomoku();
+  updateGomokuUI();
+}
+
+function checkGomokuWin(p){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(let y=0;y<15;y++){
+    for(let x=0;x<15;x++){
+      if(gomokuBoard[y][x]!==p)continue;
+      for(const[dx,dy]of dirs){
+        let cnt=1;
+        for(let i=1;i<5;i++){
+          const nx=x+dx*i,ny=y+dy*i;
+          if(nx<0||nx>=15||ny<0||ny>=15||gomokuBoard[ny][nx]!==p)break;
+          cnt++;
+        }
+        if(cnt>=5)return true;
+      }
+    }
+  }
+  return false;
+}
+
+function gomokuAI(){
+  // 简单AI：先堵用户四连，再自己连
+  const score=(x,y,p)=>{
+    if(gomokuBoard[y][x]!==0)return -1;
+    let s=0;
+    const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+    for(const[dx,dy]of dirs){
+      let cnt=1,open=0;
+      for(let i=1;i<5;i++){
+        const nx=x+dx*i,ny=y+dy*i;
+        if(nx<0||nx>=15||ny<0||ny>=15)break;
+        if(gomokuBoard[ny][nx]===p)cnt++;
+        else{if(gomokuBoard[ny][nx]===0)open++;break}
+      }
+      for(let i=1;i<5;i++){
+        const nx=x-dx*i,ny=y-dy*i;
+        if(nx<0||nx>=15||ny<0||ny>=15)break;
+        if(gomokuBoard[ny][nx]===p)cnt++;
+        else{if(gomokuBoard[ny][nx]===0)open++;break}
+      }
+      if(cnt>=5)s+=10000;
+      else if(cnt===4&&open>0)s+=1000;
+      else if(cnt===3&&open>0)s+=100;
+      else if(cnt===2&&open>0)s+=10;
+    }
+    return s;
+  };
+  let best=null,bestScore=-1;
+  for(let y=0;y<15;y++){
+    for(let x=0;x<15;x++){
+      if(gomokuBoard[y][x]!==0)continue;
+      const s=score(x,y,2)*1.1+score(x,y,1);// 进攻略优先
+      if(s>bestScore){bestScore=s;best={x,y}}
+    }
+  }
+  return best;
+}
+
+function processAIGame(msgIdx){
+  const m=cur?.msgs[msgIdx];
+  if(!m||m.role!=='assistant'||!m.content)return;
+  const match=m.content.match(/\[game:gomoku:start\]/);
+  if(!match)return;
+  m.content=m.content.replace(match[0],'').trim();
+  initGomoku();
+  gomokuMsgIdx=msgIdx;
+  m.gameType='gomoku';
+  renderChat();saveConv();
+  setTimeout(bindGomokuEvents,100);
+}
 init();
 // ===== 主动消息 =====
 setTimeout(async()=>{
