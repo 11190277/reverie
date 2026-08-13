@@ -265,18 +265,13 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .theme-dots i{width:16px;height:16px;border-radius:50%;border:0.5px solid rgba(0,0,0,0.08)}
 .theme-nm{font-size:13px}
 /* 五子棋 */
-.gomoku-game{background:var(--glass);border-radius:16px;padding:16px;width:100%;max-width:100%}
-.gomoku-board{display:grid;grid-template-columns:repeat(15,1fr);gap:0;background:#dcb35c;border-radius:10px;padding:10px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.15)}
-.gomoku-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
-.gomoku-cell::before{content:'';position:absolute;width:100%;height:100%;border:0.5px solid rgba(0,0,0,0.3);box-sizing:border-box}
-.gomoku-cell::after{content:'';width:80%;height:80%;border-radius:50%;opacity:0;transition:opacity 0.15s}
-.gomoku-cell:active::after{opacity:0.3;background:var(--text)}
-.gomoku-cell.black::after{opacity:1;background:linear-gradient(145deg,#555,#111);box-shadow:2px 2px 4px rgba(0,0,0,0.5)}
-.gomoku-cell.white::after{opacity:1;background:linear-gradient(145deg,#fff,#ccc);box-shadow:2px 2px 4px rgba(0,0,0,0.25)}
-.gomoku-cell.last::after{box-shadow:0 0 0 2px #ff6b6b}
-.gomoku-status{text-align:center;font-size:14px;color:var(--text2);margin-top:12px}
-.gomoku-status.win{color:#34c759;font-weight:400}
-.gomoku-status.lose{color:#ff3b30}
+.gomoku-board-big{display:grid;grid-template-columns:repeat(15,1fr);gap:0;background:linear-gradient(135deg,#e8c896,#d4a85c);border-radius:10px;padding:3px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.12)}
+.gomoku-cell-big{aspect-ratio:1;position:relative;cursor:pointer}
+.gomoku-cell-big::before{content:'';position:absolute;inset:0;border:0.5px solid rgba(0,0,0,0.3)}
+.gomoku-cell-big::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;height:85%;border-radius:50%;opacity:0}
+.gomoku-cell-big.black::after{opacity:1;background:linear-gradient(145deg,#444,#111);box-shadow:2px 2px 5px rgba(0,0,0,0.5)}
+.gomoku-cell-big.white::after{opacity:1;background:linear-gradient(145deg,#fff,#ddd);box-shadow:2px 2px 5px rgba(0,0,0,0.25)}
+.gomoku-cell-big.last::after{box-shadow:0 0 0 3px #ff6b6b,2px 2px 5px rgba(0,0,0,0.3)}
 </style>
 <script src="eventide.js"></script>
 </head>
@@ -294,6 +289,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
       <div class="sb-tab" id="tabCall"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>通话记录</div>
       <div class="sb-tab" id="tabPlay"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Play</div>
 <div class="sb-tab" onclick="location.href='companion.html'"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/></svg>陪伴</div>
+<div class="sb-tab" id="tabGame"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="3"/><line x1="8" y1="2" x2="8" y2="22"/><line x1="16" y1="2" x2="16" y2="22"/><line x1="2" y1="8" x2="22" y2="8"/><line x1="2" y1="16" x2="22" y2="16"/></svg>游戏</div>
 <div class="sb-tab" id="tabBody"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>身体状态</div>
       <div class="sb-tab" id="tabSet"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68 1.65 1.65 0 0 0 10 3.17V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>设置</div>
     </div>
@@ -402,6 +398,32 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <div class="set-item col"><label>内容</label><textarea class="set-textarea" id="playMemContent" rows="12" placeholder="写下这个角色要记住的信息..."></textarea></div>
   </div></div>
 </div>
+</div>
+<!-- 游戏页 -->
+<div class="page" id="gamePage">
+  <div class="page-hd">
+    <button class="page-back" id="gameBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>游戏</h2>
+  </div>
+  <div class="card-list" style="padding:10px 0">
+    <div class="cfg-card" id="startGomoku"><span class="cfg-card-name">⚫ 五子棋</span><span class="arrow">›</span></div>
+  </div>
+</div>
+
+<!-- 五子棋页 -->
+<div class="page" id="gomokuPage">
+  <div class="page-hd">
+    <button class="page-back" id="gomokuBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>五子棋</h2>
+    <button class="add-btn" id="gomokuRestart"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+  </div>
+  <div id="gomokuContainer" style="padding:6px 0"></div>
+  <div id="gomokuStatus" style="text-align:center;padding:8px;font-size:13px;color:var(--text2)"></div>
+  <div id="gomokuChat" style="flex:1;overflow-y:auto;padding:8px 12px;border-top:0.5px solid var(--border);min-height:120px;max-height:200px"></div>
+  <div style="padding:7px 10px;padding-bottom:max(7px,env(safe-area-inset-bottom));display:flex;align-items:flex-end;gap:5px;border-top:0.5px solid var(--border)">
+    <textarea class="in-box" id="gomokuInBox" rows="1" placeholder="边下棋边聊天..."></textarea>
+    <button class="send-btn" id="gomokuSendBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+  </div>
 </div>
 <!-- 消息菜单 -->
 <div class="msg-menu" id="msgMenu">
@@ -1880,6 +1902,13 @@ if(convs.length===0)newConv();else{cur=convs[0];renderChat();updTitle()}
   $('callLogBack').onclick=()=>$('callLogPage').classList.remove('open');
   $('tabSet').onclick=()=>{$('setPage').classList.add('open');closeSB()};
 let bodyTimer=null;
+$('tabGame').onclick=()=>{$('gamePage').classList.add('open');closeSB()};
+$('gameBack').onclick=()=>$('gamePage').classList.remove('open');
+$('startGomoku').onclick=async()=>{await loadGomokuState();if(!gomokuBoard)initGomoku();renderGomokuBig();$('gomokuPage').classList.add('open')};
+$('gomokuBack').onclick=()=>$('gomokuPage').classList.remove('open');
+$('gomokuRestart').onclick=()=>{if(confirm('重新开始？')){initGomoku();saveGomokuState();renderGomokuBig()}};
+$('gomokuSendBtn').onclick=sendGomokuChat;
+$('gomokuInBox').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendGomokuChat()}};
 $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');closeSB();bodyTimer=setInterval(renderBodyPanel,3000)};
 $('bodyBack').onclick=()=>{$('bodyPage').classList.remove('open');if(bodyTimer){clearInterval(bodyTimer);bodyTimer=null}};
   $('setBack').onclick=()=>{$('setPage').classList.remove('open');saveCfg()};
@@ -2385,56 +2414,163 @@ initPlay();
 let gomokuBoard=null;
 let gomokuOver=false;
 let gomokuLastMove=null;
+let gomokuMyTurn=true;
+let gomokuMsgs=[];
+let gomokuGenerating=false;
 
 function initGomoku(){
   gomokuBoard=Array(15).fill(null).map(()=>Array(15).fill(0));
   gomokuOver=false;
   gomokuLastMove=null;
+  gomokuMyTurn=true;
+  gomokuMsgs=[];
 }
 
-function renderGomoku(){
+function renderGomokuBig(){
   if(!gomokuBoard)initGomoku();
   let cells='';
   for(let y=0;y<15;y++){
     for(let x=0;x<15;x++){
       const v=gomokuBoard[y][x];
       const cls=(v===1?' black':v===2?' white':'')+(gomokuLastMove&&gomokuLastMove.x===x&&gomokuLastMove.y===y?' last':'');
-      cells+=`<div class="gomoku-cell${cls}" data-x="${x}" data-y="${y}"></div>`;
+      cells+=`<div class="gomoku-cell-big${cls}" data-x="${x}" data-y="${y}"></div>`;
     }
   }
-  const status=gomokuOver?(gomokuOver==='user'?'你赢啦！🎉':'我赢了～'):'点击落子，你执黑棋●';
-  const statusCls=gomokuOver==='user'?' win':gomokuOver==='ai'?' lose':'';
-  return `<div class="gomoku-game" style="background:var(--glass);border-radius:16px;padding:12px;width:100%"><div class="gomoku-board" style="display:grid;grid-template-columns:repeat(15,1fr);gap:0;background:linear-gradient(135deg,#e8c896,#d4a85c);border-radius:8px;padding:6px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.12)">${cells}</div><div style="text-align:center;font-size:13px;color:var(--text2);margin-top:10px">${status}</div></div>`;
+  $('gomokuContainer').innerHTML=`<div class="gomoku-board-big">${cells}</div>`;
+  $('gomokuContainer').querySelector('.gomoku-board-big').onclick=handleGomokuClickBig;
+  updateGomokuStatus();
+  renderGomokuChat();
 }
 
-function handleGomokuClick(e){
-  const cell=e.target.closest('.gomoku-cell');
-  if(!cell||gomokuOver)return;
+function updateGomokuStatus(){
+  let txt='';
+  if(gomokuOver){
+    txt=gomokuOver==='user'?'🎉 你赢了！':'我赢了～再来一局？';
+  }else{
+    txt=gomokuMyTurn?'你的回合 ●':'Eli思考中...';
+  }
+  $('gomokuStatus').innerHTML=txt;
+}
+
+function renderGomokuChat(){
+  const area=$('gomokuChat');
+  if(!area)return;
+  area.innerHTML=gomokuMsgs.map(m=>{
+    const cls=m.role==='user'?'user':'assistant';
+    return `<div class="msg ${cls}" style="margin-bottom:8px"><div class="msg-body"><div class="bubble" style="font-size:13px">${esc(m.content)}</div></div></div>`;
+  }).join('');
+  area.scrollTop=area.scrollHeight;
+}
+
+function handleGomokuClickBig(e){
+  const cell=e.target.closest('.gomoku-cell-big');
+  if(!cell||gomokuOver||!gomokuMyTurn||gomokuGenerating)return;
   const x=+cell.dataset.x,y=+cell.dataset.y;
   if(gomokuBoard[y][x]!==0)return;
   gomokuBoard[y][x]=1;
   gomokuLastMove={x,y};
-  if(checkGomokuWin(1)){gomokuOver='user';updateGomokuUI();saveGomokuState();return}
-  updateGomokuUI();
+  gomokuMyTurn=false;
+  renderGomokuBig();
+  if(checkGomokuWin(1)){
+    gomokuOver='user';
+    updateGomokuStatus();
+    saveGomokuState();
+    saveGomokuMemory('win');
+    return;
+  }
   saveGomokuState();
   const letters='ABCDEFGHJKLMNOP';
   const pos=letters[x]+(15-y);
-  sendGomokuMove(pos);
+  callGomokuAI('落子:'+pos);
 }
 
-function sendGomokuMove(pos){
-  if(!cur)return;
+async function sendGomokuChat(){
+  const text=$('gomokuInBox').value.trim();
+  if(!text||gomokuGenerating)return;
+  $('gomokuInBox').value='';
+  gomokuMsgs.push({role:'user',content:text});
+  renderGomokuChat();
+  saveGomokuState();
+  await callGomokuAI(text);
+}
+
+async function callGomokuAI(userInput){
+  const api=apis.find(a=>a.id===activeApi);
+  if(!api||!api.url||!api.key){
+    gomokuMsgs.push({role:'assistant',content:'⚠️ 请先配置API'});
+    renderGomokuChat();return;
+  }
+  gomokuGenerating=true;
+  updateGomokuStatus();
   const boardStr=renderBoardText();
-  const text='[五子棋] 我下在 '+pos+'\n\n当前棋盘：\n'+boardStr;
-  cur.msgs.push({role:'user',content:text,ts:Date.now()});
-  cur.ts=Date.now();
-  renderChat();saveConv();
-  callAPI();
+  const sysPrompt=`你正在和雯雯下五子棋。你执白棋○，她执黑棋●。
+
+当前棋盘：
+${boardStr}
+
+规则：
+1. 如果她刚落子（消息以"落子:"开头），你要回复你的落子，格式：[game:gomoku:坐标]，如[game:gomoku:H8]
+2. 坐标是A-P列(跳过I)和1-15行
+3. 可以边下棋边聊天，嘲讽、夸奖、撒娇都行
+4. 回复简短有趣，像真人聊天
+5. 如果她只是聊天没落子，就正常聊天不用下棋`;
+
+  const msgs=gomokuMsgs.slice(-10).map(m=>({role:m.role,content:m.content}));
+  msgs.push({role:'user',content:userInput});
+
+  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
+  let headers={'Content-Type':'application/json'};
+  let body;
+  if(isOAI){
+    headers['Authorization']='Bearer '+api.key;
+    body=JSON.stringify({model:api.model||'gpt-4',messages:[{role:'system',content:sysPrompt},...msgs],max_tokens:200});
+  }else{
+    headers['x-api-key']=api.key;
+    headers['anthropic-version']='2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access']='true';
+    body=JSON.stringify({model:api.model||'claude-sonnet-4-20250514',max_tokens:200,system:sysPrompt,messages:msgs});
+  }
+
+  try{
+    const res=await fetch(api.url,{method:'POST',headers,body});
+    if(!res.ok){gomokuMsgs.push({role:'assistant',content:'出错了...'});renderGomokuChat();gomokuGenerating=false;gomokuMyTurn=true;updateGomokuStatus();return}
+    const data=await res.json();
+    let reply='';
+    if(isOAI)reply=data.choices?.[0]?.message?.content||'';
+    else{const blocks=data.content||[];reply=blocks.find(b=>b.type==='text')?.text||''}
+    
+    const moveMatch=reply.match(/\[game:gomoku:([A-P])(\d+)\]/i);
+    if(moveMatch){
+      const letters='ABCDEFGHJKLMNOP';
+      const x=letters.indexOf(moveMatch[1].toUpperCase());
+      const y=15-parseInt(moveMatch[2]);
+      reply=reply.replace(moveMatch[0],'').trim();
+      if(x>=0&&x<15&&y>=0&&y<15&&gomokuBoard[y][x]===0){
+        gomokuBoard[y][x]=2;
+        gomokuLastMove={x,y};
+        if(checkGomokuWin(2)){
+          gomokuOver='ai';
+          if(reply)gomokuMsgs.push({role:'assistant',content:reply});
+          renderGomokuBig();
+          saveGomokuState();
+          saveGomokuMemory('lose');
+          gomokuGenerating=false;
+          return;
+        }
+      }
+    }
+    if(reply)gomokuMsgs.push({role:'assistant',content:reply});
+    gomokuMyTurn=true;
+    renderGomokuBig();
+    saveGomokuState();
+  }catch(e){gomokuMsgs.push({role:'assistant',content:'出错了: '+e.message})}
+  gomokuGenerating=false;
+  updateGomokuStatus();
 }
 
 function renderBoardText(){
   const letters='ABCDEFGHJKLMNOP';
-  let s='　 '+letters.split('').join(' ')+'\n';
+  let s='   '+letters.split('').join(' ')+'\n';
   for(let y=0;y<15;y++){
     s+=(15-y<10?' ':'')+(15-y)+' ';
     for(let x=0;x<15;x++){
@@ -2446,63 +2582,44 @@ function renderBoardText(){
   return s;
 }
 
-function updateGomokuUI(){
-  const game=document.querySelector('.gomoku-game');
-  if(game)game.outerHTML=renderGomoku();
-  bindGomokuEvents();
-  document.querySelectorAll('.gomoku-cell').forEach(c=>{
-    c.style.cssText='aspect-ratio:1;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;background:transparent';
-  });
-  document.querySelectorAll('.gomoku-cell::before').forEach(c=>{});
-  const cells=document.querySelectorAll('.gomoku-cell');
-  cells.forEach(c=>{
-    const inner=document.createElement('div');
-    inner.style.cssText='position:absolute;inset:0;border:0.5px solid rgba(0,0,0,0.25)';
-    c.appendChild(inner);
-    const v=c.classList.contains('black')?1:c.classList.contains('white')?2:0;
-    if(v){
-      const stone=document.createElement('div');
-      stone.style.cssText='width:85%;height:85%;border-radius:50%;'+(v===1?'background:linear-gradient(145deg,#444,#111);box-shadow:2px 2px 4px rgba(0,0,0,0.4)':'background:linear-gradient(145deg,#fff,#ddd);box-shadow:2px 2px 4px rgba(0,0,0,0.2)');
-      if(gomokuLastMove&&+c.dataset.x===gomokuLastMove.x&&+c.dataset.y===gomokuLastMove.y){
-        stone.style.boxShadow='0 0 0 2px #ff6b6b,'+(v===1?'2px 2px 4px rgba(0,0,0,0.4)':'2px 2px 4px rgba(0,0,0,0.2)');
+function checkGomokuWin(p){
+  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
+  for(let y=0;y<15;y++){
+    for(let x=0;x<15;x++){
+      if(gomokuBoard[y][x]!==p)continue;
+      for(const[dx,dy]of dirs){
+        let cnt=1;
+        for(let i=1;i<5;i++){
+          const nx=x+dx*i,ny=y+dy*i;
+          if(nx<0||nx>=15||ny<0||ny>=15||gomokuBoard[ny][nx]!==p)break;
+          cnt++;
+        }
+        if(cnt>=5)return true;
       }
-      c.appendChild(stone);
     }
-  });
+  }
+  return false;
 }
 
-function bindGomokuEvents(){
-  const board=document.querySelector('.gomoku-board');
-  if(board)board.onclick=handleGomokuClick;
+function saveGomokuState(){
+  dbPut('cfg',{id:'_gomoku',type:'_gomoku',board:gomokuBoard,over:gomokuOver,last:gomokuLastMove,myTurn:gomokuMyTurn,msgs:gomokuMsgs});
 }
 
-function processAIGame(msgIdx){
-  const m=cur?.msgs[msgIdx];
-  if(!m||m.role!=='assistant'||!m.content)return;
-  if(m.content.includes('[game:gomoku:start]')){
-    m.content=m.content.replace('[game:gomoku:start]','').trim();
-    initGomoku();
-    m.gameType='gomoku';
-    renderChat();saveConv();saveGomokuState();
-    setTimeout(()=>{updateGomokuUI();bindGomokuEvents()},100);
-    return;
-  }
-  const moveMatch=m.content.match(/\[game:gomoku:([A-P])(\d+)\]/i);
-  if(moveMatch&&gomokuBoard){
-    const letters='ABCDEFGHJKLMNOP';
-    const x=letters.indexOf(moveMatch[1].toUpperCase());
-    const y=15-parseInt(moveMatch[2]);
-    m.content=m.content.replace(moveMatch[0],'').trim();
-    if(x>=0&&x<15&&y>=0&&y<15&&gomokuBoard[y][x]===0){
-      gomokuBoard[y][x]=2;
-      gomokuLastMove={x,y};
-      if(checkGomokuWin(2))gomokuOver='ai';
-      saveGomokuState();
-    }
-    renderChat();saveConv();
-    setTimeout(()=>{updateGomokuUI();bindGomokuEvents()},100);
-  }
+async function loadGomokuState(){
+  const d=await dbGet('cfg','_gomoku');
+  if(d){gomokuBoard=d.board;gomokuOver=d.over||false;gomokuLastMove=d.last;gomokuMyTurn=d.myTurn!==false;gomokuMsgs=d.msgs||[]}
 }
+
+function saveGomokuMemory(result){
+  const moves=gomokuBoard.flat().filter(c=>c!==0).length;
+  const text=result==='win'?
+    `五子棋：雯雯赢了！(${new Date().toLocaleDateString()}，共${moves}步)`:
+    `五子棋：Eli赢了～(${new Date().toLocaleDateString()}，共${moves}步)`;
+  addMemory(text);
+}
+
+function processAIGame(msgIdx){}
+
 
 init();
 // ===== 主动消息 =====
