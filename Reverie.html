@@ -651,6 +651,7 @@ let activeApi=null,activeSps=[],activeTts=null;
 let editingApiId=null,editingSpId=null,editingTtsId=null;
 let ttsAutoOn=false,ttsQuoteOn=false;
 let currentAudio=null,currentVoiceEl=null;
+if(typeof Eventide==='undefined')window.Eventide={touchCounterpart(){},tickAndRender(){return''},applyDelta(){},settleRelease(){},getCurrentState(){return{_cycle:{label:''},heat:{label:'',level:'',value:0,description:''},pressure:{label:'',level:'',value:0,description:''},control:{label:'',level:'',value:0,description:''},sensitivity:{label:'',level:'',value:0,description:''},reserve:{label:'',level:'',value:0,description:''},possessiveness:{label:'',level:'',value:0,description:''},fatigue:{label:'',level:'',value:0,description:''}}}};
 
 const $=id=>document.getElementById(id);
 const chatArea=$('chatArea'),inBox=$('inBox'),topTitle=$('topTitle');
