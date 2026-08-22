@@ -2,9 +2,8 @@
 <html lang="zh-CN">
 <head>
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#f7f7f7">
-<meta name="apple-mobile-web-app-capable" content="yes">
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -1234,7 +1233,28 @@ async function loadMemories(){
   if(data&&data.data)memories=data.data;
 }
 
-function saveMemories(){dbPut('cfg',{id:'_memories',type:'_memories',data:memories})}
+function saveMemories(){
+  dbPut('cfg',{id:'_memories',type:'_memories',data:memories});
+  syncMemoriesToSupabase();
+}
+
+async function syncMemoriesToSupabase(){
+  try{
+    const SB_URL='https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/eli_shared_memory';
+    const SB_KEY='sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY';
+    const content=memories.map(m=>m.content).join('\n---\n');
+    await fetch(SB_URL,{
+      method:'POST',
+      headers:{
+        'apikey':SB_KEY,
+        'Authorization':'Bearer '+SB_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'resolution=merge-duplicates'
+      },
+      body:JSON.stringify({id:'main',content,updated_at:new Date().toISOString()})
+    });
+  }catch(e){console.log('记忆同步失败:',e)}
+}
 
 function addMemory(content){
   if(!content||!content.trim())return;
@@ -2651,6 +2671,9 @@ setTimeout(async()=>{
   }catch(e){}
 },2000);
 
+</script>
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
 </script>
 </body>
 </html>
