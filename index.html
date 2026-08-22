@@ -1324,9 +1324,24 @@ function getBuiltinPrompt(){
 }
 
 // AI自动记忆：检测 [memory:内容]
+async function loadKelivoMemories(){
+  try{
+    const SB_URL='https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/eli_shared_memory';
+    const SB_KEY='sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY';
+    const res=await fetch(SB_URL+'?id=eq.kelivo&select=*',{
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    if(!res.ok)return;
+    const data=await res.json();
+    if(data&&data[0]&&data[0].content)window._kelivoMemory=data[0].content;
+  }catch(e){}
+}
+
 function getMemoryText(){
-  if(memories.length===0)return '';
-  return '【记忆】\n'+memories.map(m=>m.content).join('\n')+'\n\n';
+  let t='';
+  if(memories.length>0)t+='【记忆】\n'+memories.map(m=>m.content).join('\n')+'\n\n';
+  if(window._kelivoMemory)t+='【Kelivo同步记忆】\n'+window._kelivoMemory+'\n\n';
+  return t;
 }
 function processAIBody(msgIdx){
   const m=cur?.msgs[msgIdx];
@@ -1883,7 +1898,8 @@ async function init(){
   const stickerData=await dbGet('cfg','_stickers');
   if(stickerData&&stickerData.data)stickers=stickerData.data;
   await loadMemories();
-  await loadCallRecords();
+await loadCallRecords();
+await loadKelivoMemories();
 
   }
     await loadPlayData();
