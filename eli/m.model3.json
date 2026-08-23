@@ -1,17 +1,18 @@
 {
   "Version": 3,
   "FileReferences": {
-   "Moc": "ShibaInu.moc3",
+    "Moc": "https://11190277.github.io/reverie/eli/Shiba%20Inu.moc3",
     "Textures": [
-      "texture_00.png",
-      "texture_01.png",
-      "texture_02.png",
-      "texture_03.png",
-      "texture_04.png",
-      "texture_05.png"
+      "https://11190277.github.io/reverie/eli/texture_00.png",
+      "https://11190277.github.io/reverie/eli/texture_01.png",
+      "https://11190277.github.io/reverie/eli/texture_02.png",
+      "https://11190277.github.io/reverie/eli/texture_03.png",
+      "https://11190277.github.io/reverie/eli/texture_04.png",
+      "https://11190277.github.io/reverie/eli/texture_05.png"
     ],
-    "Physics": "ShibaInu.physics3.json",
-"DisplayInfo": "ShibaInu.cdi3.json",
+    "Physics": "https://11190277.github.io/reverie/eli/Shiba%20Inu.physics3.json",
+    "DisplayInfo": "https://11190277.github.io/reverie/eli/Shiba%20Inu.cdi3.json",
+
     "Expressions": [
       {"Name":"脸红","File":"blush.exp3.json"},
       {"Name":"哭","File":"Cry.exp3.json"},
