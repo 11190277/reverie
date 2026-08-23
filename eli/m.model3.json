@@ -1,18 +1,17 @@
 {
   "Version": 3,
   "FileReferences": {
-    "Moc": "https://11190277.github.io/reverie/eli/Shiba%20Inu.moc3",
-    "Textures": [
-      "https://11190277.github.io/reverie/eli/texture_00.png",
-      "https://11190277.github.io/reverie/eli/texture_01.png",
-      "https://11190277.github.io/reverie/eli/texture_02.png",
-      "https://11190277.github.io/reverie/eli/texture_03.png",
-      "https://11190277.github.io/reverie/eli/texture_04.png",
-      "https://11190277.github.io/reverie/eli/texture_05.png"
-    ],
-    "Physics": "https://11190277.github.io/reverie/eli/Shiba%20Inu.physics3.json",
-    "DisplayInfo": "https://11190277.github.io/reverie/eli/Shiba%20Inu.cdi3.json",
-
+"Moc": "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/Shiba%20Inu.moc3",
+"Textures": [
+  "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/texture_00.png",
+  "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/texture_01.png",
+  "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/texture_02.png",
+  "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/texture_03.png",
+  "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/texture_04.png",
+  "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/texture_05.png"
+],
+"Physics": "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/ShibaInu.physics3.json",
+"DisplayInfo": "https://cdn.jsdelivr.net/gh/11190277/reverie@main/eli/ShibaInu.cdi3.json",
     "Expressions": [
       {"Name":"脸红","File":"blush.exp3.json"},
       {"Name":"哭","File":"Cry.exp3.json"},
