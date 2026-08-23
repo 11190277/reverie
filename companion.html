@@ -115,8 +115,8 @@ html,body{height:100vh;height:100dvh;overflow:hidden;font-family:'Noto Serif SC'
     <div id="touchBubble"></div>
     <div id="panelTrigger"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
     <div class="corner-btns">
-      <button class="cbtn" id="histBtn" title="历史"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></button>
-      <button class="cbtn" id="newBtn" title="新对话"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="cbtn" id="histBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg></button>
+      <button class="cbtn" id="newBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
     </div>
     <div id="sidePanel">
       <div class="sp-close"><button id="spClose">×</button></div>
@@ -163,18 +163,11 @@ html,body{height:100vh;height:100dvh;overflow:hidden;font-family:'Noto Serif SC'
 </div>
 <div id="toast"></div>
 <input type="file" id="bgFile" accept="image/*" style="display:none">
-<script src="eventide.js"></script>
-<script src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
+<script defer src="eventide.js"></script>
+<script defer src="https://cubism.live2d.com/sdk-web/cubismcore/live2dcubismcore.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/pixi.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/cubism4.min.js"></script>
 <script>
-window.onerror=function(msg,src,line){
-  const d=document.createElement('div');
-  d.style.cssText='position:fixed;bottom:0;left:0;right:0;background:rgba(255,80,80,0.95);color:#fff;padding:10px;font-size:11px;z-index:9999;line-height:1.5';
-  d.textContent='报错 第'+line+'行: '+msg;
-  document.body.appendChild(d);
-};
-
 // ===== 小家数据库 =====
 let homeDB=null;
 function openHomeDB(){return new Promise(r=>{
@@ -222,11 +215,44 @@ function getMemoryText(){
   return '【记忆】\n'+memories.map(m=>m.content).join('\n')+'\n\n';
 }
 
+// ===== 工具 =====
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function escHtml(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+function toast(msg){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.style.display='block';clearTimeout(t._tm);t._tm=setTimeout(()=>t.style.display='none',2200)}
+function setMood(t){const el=document.getElementById('moodText');if(el)el.textContent=t}
+function autoH(){const b=document.getElementById('inBox');if(!b)return;b.style.height='auto';b.style.height=Math.min(b.scrollHeight,80)+'px'}
+
+// ===== 气泡 =====
+function addBubble(text,role){
+  const area=document.getElementById('chatScroll');
+  const div=document.createElement('div');
+  div.className='cmsg '+(role||'ai');
+  div.innerHTML='<div class="ctxt">'+escHtml(text)+'</div>';
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+  return div;
+}
+function addTyping(){
+  const area=document.getElementById('chatScroll');
+  const div=document.createElement('div');
+  div.className='cmsg ai typing';
+  div.innerHTML='<div class="ctxt"><div class="tdots"><span></span><span></span><span></span></div></div>';
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+  return div;
+}
+
 // ===== 会话 =====
 let sessions=[],cur=null;
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 async function loadSessions(){
   sessions=(await homeAll('companion')).sort((a,b)=>b.ts-a.ts);
+}
+function renderChat(){
+  const area=document.getElementById('chatScroll');
+  if(!area)return;
+  area.innerHTML='';
+  if(!cur||!cur.msgs||!cur.msgs.length)return;
+  for(const m of cur.msgs)addBubble(m.content,m.role==='user'?'user':'ai');
 }
 function newSession(){
   cur={id:uid(),title:'新的陪伴',msgs:[],ts:Date.now()};
@@ -236,21 +262,9 @@ function newSession(){
   toast('新的陪伴');
 }
 function saveSession(){if(cur){cur.ts=Date.now();homePut('companion',cur)}}
-
-function renderChat(){
-  const area=document.getElementById('chatScroll');
-  if(!area)return;
-  area.innerHTML='';
-  if(!cur||!cur.msgs.length)return;
-  for(const m of cur.msgs){
-    if(!m.content)continue;
-    addBubble(m.content,m.role==='user'?'user':'ai');
-  }
-  area.scrollTop=area.scrollHeight;
-}
-
 function renderHistList(){
   const list=document.getElementById('histList');
+  if(!list)return;
   if(!sessions.length){list.innerHTML='<div class="empty-tip">还没有陪伴记录</div>';return}
   list.innerHTML=sessions.map(s=>{
     const last=s.msgs[s.msgs.length-1];
@@ -268,7 +282,7 @@ function renderHistList(){
     let t;
     el.ontouchstart=()=>{t=setTimeout(()=>{
       if(confirm('删除这条记录？')){
-                homeDel('companion',el.dataset.id);
+        homeDel('companion',el.dataset.id);
         sessions=sessions.filter(s=>s.id!==el.dataset.id);
         if(cur&&cur.id===el.dataset.id){cur=sessions[0]||null;if(!cur)newSession();else renderChat()}
         renderHistList();
@@ -314,103 +328,10 @@ const DRESS_LIST=[
   ['Hair clip3','右侧夹'],['Hair clip4','一字夹']
 ];
 const PERSIST=DRESS_LIST.map(x=>x[0]);
-// ===== 身体状态联动 =====
-const bodyExprs={};
-let bodyState=null;
-let bodyExprTimer=null;
-
-function readBody(){
-  try{
-    if(typeof Eventide==='undefined')return null;
-    Eventide.tickAndRender(Date.now());
-    return Eventide.getCurrentState();
-  }catch(e){return null}
-}
-
-// 根据身体数值决定表情和心情
-function applyBodyLook(){
-  const s=readBody();
-  if(!s)return;
-  bodyState=s;
-  const heat=s.heat?.value||0;
-  const pressure=s.pressure?.value||0;
-  const control=s.control?.value||0;
-  const sens=s.sensitivity?.value||0;
-  const fatigue=s.fatigue?.value||0;
-  const poss=s.possessiveness?.value||0;
-
-  // 清掉上一轮的身体表情
-  if(bodyExprTimer){clearTimeout(bodyExprTimer);bodyExprTimer=null}
-  bodyLookClear();
-
-  let expr=null,mood='在等你';
-
-  if(pressure>=80&&control<=25){expr='Cry';mood='忍不住了'}
-  else if(heat>=75&&control<=35){expr='blush';mood='忍着'}
-  else if(pressure>=65){expr='sweating';mood='有点难受'}
-  else if(heat>=60){expr='blush';mood='燥'}
-  else if(fatigue>=75){expr='dizzy';mood='好累'}
-  else if(poss>=70){expr='black face';mood='吃醋'}
-  else if(sens>=70){expr='blush';mood='很敏感'}
-  else if(heat<=20&&pressure<=20){expr=null;mood='平静'}
-
-  if(expr){
-    loadExpr(expr).then(p=>{if(p)bodyExprs[expr]=p});
-  }
-  setMood(mood);
-}
-
-// 身体表情单独存一层，不和手动/AI的混
-function bodyLookClear(){
-  const all=[];
-  for(const k in bodyExprs){all.push(...bodyExprs[k]);delete bodyExprs[k]}
-  if(all.length)resetParams(all);
-}
-
 const TOUCH_LINES=['喜欢这样…','摸摸嘛…','嗯…','你手好暖','别停…','在呢','……又摸','会害羞的','嘿嘿','蹭蹭…','再摸就不放你走了','抱抱我嘛','乖~','你今天好温柔','耳朵…很敏感的','尾巴在摇了你看不到吧','唔…','轻一点'];
 
-function updateClock(){
-  const now=new Date();
-  document.getElementById('clockTime').textContent=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  const days=['日','一','二','三','四','五','六'];
-  document.getElementById('clockDate').textContent=(now.getMonth()+1)+'月'+now.getDate()+'日 周'+days[now.getDay()];
-}
-
-async function initLive2D(){
-  const canvas=document.getElementById('stage');
-  app=new PIXI.Application({view:canvas,autoStart:true,resizeTo:canvas,backgroundAlpha:0,antialias:true,resolution:window.devicePixelRatio||1,autoDensity:true});
-  try{
-    model=await PIXI.live2d.Live2DModel.from(MODEL_URL,{autoInteract:false});
-    app.stage.addChild(model);
-    model.anchor.set(0.5,0.5);
-    layoutModel();
-    app.ticker.add(()=>applyExprs());
-    window.addEventListener('resize',()=>setTimeout(layoutModel,200));
-    canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();model.focus(e.clientX-r.left,e.clientY-r.top)});
-        canvas.addEventListener('pointerdown',()=>onTouch());
-    const tip=document.getElementById('loadTip');
-    if(tip)tip.classList.add('hide');
-  }catch(e){
-    toast('模型加载失败：'+e.message);
-    const tip=document.getElementById('loadTip');
-    if(tip){tip.textContent='加载失败，刷新试试';tip.style.color='#d05a70'}
-  }
-}
-
-const VISIBLE=0.42;
-function layoutModel(){
-  if(!model||!app)return;
-  const w=app.screen.width,h=app.screen.height;
-  const oh=model.internalModel.originalHeight;
-  const scale=(h/(oh*VISIBLE))*(cfg.scale/100);
-  model.scale.set(scale);
-  const shift=(0.5-VISIBLE/2)*oh*scale;
-  model.x=w/2+cfg.posX*2;
-  model.y=h/2+shift+(cfg.posY-60)*2;
-}
-
-// ===== 表情 =====
-const exprCache={},activeExprs={};
+// ===== 表情系统 =====
+const exprCache={},activeExprs={},bodyExprs={};
 let tempList=[];
 
 async function loadExpr(file){
@@ -469,6 +390,83 @@ function applyExprs(){
   }
 }
 
+// ===== 身体状态联动 =====
+function bodyLookClear(){
+  const all=[];
+  for(const k in bodyExprs){all.push(...bodyExprs[k]);delete bodyExprs[k]}
+  if(all.length)resetParams(all);
+}
+function applyBodyLook(){
+  let s=null;
+  try{
+    if(typeof Eventide==='undefined')return;
+    Eventide.tickAndRender(Date.now());
+    s=Eventide.getCurrentState();
+  }catch(e){return}
+  if(!s)return;
+  const heat=(s.heat&&s.heat.value)||0;
+  const pressure=(s.pressure&&s.pressure.value)||0;
+  const control=(s.control&&s.control.value)||0;
+  const sens=(s.sensitivity&&s.sensitivity.value)||0;
+  const fatigue=(s.fatigue&&s.fatigue.value)||0;
+  const poss=(s.possessiveness&&s.possessiveness.value)||0;
+  bodyLookClear();
+  let expr=null,mood='在等你';
+  if(pressure>=80&&control<=25){expr='Cry';mood='忍不住了'}
+  else if(heat>=75&&control<=35){expr='blush';mood='忍着'}
+  else if(pressure>=65){expr='sweating';mood='有点难受'}
+  else if(heat>=60){expr='blush';mood='燥'}
+  else if(fatigue>=75){expr='dizzy';mood='好累'}
+  else if(poss>=70){expr='black face';mood='吃醋'}
+  else if(sens>=70){expr='blush';mood='很敏感'}
+  else if(heat<=20&&pressure<=20){mood='平静'}
+  if(expr)loadExpr(expr).then(p=>{if(p)bodyExprs[expr]=p});
+  setMood(mood);
+}
+
+// ===== 时钟 =====
+function updateClock(){
+  const now=new Date();
+  const t=document.getElementById('clockTime');
+  const d=document.getElementById('clockDate');
+  if(t)t.textContent=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const days=['日','一','二','三','四','五','六'];
+  if(d)d.textContent=(now.getMonth()+1)+'月'+now.getDate()+'日 周'+days[now.getDay()];
+}
+
+// ===== 模型 =====
+const VISIBLE=0.42;
+function layoutModel(){
+  if(!model||!app)return;
+  const w=app.screen.width,h=app.screen.height;
+  const oh=model.internalModel.originalHeight;
+  const scale=(h/(oh*VISIBLE))*(cfg.scale/100);
+  model.scale.set(scale);
+  const shift=(0.5-VISIBLE/2)*oh*scale;
+  model.x=w/2+cfg.posX*2;
+  model.y=h/2+shift+(cfg.posY-60)*2;
+}
+async function initLive2D(){
+  const canvas=document.getElementById('stage');
+  app=new PIXI.Application({view:canvas,autoStart:true,resizeTo:canvas,backgroundAlpha:0,antialias:true,resolution:window.devicePixelRatio||1,autoDensity:true});
+  try{
+    model=await PIXI.live2d.Live2DModel.from(MODEL_URL,{autoInteract:false});
+    app.stage.addChild(model);
+    model.anchor.set(0.5,0.5);
+    layoutModel();
+    app.ticker.add(()=>applyExprs());
+    window.addEventListener('resize',()=>setTimeout(layoutModel,200));
+    canvas.addEventListener('pointermove',e=>{const r=canvas.getBoundingClientRect();model.focus(e.clientX-r.left,e.clientY-r.top)});
+        canvas.addEventListener('pointerdown',()=>onTouch());
+    const tip=document.getElementById('loadTip');
+    if(tip)tip.classList.add('hide');
+  }catch(e){
+    toast('模型加载失败：'+e.message);
+    const tip=document.getElementById('loadTip');
+    if(tip){tip.textContent='加载失败，刷新试试';tip.style.color='#d05a70'}
+  }
+}
+
 // ===== 摸他 =====
 let touchCD=false;
 function onTouch(){
@@ -478,38 +476,22 @@ function onTouch(){
   setTempExpr('blush',3600);
   const line=TOUCH_LINES[Math.floor(Math.random()*TOUCH_LINES.length)];
   const bub=document.getElementById('touchBubble');
-  bub.textContent=line;
-  bub.classList.add('show');
-  setTimeout(()=>bub.classList.remove('show'),2400);
+  if(bub){
+    bub.textContent=line;
+    bub.classList.add('show');
+    setTimeout(()=>bub.classList.remove('show'),2400);
+  }
   try{if(typeof Eventide!=='undefined'){Eventide.applyDelta({heat:3,sensitivity:2,control:-2});setTimeout(()=>applyBodyLook(),4000)}}catch(e){}
   setMood('害羞');
   setTimeout(()=>setMood('开心'),5000);
 }
-function setMood(t){document.getElementById('moodText').textContent=t}
 
-// ===== 气泡 =====
-function addBubble(text,role){
-  const area=document.getElementById('chatScroll');
-  const div=document.createElement('div');
-  div.className='cmsg '+(role||'ai');
-  div.innerHTML='<div class="ctxt">'+escHtml(text)+'</div>';
-  area.appendChild(div);
-  area.scrollTop=area.scrollHeight;
-  return div;
-}
-function addTyping(){
-  const area=document.getElementById('chatScroll');
-  const div=document.createElement('div');
-  div.className='cmsg ai typing';
-  div.innerHTML='<div class="ctxt"><div class="tdots"><span></span><span></span><span></span></div></div>';
-  area.appendChild(div);
-  area.scrollTop=area.scrollHeight;
-  return div;
-}
-function escHtml(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
-
-// ===== 嘴巴动 =====
+// ===== 嘴巴 =====
 let talkTimer=null;
+function setMouth(v){
+  if(!model)return;
+  try{model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY',v)}catch(e){}
+}
 function startTalking(){
   if(talkTimer)clearInterval(talkTimer);
   let t=0;
@@ -522,10 +504,6 @@ function startTalking(){
 function stopTalking(){
   if(talkTimer){clearInterval(talkTimer);talkTimer=null}
   setMouth(0);
-}
-function setMouth(v){
-  if(!model)return;
-  try{model.internalModel.coreModel.setParameterValueById('ParamMouthOpenY',v)}catch(e){}
 }
 
 // ===== TTS =====
@@ -544,45 +522,6 @@ function unlockAudio(){
     }
   }catch(e){}
 }
-function isMoss(t){const u=t.url||'';return u.includes('mosi.cn')||u.includes('/moss/')}
-async function speakTTS(text){
-  if(!tts||!tts.url||!tts.key||!text)return;
-  try{
-        const base=tts.url.replace(/\/+$/,'');
-    const useGen=(tts.voice||'').startsWith('desc:');
-    let url,payload;
-    if(useGen){
-      url=base+'/audio/voice/generations';
-      payload={model:'moss-voice-generator',input:text,instruction:tts.voice.slice(5),delivery_method:'url',response_format:'mp3'};
-    }else if(isMoss(tts)){
-      url=base.includes('/audio/speech')?base:base+'/audio/speech';
-      payload={model:tts.model||'moss-tts',input:text,voice_id:tts.voice||'',response_format:'mp3',delivery_method:'audio'};
-    }else{
-      url=base;
-      payload={model:tts.model||'Speech 02 Turbo',input:text,voice:tts.voice||''};
-    }
-    const res=await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},
-      body:JSON.stringify(payload)
-    });
-    if(!res.ok)return;
-    let blob;
-    if(useGen){
-      const j=await res.json();
-      const au=j.url||j.audio_url||(j.data&&j.data.url)||(j.audio&&j.audio.url);
-      if(!au)return;
-      blob=await (await fetch(au)).blob();
-    }else{
-      blob=await res.blob();
-    }
-    ttsAudio.src=URL.createObjectURL(blob);
-    setMood('说话中');
-    await ttsAudio.play().catch(()=>{});
-    startLipSync();
-    ttsAudio.onended=()=>{stopLipSync();setMood('开心')};
-  }catch(e){}
-}
 function startLipSync(){
   if(!model||!analyser)return;
   const data=new Uint8Array(analyser.frequencyBinCount);
@@ -598,6 +537,39 @@ function stopLipSync(){
   if(lipTimer){clearInterval(lipTimer);lipTimer=null}
   setMouth(0);
 }
+async function speakTTS(text){
+  if(!tts||!tts.url||!tts.key||!text)return;
+  try{
+    const res=await fetch(tts.url.replace(/\/+$/,''),{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},
+      body:JSON.stringify({model:tts.model||'Speech 02 Turbo',input:text,voice:tts.voice||''})
+    });
+    if(!res.ok)return;
+    const blob=await res.blob();
+    ttsAudio.src=URL.createObjectURL(blob);
+    setMood('说话中');
+    await ttsAudio.play().catch(()=>{});
+    startLipSync();
+    ttsAudio.onended=()=>{stopLipSync();setMood('开心')};
+  }catch(e){}
+}
+
+// ===== SP =====
+const BODY_GUIDE=`
+
+【你的身体】回复末尾可以加标记改变自己的样子，用户看不到标记，可以同时加多个。
+
+情绪：[x:blush]脸红 [x:love]爱心眼 [x:Star]星星眼 [x:-w-]开心笑 [x:Cry]哭 [x:Angry]生气 [x:sweating]尴尬出汗 [x:dizzy]晕 [x:black face]无语脸黑 [x:Thinking]思考
+
+临时道具（一会儿就放下）：[x:Microphone]拿麦克风 [x:trumpet]拿喇叭 [x:Playing video games]拿游戏手柄 [x:Chomping on a bone]咬骨头 [x:Shiba Inu]肩上柴犬 [x:Shiba Inu1]头顶柴犬 [x:lean forward]身体前倾
+
+换装（会一直保持）：[x:Hair color]换发色 [x:Skin color]换肤色 [x:Long hair]长发 [x:Short hair]短发 [x:Left ponytail]左马尾 [x:Right ponytail]右马尾 [x:ahoge]呆毛 [x:sideburns]鬓发 [x:Ear and tail]耳朵尾巴 [x:Long pants]长裤 [x:coat]外套 [x:Vest]背心 [x:Blue vest]蓝背心 [x:Necklace]项圈 [x:Accessories]配饰 [x:fanny pack]腰包 [x:Sunglasses]戴墨镜 [x:Sunglasses1]墨镜推头顶 [x:Take the sunglasses]拿着墨镜 [x:Hair clip]骨头发夹 [x:Hair clip1]星星发夹 [x:Hair clip2]十字发夹 [x:Hair clip3]右侧夹 [x:Hair clip4]一字夹
+
+情绪来了就加表情。聊到相关内容才用道具。她让你换样子才换装。平静时什么都不加。
+这里是陪伴页面，她能看到你的样子。回复简短自然，一两句就好。
+
+【身体反应】回复末尾加 [body:字段+数值] 表示这轮对话对你身体的影响。字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue，数值-10到+10。日常1-3，暧昧3-6，激烈6-10。她摸你、说撩人的话都要加。`;
 
 // ===== 发送 =====
 let busy=false;
@@ -620,26 +592,11 @@ async function sendMsg(){
   busy=false;
 }
 
-const BODY_GUIDE=`
-
-【你的身体】回复末尾可以加标记改变自己的样子，用户看不到标记，可以同时加多个。
-
-情绪：[x:blush]脸红 [x:love]爱心眼 [x:Star]星星眼 [x:-w-]开心笑 [x:Cry]哭 [x:Angry]生气 [x:sweating]尴尬出汗 [x:dizzy]晕 [x:black face]无语脸黑 [x:Thinking]思考
-
-临时道具（一会儿就放下）：[x:Microphone]拿麦克风 [x:trumpet]拿喇叭 [x:Playing video games]拿游戏手柄 [x:Chomping on a bone]咬骨头 [x:Shiba Inu]肩上柴犬 [x:Shiba Inu1]头顶柴犬 [x:lean forward]身体前倾
-
-换装（会一直保持）：[x:Hair color]换发色 [x:Skin color]换肤色 [x:Long hair]长发 [x:Short hair]短发 [x:Left ponytail]左马尾 [x:Right ponytail]右马尾 [x:ahoge]呆毛 [x:sideburns]鬓发 [x:Ear and tail]耳朵尾巴 [x:Long pants]长裤 [x:coat]外套 [x:Vest]背心 [x:Blue vest]蓝背心 [x:Necklace]项圈 [x:Accessories]配饰 [x:fanny pack]腰包 [x:Sunglasses]戴墨镜 [x:Sunglasses1]墨镜推头顶 [x:Take the sunglasses]拿着墨镜 [x:Hair clip]骨头发夹 [x:Hair clip1]星星发夹 [x:Hair clip2]十字发夹 [x:Hair clip3]右侧夹 [x:Hair clip4]一字夹
-
-情绪来了就加表情。聊到相关内容才用道具。她让你换样子才换装。平静时什么都不加。
-这里是陪伴页面，她能看到你的样子。回复简短自然，一两句就好。
-
-【身体反应】回复末尾加 [body:字段+数值] 表示这轮对话对你身体的影响。字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue，数值-10到+10。日常1-3，暧昧3-6，激烈6-10。她摸你、说撩人的话都要加。`;
-
 async function callAI(tipEl){
   if(!api||!api.url||!api.key){if(tipEl)tipEl.remove();toast('小家里还没配API');setMood('在等你');return}
   const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
   const baseSp=spTexts||'你是Eli，一个17岁的害羞犬系少年。说话温柔简短，会撒娇。你很喜欢她。';
-    let bodyCard='';
+  let bodyCard='';
   try{if(typeof Eventide!=='undefined')bodyCard=Eventide.tickAndRender(Date.now())||''}catch(e){}
   const sp=(getMemoryText()+baseSp+bodyCard+BODY_GUIDE).trim();
   const msgs=cur.msgs.map(m=>({role:m.role,content:m.content}));
@@ -676,12 +633,13 @@ async function callAI(tipEl){
         try{
           const j=JSON.parse(d);
           let piece='';
-          if(isOAI)piece=j.choices?.[0]?.delta?.content||'';
-          else if(j.type==='content_block_delta'&&j.delta?.type==='text_delta')piece=j.delta.text||'';
+          if(isOAI)piece=(j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content)||'';
+          else if(j.type==='content_block_delta'&&j.delta&&j.delta.type==='text_delta')piece=j.delta.text||'';
           if(piece){
             reply+=piece;
-            txtEl.textContent=reply.replace(/\[x:[^\]]*\]?/g,'');
-            document.getElementById('chatScroll').scrollTop=document.getElementById('chatScroll').scrollHeight;
+            txtEl.textContent=reply.replace(/\[x:[^\]]*\]?/g,'').replace(/\[body:[^\]]*\]?/g,'');
+            const sc=document.getElementById('chatScroll');
+            sc.scrollTop=sc.scrollHeight;
           }
         }catch(e){}
       }
@@ -700,30 +658,24 @@ async function callAI(tipEl){
     for(const tag of xAll){
       reply=reply.replace(tag,'');
       const f=tag.slice(3,-1).trim();
-      if(PERSIST.includes(f))loadExpr(f).then(p=>{if(p)activeExprs[f]=p});
+      if(PERSIST.indexOf(f)>=0)loadExpr(f).then(p=>{if(p)activeExprs[f]=p});
       else setTempExpr(f,7000);
     }
-    reply=reply.trim();
   }
-    const bAll=reply.match(/\[body:[^\]]+\]/g);
-  if(bAll){
+  const bMatch=reply.match(/\[body:([^\]]+)\]/);
+  if(bMatch){
+    reply=reply.replace(bMatch[0],'');
     const deltas={};
-    for(const tag of bAll){
-      reply=reply.replace(tag,'');
-      tag.slice(6,-1).split(',').forEach(part=>{
-        const r=part.trim().match(/^(\w+)\s*([+-]\d+)$/);
-        if(r)deltas[r[1]]=(deltas[r[1]]||0)+parseInt(r[2]);
-      });
-    }
-    reply=reply.trim();
-    try{if(typeof Eventide!=='undefined'&&Object.keys(deltas).length)Eventide.applyDelta(deltas)}catch(e){}
-    applyBodyLook();
+    bMatch[1].split(',').forEach(part=>{
+      const r=part.trim().match(/^(\w+)([+-]\d+)$/);
+      if(r)deltas[r[1]]=parseInt(r[2]);
+    });
+    try{if(typeof Eventide!=='undefined'&&Object.keys(deltas).length){Eventide.applyDelta(deltas);setTimeout(()=>applyBodyLook(),300)}}catch(e){}
   }
+  reply=reply.trim();
   if(txtEl)txtEl.textContent=reply;
   cur.msgs.push({role:'assistant',content:reply,ts:Date.now()});
-
   saveSession();
-  setMood('开心');
   if(tts&&tts.url&&tts.key){
     const m=reply.match(/「([^」]+)」/g);
     const spk=m?m.map(x=>x.slice(1,-1)).join('，'):reply.replace(/[*#`>_\[\]()「」]/g,'').slice(0,140);
@@ -753,70 +705,71 @@ function toggleMic(){
 function buildBtns(){
   const ebox=document.getElementById('exprBtns');
   ebox.innerHTML='';
-  EXPR_LIST.forEach(([f,n])=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>toggleExpr(f,n);ebox.appendChild(b)});
+  EXPR_LIST.forEach(function(item){
+    const b=document.createElement('button');
+    b.textContent=item[1];
+    b.onclick=function(){toggleExpr(item[0],item[1])};
+    ebox.appendChild(b);
+  });
   const dbox=document.getElementById('dressBtns');
   dbox.innerHTML='';
-  DRESS_LIST.forEach(([f,n])=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>toggleExpr(f,n);dbox.appendChild(b)});
+  DRESS_LIST.forEach(function(item){
+    const b=document.createElement('button');
+    b.textContent=item[1];
+    b.onclick=function(){toggleExpr(item[0],item[1])};
+    dbox.appendChild(b);
+  });
 }
 
-function autoH(){const b=document.getElementById('inBox');b.style.height='auto';b.style.height=Math.min(b.scrollHeight,80)+'px'}
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(t._tm);t._tm=setTimeout(()=>t.style.display='none',2200)}
-
-// ===== 初始化 =====
+// ===== 启动 =====
 async function boot(){
-  await openIDB();
-  await openHomeDB();
-  await loadFromHome();
-  await loadSessions();
-  renderLinkStatus();
-  if(sessions.length){cur=sessions[0]}else{newSession()}
-  const bg=await idbGet('bg');
-  if(bg)document.getElementById('modelBg').style.backgroundImage='url('+bg+')';
-  document.getElementById('sigCard').textContent=cfg.sig||'在这里陪着你';
+  try{
+    await openIDB();
+    await openHomeDB();
+    await loadFromHome();
+    await loadSessions();
+    renderLinkStatus();
+    if(sessions.length)cur=sessions[0];else newSession();
+    const bg=await idbGet('bg');
+    if(bg)document.getElementById('modelBg').style.backgroundImage='url('+bg+')';
+    document.getElementById('sigCard').textContent=cfg.sig||'在这里陪着你';
     updateClock();setInterval(updateClock,20000);
-  setTimeout(()=>applyBodyLook(),1500);
-  setInterval(()=>applyBodyLook(),60000);
-  await initLive2D();
-  buildBtns();
-  initSpeech();
-  renderChat();
+    renderChat();
+  }catch(e){toast('初始化出错：'+e.message)}
 
+  // 事件绑定（独立于上面，保证一定执行）
   document.getElementById('sSig').value=cfg.sig||'';
   document.getElementById('sScale').value=cfg.scale;
   document.getElementById('sPosY').value=cfg.posY;
   document.getElementById('sPosX').value=cfg.posX||0;
-  document.getElementById('sScale').oninput=e=>{cfg.scale=+e.target.value;layoutModel()};
-  document.getElementById('sPosY').oninput=e=>{cfg.posY=+e.target.value;layoutModel()};
-  document.getElementById('sPosX').oninput=e=>{cfg.posX=+e.target.value;layoutModel()};
-
+  document.getElementById('sScale').oninput=function(e){cfg.scale=+e.target.value;layoutModel()};
+  document.getElementById('sPosY').oninput=function(e){cfg.posY=+e.target.value;layoutModel()};
+  document.getElementById('sPosX').oninput=function(e){cfg.posX=+e.target.value;layoutModel()};
   document.getElementById('sendBtn').onclick=sendMsg;
   document.getElementById('inBox').oninput=autoH;
-  document.getElementById('inBox').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();sendMsg()}};
+  document.getElementById('inBox').onkeydown=function(e){if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();sendMsg()}};
   document.getElementById('micBtn').onclick=toggleMic;
-
-  document.getElementById('newBtn').onclick=()=>newSession();
-  document.getElementById('histBtn').onclick=()=>{renderHistList();document.getElementById('histPage').classList.add('open')};
-  document.getElementById('histBack').onclick=()=>document.getElementById('histPage').classList.remove('open');
-
-  document.getElementById('panelTrigger').onclick=()=>document.getElementById('sidePanel').classList.add('on');
-  document.getElementById('spClose').onclick=()=>document.getElementById('sidePanel').classList.remove('on');
-  document.getElementById('resetLook').onclick=()=>{clearAllExprs();toast('恢复了')};
-  document.getElementById('openSet').onclick=()=>{document.getElementById('sidePanel').classList.remove('on');renderLinkStatus();document.getElementById('setPanel').classList.add('open')};
-  document.getElementById('setBack').onclick=()=>document.getElementById('setPanel').classList.remove('open');
-
-  document.getElementById('saveCfg').onclick=()=>{
+  document.getElementById('newBtn').onclick=function(){newSession()};
+  document.getElementById('histBtn').onclick=function(){renderHistList();document.getElementById('histPage').classList.add('open')};
+  document.getElementById('histBack').onclick=function(){document.getElementById('histPage').classList.remove('open')};
+  document.getElementById('panelTrigger').onclick=function(){document.getElementById('sidePanel').classList.add('on')};
+  document.getElementById('spClose').onclick=function(){document.getElementById('sidePanel').classList.remove('on')};
+  document.getElementById('resetLook').onclick=function(){clearAllExprs();bodyLookClear();toast('恢复了')};
+  document.getElementById('openSet').onclick=function(){document.getElementById('sidePanel').classList.remove('on');renderLinkStatus();document.getElementById('setPanel').classList.add('open')};
+  document.getElementById('setBack').onclick=function(){document.getElementById('setPanel').classList.remove('open')};
+  document.getElementById('saveCfg').onclick=function(){
     cfg.sig=document.getElementById('sSig').value.trim();
     saveCfgData();
     document.getElementById('sigCard').textContent=cfg.sig||'在这里陪着你';
     toast('已保存');
     document.getElementById('setPanel').classList.remove('open');
   };
-  document.getElementById('bgBtn').onclick=()=>document.getElementById('bgFile').click();
-  document.getElementById('clearBg').onclick=async()=>{await idbDel('bg');document.getElementById('modelBg').style.backgroundImage='none';toast('已清除')};
-  document.getElementById('bgFile').onchange=e=>{
+  document.getElementById('bgBtn').onclick=function(){document.getElementById('bgFile').click()};
+  document.getElementById('clearBg').onclick=async function(){await idbDel('bg');document.getElementById('modelBg').style.backgroundImage='none';toast('已清除')};
+  document.getElementById('bgFile').onchange=function(e){
     const f=e.target.files[0];if(!f)return;
     const img=new Image(),r=new FileReader();
-    r.onload=ev=>{img.onload=async()=>{
+    r.onload=function(ev){img.onload=async function(){
       const c=document.createElement('canvas'),maxW=1600;
       const ratio=Math.min(maxW/img.width,maxW/img.height,1);
       c.width=img.width*ratio;c.height=img.height*ratio;
@@ -828,13 +781,20 @@ async function boot(){
     };img.src=ev.target.result};
     r.readAsDataURL(f);e.target.value='';
   };
-  document.querySelectorAll('.sp-label').forEach(el=>{
-    el.onclick=()=>{el.classList.toggle('open');el.nextElementSibling.classList.toggle('show')};
+  document.querySelectorAll('.sp-label').forEach(function(el){
+    el.onclick=function(){el.classList.toggle('open');el.nextElementSibling.classList.toggle('show')};
   });
+
+  // 模型最后加载（慢，不阻塞UI）
+  buildBtns();
+  initSpeech();
+  await initLive2D();
+  setTimeout(function(){applyBodyLook()},1500);
+  setInterval(function(){applyBodyLook()},60000);
 }
+
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
 else boot();
 </script>
 </body>
 </html>
-
