@@ -275,6 +275,26 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .gomoku-cell-big.black::after{opacity:1;background:linear-gradient(145deg,#444,#111);box-shadow:2px 2px 5px rgba(0,0,0,0.5)}
 .gomoku-cell-big.white::after{opacity:1;background:linear-gradient(145deg,#fff,#ddd);box-shadow:2px 2px 5px rgba(0,0,0,0.25)}
 .gomoku-cell-big.last::after{box-shadow:0 0 0 3px #ff6b6b,2px 2px 5px rgba(0,0,0,0.3)}
+.mcp-status{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 7px;border-radius:6px;background:rgba(52,199,89,0.1);color:#34c759}
+.mcp-status.err{background:rgba(255,59,48,0.1);color:#ff3b30}
+.mcp-status.loading{background:rgba(0,0,0,0.04);color:var(--text2)}
+.mcp-status::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.tool-call-card{margin:4px 0;border-radius:12px;overflow:hidden;border:0.5px solid var(--border);background:rgba(255,255,255,0.5)}
+.tool-call-hd{padding:8px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px}
+.tool-call-hd svg{width:14px;height:14px;stroke:var(--text2);fill:none;stroke-width:1.5;flex-shrink:0}
+.tool-call-name{font-weight:500;color:var(--text);flex:1}
+.tool-call-server{color:var(--text2);font-size:11px}
+.tool-call-status{font-size:11px;padding:1px 6px;border-radius:5px}
+.tool-call-status.running{background:rgba(255,149,0,0.12);color:#ff9500}
+.tool-call-status.done{background:rgba(52,199,89,0.1);color:#34c759}
+.tool-call-status.err{background:rgba(255,59,48,0.1);color:#ff3b30}
+.tool-call-body{display:none;padding:8px 12px;border-top:0.5px solid var(--border);font-size:11.5px;color:var(--text2);line-height:1.6}
+.tool-call-body.show{display:block}
+.tool-call-body pre{background:var(--soft);padding:6px 8px;border-radius:6px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;font-size:11px;margin:4px 0}
+.mcp-header-row{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:0.5px solid var(--border)}
+.mcp-header-row:last-child{border-bottom:none}
+.mcp-header-row input{flex:1;padding:6px 8px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.08);background:var(--bg);font-size:12px;font-family:inherit;outline:none;color:var(--text);min-width:0}
+.mcp-header-del{width:22px;height:22px;border-radius:50%;border:none;background:rgba(255,59,48,0.1);color:#ff3b30;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;line-height:1}
 </style>
 <script src="eventide.js"></script>
 </head>
@@ -457,7 +477,8 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <div class="set-item" id="goApi"><label>API 配置</label><span class="arrow">›</span></div>
     <div class="set-item" id="goSp"><label>System Prompt</label><span class="arrow">›</span></div>
     <div class="set-item" id="goTts"><label>语音 TTS</label><span class="arrow">›</span></div>
-    <div class="set-item" id="goEmoji"><label>表情包库</label><span class="arrow">›</span></div>
+<div class="set-item" id="goEmoji"><label>表情包库</label><span class="arrow">›</span></div>
+<div class="set-item" id="goMcp"><label>MCP 服务器</label><span class="arrow">›</span></div>
   </div></div>
   <div class="set-sec"><h3>语音</h3><div class="set-card">
     <div class="set-item" style="cursor:default"><label>自动生成语音</label><div class="toggle" id="ttsAuto"></div></div>
@@ -588,6 +609,37 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div>
   <div class="set-sec"><div class="set-card">
     <div class="set-item col"><label>内容</label><textarea class="set-textarea" id="memContent" rows="12" placeholder="写下要记住的信息..."></textarea></div>
+  </div></div>
+</div>
+
+<!-- MCP列表页 -->
+<div class="page" id="mcpListPage">
+  <div class="page-hd">
+    <button class="page-back" id="mcpListBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>MCP 服务器</h2>
+    <button class="add-btn" id="mcpAdd"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  </div>
+  <div class="card-list" id="mcpCards"></div>
+</div>
+
+<!-- MCP编辑页 -->
+<div class="page" id="mcpEditPage">
+  <div class="page-hd">
+    <button class="page-back" id="mcpEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>编辑 MCP</h2>
+  </div>
+  <div class="set-sec"><div class="set-card">
+    <div class="set-item" style="cursor:default"><label>启用</label><div class="toggle on" id="mcpEnabled"></div></div>
+    <div class="set-item col"><label>名称</label><input class="set-input" id="mcpName" placeholder="My MCP"></div>
+    <div class="set-item col"><label>服务器地址</label><input class="set-input" id="mcpUrl" placeholder="https://example.com/mcp"></div>
+  </div></div>
+  <div class="set-sec">
+    <h3>自定义请求头</h3>
+    <div class="set-card" id="mcpHeadersList"></div>
+    <button class="sbtn" id="mcpAddHeader" style="margin-top:8px;padding:10px;border-radius:10px;border:0.5px dashed rgba(0,0,0,0.15);background:transparent;width:100%;font-size:13px;color:var(--text2);font-family:inherit;cursor:pointer">+ 添加请求头</button>
+  </div>
+  <div class="set-sec"><div class="set-card">
+    <div class="set-item" id="mcpDel" style="color:#ff3b30;justify-content:center;cursor:pointer"><label style="color:#ff3b30">删除</label></div>
   </div></div>
 </div>
 
@@ -777,6 +829,9 @@ if(m.type==='sticker'){
   if(m.img)body+=`<div class="bubble"><img src="${m.img}"></div>`;
   if(m.file)body+=`<div class="file-bubble"><div class="file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="file-info"><div class="file-name">${esc(m.file.name)}</div><div class="file-size">${fmtSize(m.file.size)}</div></div></div>`;
   if(m.content){let ct=m.content;if(!ttsAutoOn)ct=ct.replace(/「/g,'').replace(/」/g,'');body+=`<div class="bubble">${u?esc(ct):md(ct)}</div>`}
+if(m._toolCalls&&m._toolCalls.length){
+  body+=m._toolCalls.map(tc=>renderToolCallCard(tc)).join('');
+}
 if(m.voiceUrl)body+=renderVoice(m.voiceUrl,m.voiceDur||0,i);
   if(m.memorySaved&&m.memorySaved.length>0)body+=`<div class="mem-tag"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>已记住 ${m.memorySaved.length} 条</div>`;
     const avSrc=m.role==='user'?avUser:avAi;
@@ -951,7 +1006,9 @@ async function send(text,img,file){
   cur.msgs.push(m);cur.ts=Date.now();
   if(cur.msgs.length===1){cur.title=text.trim().slice(0,18)||file?.name||'图片对话';updTitle();renderList()}
   renderChat();saveConv();
-  await callAPI();
+  const toolDefs=getAllMcpToolDefs();
+if(toolDefs.length>0)await callAPIWithTools(toolDefs);
+else await callAPIStream();
 }
 
 // ===== 只发不回 =====
@@ -965,7 +1022,7 @@ function sendOnly(){
 }
 
 // ===== API调用 =====
-async function callAPI(){
+async function callAPIStream(){
   const api=apis.find(a=>a.id===activeApi);
   if(!api||!api.url||!api.key){addAIMsg('⚠️ 请先在设置→API配置中添加并选择一个API~');return}
 
@@ -1903,6 +1960,8 @@ await loadKelivoMemories();
 
   }
     await loadPlayData();
+await loadMcps();
+await refreshAllMcpTools();
   applyTheme(activeTheme);
 // 加载背景
 const bgData=await dbGet('cfg','_chatBg');
@@ -1962,6 +2021,13 @@ $('bodyBack').onclick=()=>{$('bodyPage').classList.remove('open');if(bodyTimer){
   $('doImport').onclick=()=>$('importFile').click();
   $('importFile').onchange=importData;
     $('goEmoji').onclick=()=>{renderEmojiLib();$('emojiPage').classList.add('open')};
+$('goMcp').onclick=()=>{renderMcpCards();$('mcpListPage').classList.add('open')};
+$('mcpListBack').onclick=()=>$('mcpListPage').classList.remove('open');
+$('mcpAdd').onclick=()=>{editingMcpId=uid();$('mcpName').value='';$('mcpUrl').value='';$('mcpEnabled').classList.add('on');mcpTempHeaders=[];renderMcpHeadersList();$('mcpEditPage').classList.add('open')};
+$('mcpEditBack').onclick=()=>{saveMcpEdit();$('mcpEditPage').classList.remove('open')};
+$('mcpDel').onclick=()=>{if(!confirm('删除这个MCP？'))return;mcps=mcps.filter(m=>m.id!==editingMcpId);delete mcpTools[editingMcpId];saveMcps();$('mcpEditPage').classList.remove('open');renderMcpCards()};
+$('mcpAddHeader').onclick=()=>{mcpTempHeaders.push({key:'',val:''});renderMcpHeadersList()};
+initToggle($('mcpEnabled'),true,()=>{});
 
   $('apiListBack').onclick=()=>$('apiListPage').classList.remove('open');
   $('apiAdd').onclick=()=>{editingApiId=uid();$('apiName').value='';$('apiUrl').value='';$('apiKey').value='';$('apiModel').value='';$('apiEditPage').classList.add('open')};
@@ -2451,6 +2517,181 @@ function initPlay(){
   };
 }
 initPlay();
+// ===== MCP =====
+let mcps=[],mcpTools={},editingMcpId=null,mcpTempHeaders=[];
+
+async function loadMcps(){const d=await dbGet('cfg','_mcps');if(d&&d.data)mcps=d.data}
+function saveMcps(){dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps})}
+
+async function fetchMcpTools(mcp){
+  if(!mcp.enabled||!mcp.url)return[];
+  try{
+    const h={'Content-Type':'application/json'};
+    (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
+    const res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})});
+    if(!res.ok)return[];
+    const j=await res.json();
+    return j.result?.tools||[];
+  }catch(e){return[]}
+}
+
+async function refreshAllMcpTools(){
+  for(const mcp of mcps){
+    if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);
+    else delete mcpTools[mcp.id];
+  }
+}
+
+function getAllMcpToolDefs(){
+  const tools=[];
+  for(const mcp of mcps){
+    if(!mcp.enabled)continue;
+    for(const t of (mcpTools[mcp.id]||[])){
+      tools.push({name:t.name,description:(t.description||'')+'（来自：'+mcp.name+'）',input_schema:t.inputSchema||{type:'object',properties:{}}});
+    }
+  }
+  return tools;
+}
+
+async function callMcpTool(name,args){
+  for(const mcp of mcps){
+    if(!mcp.enabled)continue;
+    if((mcpTools[mcp.id]||[]).find(t=>t.name===name)){
+      try{
+        const h={'Content-Type':'application/json'};
+        (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
+        const res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});
+        if(!res.ok)return{error:'HTTP '+res.status};
+        const j=await res.json();
+        if(j.error)return{error:j.error.message||JSON.stringify(j.error)};
+        const content=j.result?.content||[];
+        const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');
+        return{result:text||JSON.stringify(j.result)};
+      }catch(e){return{error:e.message}}
+    }
+  }
+  return{error:'工具未找到: '+name};
+}
+
+function renderToolCallCard(tc){
+  const statusLabel=tc.status==='running'?'执行中':tc.status==='done'?'完成':'出错';
+  const argsStr=typeof tc.args==='object'?JSON.stringify(tc.args,null,2):String(tc.args||'');
+  const resultStr=tc.result||'';
+  return`<div class="tool-call-card"><div class="tool-call-hd" onclick="this.nextElementSibling.classList.toggle('show')"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="tool-call-name">${esc(tc.name)}</span><span class="tool-call-status ${tc.status}">${statusLabel}</span></div><div class="tool-call-body"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">参数</div><pre>${esc(argsStr)}</pre>${resultStr?'<div style="font-size:11px;color:var(--text2);margin:6px 0 4px">结果</div><pre>'+esc(resultStr.slice(0,600))+(resultStr.length>600?'…':'')+'</pre>':''}</div></div>`;
+}
+
+function renderMcpCards(){
+  const el=$('mcpCards');
+  if(!mcps.length){el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有MCP，点 + 添加</div>';return}
+  el.innerHTML=mcps.map(m=>{
+    const cnt=(mcpTools[m.id]||[]).length;
+    const badge=m.enabled?`<span class="mcp-status">${cnt} 个工具</span>`:`<span class="mcp-status err">已禁用</span>`;
+    return`<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div></div><span class="arrow">›</span></div>`;
+  }).join('');
+  el.querySelectorAll('.cfg-card').forEach(card=>{
+    card.onclick=()=>openMcpEdit(card.dataset.id);
+    let t;
+    card.ontouchstart=()=>{t=setTimeout(()=>{
+      const mcp=mcps.find(m=>m.id===card.dataset.id);if(!mcp)return;
+      mcp.enabled=!mcp.enabled;saveMcps();
+      if(mcp.enabled)fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;renderMcpCards()});
+      else{delete mcpTools[mcp.id];renderMcpCards()}
+    },600)};
+    card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t);
+  });
+}
+
+function openMcpEdit(id){
+  editingMcpId=id;
+  const m=mcps.find(x=>x.id===id)||{};
+  $('mcpName').value=m.name||'';$('mcpUrl').value=m.url||'';
+  m.enabled!==false?$('mcpEnabled').classList.add('on'):$('mcpEnabled').classList.remove('on');
+  mcpTempHeaders=(m.headers||[]).map(h=>({...h}));
+  renderMcpHeadersList();
+  $('mcpEditPage').classList.add('open');
+}
+
+function renderMcpHeadersList(){
+  const list=$('mcpHeadersList');
+  if(!mcpTempHeaders.length){list.innerHTML='';return}
+  list.innerHTML=mcpTempHeaders.map((h,i)=>`<div class="mcp-header-row"><input placeholder="Header名（如 Authorization）" value="${esc(h.key||'')}" data-i="${i}" data-f="key"><input placeholder="值（如 Bearer token）" value="${esc(h.val||'')}" data-i="${i}" data-f="val"><button class="mcp-header-del" data-i="${i}">×</button></div>`).join('');
+  list.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{mcpTempHeaders[+inp.dataset.i][inp.dataset.f]=inp.value});
+  list.querySelectorAll('.mcp-header-del').forEach(btn=>btn.onclick=()=>{mcpTempHeaders.splice(+btn.dataset.i,1);renderMcpHeadersList()});
+}
+
+function saveMcpEdit(){
+  let m=mcps.find(x=>x.id===editingMcpId);
+  if(!m){m={id:editingMcpId};mcps.push(m)}
+  m.name=$('mcpName').value.trim()||'未命名';
+  m.url=$('mcpUrl').value.trim();
+  m.enabled=$('mcpEnabled').classList.contains('on');
+  m.headers=mcpTempHeaders.filter(h=>h.key);
+  saveMcps();
+  if(m.enabled)fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;renderMcpCards()});
+  else{delete mcpTools[m.id];renderMcpCards()}
+}
+
+// 带工具的API调用（非streaming，支持多轮tool_use）
+async function callAPIWithTools(toolDefs){
+  const api=apis.find(a=>a.id===activeApi);
+  if(!api||!api.url||!api.key)return callAPIStream();
+  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
+  if(isOAI)return callAPIStream(); // OAI tool use暂不支持，降级
+
+  generating=true;sendBtn.style.display='none';stopBtn.classList.add('show');
+  abortCtrl=new AbortController();
+  Eventide.touchCounterpart();
+  const eventideCard=Eventide.tickAndRender(Date.now())||'';
+  const spTexts=sps.filter(s=>activeSps.includes(s.id)).map(s=>s.content).join('\n\n');
+  const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')+eventideCard).trim();
+
+  let messages=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{
+    if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}
+    let txt=m.content||'';if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;
+    return{role:m.role,content:txt};
+  });
+
+  const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),_toolCalls:[]};
+  cur.msgs.push(aiMsg);const aiIdx=cur.msgs.length-1;renderChat();
+
+  for(let loop=0;loop<6;loop++){
+    const headers={'Content-Type':'application/json','x-api-key':api.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+    const body={model:api.model||'claude-sonnet-4-20250514',max_tokens:4096,system:sysText,messages,tools:toolDefs.map(t=>({name:t.name,description:t.description,input_schema:t.input_schema}))};
+    try{
+      const res=await fetch(api.url,{method:'POST',headers,body:JSON.stringify(body),signal:abortCtrl.signal});
+      if(!res.ok){aiMsg.content='⚠️ 错误 '+res.status;renderChat();finish();return}
+      const data=await res.json();
+      const blocks=data.content||[];
+      const toolBlocks=blocks.filter(b=>b.type==='tool_use');
+      const textContent=blocks.filter(b=>b.type==='text').map(b=>b.text).join('');
+      const thinkContent=blocks.find(b=>b.type==='thinking')?.thinking||'';
+      if(thinkContent)aiMsg.thinking=thinkContent;
+      if(textContent)aiMsg.content=textContent;
+      renderChat();
+      if(!toolBlocks.length){
+        // 没有更多工具调用，结束
+        finish();saveConv();
+        const wasSplit=aiMsg.content?.includes('|||');
+        await processAIMultiBubble(aiIdx);
+        if(!wasSplit){processAIStickers(aiIdx);processAIBody(aiIdx);processAIMemories(aiIdx)}
+        autoTTS(aiIdx);processAICall(aiIdx);processAIGame(aiIdx);
+        return;
+      }
+      // 执行工具
+      messages.push({role:'assistant',content:blocks});
+      const toolResults=[];
+      for(const tb of toolBlocks){
+        const tc={id:tb.id,name:tb.name,args:tb.input,status:'running',result:null};
+        aiMsg._toolCalls=[...(aiMsg._toolCalls||[]),tc];renderChat();
+        const r=await callMcpTool(tb.name,tb.input);
+        tc.status=r.error?'err':'done';tc.result=r.error||r.result;renderChat();
+        toolResults.push({type:'tool_result',tool_use_id:tb.id,content:tc.result||''});
+      }
+      messages.push({role:'user',content:toolResults});
+    }catch(e){if(e.name!=='AbortError')aiMsg.content+=' ⚠️ '+e.message;renderChat();finish();return}
+  }
+  finish();saveConv();
+}
 // ===== 五子棋 =====
 let gomokuBoard=null;
 let gomokuOver=false;
