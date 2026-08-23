@@ -82,3 +82,9 @@ if (url.pathname.startsWith('/garden/')) {
     headers: respHeaders
   });
 }
+    return new Response('unknown path', {
+      status: 400,
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+};
