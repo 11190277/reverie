@@ -56,27 +56,29 @@ export default {
       return out;
     }
 
-    // 花园MCP中转
-    if (url.pathname.startsWith('/garden/')) {
-      const target = 'https://galatea.abysslumina.com' + url.pathname.slice(7) + url.search;
-      const headers = new Headers(request.headers);
-      headers.delete('host');
-      headers.delete('origin');
-      headers.delete('referer');
-      const resp = await fetch(target, {
-        method: request.method,
-        headers,
-        body: (request.method === 'GET' || request.method === 'HEAD') ? undefined : request.body
-      });
-      const out = new Response(resp.body, resp);
-      out.headers.set('Access-Control-Allow-Origin', '*');
-      out.headers.set('Access-Control-Expose-Headers', '*');
-      return out;
-    }
-
-    return new Response('unknown path', {
-      status: 400,
-      headers: { 'Access-Control-Allow-Origin': '*' }
-    });
+   // 花园MCP中转
+if (url.pathname.startsWith('/garden/')) {
+  const target = 'https://galatea.abysslumina.com' + url.pathname.slice(7) + url.search;
+  const reqHeaders = new Headers();
+  for (const [k, v] of request.headers.entries()) {
+    const kl = k.toLowerCase();
+    if (kl === 'host' || kl === 'origin' || kl === 'referer') continue;
+    reqHeaders.set(k, v);
   }
-};
+  reqHeaders.set('Accept', 'application/json, text/event-stream');
+  const body = (request.method === 'GET' || request.method === 'HEAD') ? undefined : await request.arrayBuffer();
+  const resp = await fetch(target, {
+    method: request.method,
+    headers: reqHeaders,
+    body
+  });
+  const respHeaders = new Headers(resp.headers);
+  respHeaders.set('Access-Control-Allow-Origin', '*');
+  respHeaders.set('Access-Control-Allow-Headers', '*');
+  respHeaders.set('Access-Control-Expose-Headers', '*');
+  return new Response(resp.body, {
+    status: resp.status,
+    statusText: resp.statusText,
+    headers: respHeaders
+  });
+}
