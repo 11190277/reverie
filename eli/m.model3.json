@@ -1,7 +1,7 @@
 {
   "Version": 3,
   "FileReferences": {
-    "Moc": "Shiba Inu.moc3",
+   "Moc": "ShibaInu.moc3",
     "Textures": [
       "texture_00.png",
       "texture_01.png",
@@ -10,8 +10,8 @@
       "texture_04.png",
       "texture_05.png"
     ],
-    "Physics": "Shiba Inu.physics3.json",
-    "DisplayInfo": "Shiba Inu.cdi3.json",
+    "Physics": "ShibaInu.physics3.json",
+"DisplayInfo": "ShibaInu.cdi3.json",
     "Expressions": [
       {"Name":"脸红","File":"blush.exp3.json"},
       {"Name":"哭","File":"Cry.exp3.json"},
