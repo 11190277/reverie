@@ -2603,7 +2603,12 @@ function renderMcpCards(){
   if(!mcps.length){el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有MCP，点 + 添加</div>';return}
   el.innerHTML=mcps.map(m=>{
     const cnt=(mcpTools[m.id]||[]).length;
-    const badge=m.enabled?`<span class="mcp-status">${cnt} 个工具</span>`:`<span class="mcp-status err">已禁用</span>`;
+    let badge='';
+    if(!m.enabled)badge='<span class="mcp-status err">已禁用</span>';
+    else if(m._status==='loading')badge='<span class="mcp-status loading">连接中…</span>';
+    else if(m._status==='err')badge='<span class="mcp-status err">连接失败</span>';
+    else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具</span>';
+    else badge='<span class="mcp-status loading">等待连接</span>';
     return`<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div></div><span class="arrow">›</span></div>`;
   }).join('');
   el.querySelectorAll('.cfg-card').forEach(card=>{
@@ -2611,9 +2616,10 @@ function renderMcpCards(){
     let t;
     card.ontouchstart=()=>{t=setTimeout(()=>{
       const mcp=mcps.find(m=>m.id===card.dataset.id);if(!mcp)return;
-      mcp.enabled=!mcp.enabled;saveMcps();
-      if(mcp.enabled)fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;saveMcpToolsCache();renderMcpCards()});
-      else{delete mcpTools[mcp.id];renderMcpCards()}
+      if(!mcp.enabled){mcp.enabled=true}else{mcp.enabled=false}
+      saveMcps();
+      if(mcp.enabled){mcp._status='loading';renderMcpCards();fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;mcp._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}
+      else{delete mcpTools[mcp.id];mcp._status='';renderMcpCards()}
     },600)};
     card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t);
   });
@@ -2645,7 +2651,7 @@ function saveMcpEdit(){
   m.enabled=$('mcpEnabled').classList.contains('on');
   m.headers=mcpTempHeaders.filter(h=>h.key);
   saveMcps();
-  if(m.enabled)fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;saveMcpToolsCache();renderMcpCards()});
+  if(m.enabled){m._status='loading';renderMcpCards();fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;m._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}
   else{delete mcpTools[m.id];renderMcpCards()}
 }
 
