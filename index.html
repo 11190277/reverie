@@ -2544,7 +2544,7 @@ async function fetchMcpTools(mcp){
     const h={'Content-Type':'application/json'};
     (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
     const ctrl=new AbortController();
-const timer=setTimeout(()=>ctrl.abort(),20000);
+const timer=setTimeout(()=>ctrl.abort(),100000);
 let res;
 try{res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}}),signal:ctrl.signal})}finally{clearTimeout(timer)}
     if(!res.ok)return[];
