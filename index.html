@@ -1966,7 +1966,6 @@ await loadKelivoMemories();
   }
     await loadPlayData();
 await loadMcps();
-await refreshAllMcpTools();
   applyTheme(activeTheme);
 // 加载背景
 const bgData=await dbGet('cfg','_chatBg');
@@ -2529,8 +2528,15 @@ initPlay();
 // ===== MCP =====
 let mcps=[],mcpTools={},editingMcpId=null,mcpTempHeaders=[];
 
-async function loadMcps(){const d=await dbGet('cfg','_mcps');if(d&&d.data)mcps=d.data}
+async function loadMcps(){
+  const d=await dbGet('cfg','_mcps');
+  if(d&&d.data)mcps=d.data;
+  const cache=await dbGet('cfg','_mcpToolsCache');
+  if(cache&&cache.data)mcpTools=cache.data;
+}
 function saveMcps(){dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps})}
+
+function saveMcpToolsCache(){dbPut('cfg',{id:'_mcpToolsCache',type:'_mcpToolsCache',data:mcpTools})}
 
 async function fetchMcpTools(mcp){
   if(!mcp.enabled||!mcp.url)return[];
@@ -2606,7 +2612,7 @@ function renderMcpCards(){
     card.ontouchstart=()=>{t=setTimeout(()=>{
       const mcp=mcps.find(m=>m.id===card.dataset.id);if(!mcp)return;
       mcp.enabled=!mcp.enabled;saveMcps();
-      if(mcp.enabled)fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;renderMcpCards()});
+      if(mcp.enabled)fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;saveMcpToolsCache();renderMcpCards()});
       else{delete mcpTools[mcp.id];renderMcpCards()}
     },600)};
     card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t);
@@ -2639,7 +2645,7 @@ function saveMcpEdit(){
   m.enabled=$('mcpEnabled').classList.contains('on');
   m.headers=mcpTempHeaders.filter(h=>h.key);
   saveMcps();
-  if(m.enabled)fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;renderMcpCards()});
+  if(m.enabled)fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;saveMcpToolsCache();renderMcpCards()});
   else{delete mcpTools[m.id];renderMcpCards()}
 }
 
