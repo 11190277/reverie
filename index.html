@@ -784,7 +784,12 @@ function delConv(id){
   renderList();
 }
 function updTitle(){topTitle.textContent=cur?cur.title:'新对话'}
-function saveConv(){if(cur)dbPut('convs',cur)}
+function saveConv(){
+  if(cur){
+    dbPut('convs',cur);
+    try{localStorage.setItem('lastConvBackup',JSON.stringify({conv:cur,ts:Date.now()}))}catch(e){}
+  }
+}
 function editTitle(){
   const t=prompt('对话标题',cur?.title||'');
   if(t!==null&&t.trim()){cur.title=t.trim();updTitle();renderList();saveConv()}
@@ -1979,7 +1984,11 @@ if(savedBlur){$('chatBg').style.filter='blur('+savedBlur+'px)';$('bgBlur').value
 
   // 加载对话
   convs=await dbAll('convs');convs.sort((a,b)=>b.ts-a.ts);
-if(convs.length===0)newConv();else{cur=convs[0];renderChat();updTitle()}
+if(convs.length===0){
+  const bk=localStorage.getItem('lastConvBackup');
+  if(bk){try{const d=JSON.parse(bk);if(d.conv){cur=d.conv;convs=[cur];await dbPut('convs',cur);renderChat();updTitle();renderList();}}catch(e){newConv()}}
+  else newConv();
+}else{cur=convs[0];renderChat();updTitle()}
   renderList();
 
 
@@ -2528,7 +2537,10 @@ async function fetchMcpTools(mcp){
   try{
     const h={'Content-Type':'application/json'};
     (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
-    const res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}})});
+    const ctrl=new AbortController();
+const timer=setTimeout(()=>ctrl.abort(),5000);
+let res;
+try{res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}}),signal:ctrl.signal})}finally{clearTimeout(timer)}
     if(!res.ok)return[];
     const j=await res.json();
     return j.result?.tools||[];
