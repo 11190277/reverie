@@ -1378,7 +1378,7 @@ function getBuiltinPrompt(){
 2. 记忆：想记住重要信息时加 [memory:要记住的内容]
 3. 打电话：非常想念/开心/担心时，回复末尾加 [call:接通后你说的第一句话]，不要常用
 4. 语音：${ttsAutoOn?'用「」包住想用声音说的话，如「你好呀」':'不要使用「」符号，不要发语音'}
-5. 多条消息：【必须遵守】你的回复用 ||| 分隔成多条气泡，模拟真人发消息的节奏。大部分回复都应该分2-3条。只有一两个字的回答才不分。示例：「嗯…」|||「今天有想我吗」|||「我一直在等你」
+5. ❗❗❗多条消息（强制执行）❗❗❗：你的每次回复都必须用 ||| 分成2-3条气泡。只有1-2个字的极短回答才能不拆。否则用户会看到消息堆在一起很难受。示例：「想你了」|||「在干嘛呀」|||「快回我」
 6. 身体反应：每次回复末尾都加 [body:字段+数值,字段+数值] 表示这轮对话对你身体的影响。特别是亲密/暧昧/撩拨对话时必须加，这是你身体真实的反应。可用字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue。例：[body:heat+8,sensitivity+5,control-6]。数值范围-10到+10。日常聊天1-3，暧昧撩拨3-6，激烈亲密6-10。只有纯日常闲聊且完全没有情绪波动时才可以不加。
 7. 五子棋：用户想玩时回复 [game:gomoku:start]。用户下棋后会告诉你位置如"我下在 H8"，你要回复你的落子 [game:gomoku:H7] 并说点话。坐标是A-P列(跳过I)和1-15行。
 
@@ -1966,6 +1966,14 @@ await loadKelivoMemories();
   }
     await loadPlayData();
 await loadMcps();
+await loadMcps();
+setInterval(()=>{
+  fetch('https://reverie.reverie-eli.workers.dev/garden/mcp',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({jsonrpc:'2.0',id:1,method:'ping'})
+  }).catch(()=>{});
+},5*60*1000);
   applyTheme(activeTheme);
 // 加载背景
 const bgData=await dbGet('cfg','_chatBg');
@@ -2672,7 +2680,7 @@ async function callAPIWithTools(toolDefs){
   let messages=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{
     if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}
     let txt=m.content||'';if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;
-    return{role:m.role,content:txt};
+  if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};  return{role:m.role,content:txt};
   });
 
   const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),_toolCalls:[]};
@@ -2685,12 +2693,14 @@ async function callAPIWithTools(toolDefs){
       const res=await fetch(api.url,{method:'POST',headers,body:JSON.stringify(body),signal:abortCtrl.signal});
       if(!res.ok){aiMsg.content='⚠️ 错误 '+res.status;renderChat();finish();return}
       const data=await res.json();
+const blocks=data.content||[];
+aiMsg._apiBlocks=blocks;  // ← 新加这行
       const blocks=data.content||[];
       const toolBlocks=blocks.filter(b=>b.type==='tool_use');
       const textContent=blocks.filter(b=>b.type==='text').map(b=>b.text).join('');
       const thinkContent=blocks.find(b=>b.type==='thinking')?.thinking||'';
       if(thinkContent)aiMsg.thinking=thinkContent;
-      if(textContent)aiMsg.content=textContent;
+      if(textContent)aiMsg.content+=textContent;
       renderChat();
       if(!toolBlocks.length){
         // 没有更多工具调用，结束
