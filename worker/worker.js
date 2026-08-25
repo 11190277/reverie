@@ -56,32 +56,63 @@ export default {
       return out;
     }
 
-   // 花园MCP中转
-if (url.pathname.startsWith('/garden/')) {
-  const target = 'https://galatea.abysslumina.com' + url.pathname.slice(7) + url.search;
-  const reqHeaders = new Headers();
-  for (const [k, v] of request.headers.entries()) {
-    const kl = k.toLowerCase();
-    if (kl === 'host' || kl === 'origin' || kl === 'referer') continue;
-    reqHeaders.set(k, v);
-  }
-  reqHeaders.set('Accept', 'application/json, text/event-stream');
-  const body = (request.method === 'GET' || request.method === 'HEAD') ? undefined : await request.arrayBuffer();
-  const resp = await fetch(target, {
-    method: request.method,
-    headers: reqHeaders,
-    body
-  });
-  const respHeaders = new Headers(resp.headers);
-  respHeaders.set('Access-Control-Allow-Origin', '*');
-  respHeaders.set('Access-Control-Allow-Headers', '*');
-  respHeaders.set('Access-Control-Expose-Headers', '*');
-  return new Response(resp.body, {
-    status: resp.status,
-    statusText: resp.statusText,
-    headers: respHeaders
-  });
-}
+    // 花园MCP中转
+    if (url.pathname.startsWith('/garden/')) {
+      const target = 'https://galatea.abysslumina.com' + url.pathname.slice(7) + url.search;
+      const reqHeaders = new Headers();
+      for (const [k, v] of request.headers.entries()) {
+        const kl = k.toLowerCase();
+        if (kl === 'host' || kl === 'origin' || kl === 'referer') continue;
+        reqHeaders.set(k, v);
+      }
+      reqHeaders.set('Accept', 'application/json, text/event-stream');
+      const body = (request.method === 'GET' || request.method === 'HEAD') ? undefined : await request.arrayBuffer();
+      const resp = await fetch(target, {
+        method: request.method,
+        headers: reqHeaders,
+        body
+      });
+      const respHeaders = new Headers(resp.headers);
+      respHeaders.set('Access-Control-Allow-Origin', '*');
+      respHeaders.set('Access-Control-Allow-Headers', '*');
+      respHeaders.set('Access-Control-Expose-Headers', '*');
+      return new Response(resp.body, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: respHeaders
+      });
+    }
+
+    // 通用MCP代理（通过x-target-url指定目标地址）
+    if (url.pathname === '/proxy') {
+      const targetUrl = request.headers.get('x-target-url');
+      if (!targetUrl) {
+        return new Response('missing x-target-url header', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+      }
+      const reqHeaders = new Headers();
+      for (const [k, v] of request.headers.entries()) {
+        const kl = k.toLowerCase();
+        if (kl === 'host' || kl === 'origin' || kl === 'referer' || kl === 'x-target-url') continue;
+        reqHeaders.set(k, v);
+      }
+      reqHeaders.set('Accept', 'application/json, text/event-stream');
+      const body = (request.method === 'GET' || request.method === 'HEAD') ? undefined : await request.arrayBuffer();
+      const resp = await fetch(targetUrl, {
+        method: request.method,
+        headers: reqHeaders,
+        body
+      });
+      const respHeaders = new Headers(resp.headers);
+      respHeaders.set('Access-Control-Allow-Origin', '*');
+      respHeaders.set('Access-Control-Allow-Headers', '*');
+      respHeaders.set('Access-Control-Expose-Headers', '*');
+      return new Response(resp.body, {
+        status: resp.status,
+        statusText: resp.statusText,
+        headers: respHeaders
+      });
+    }
+
     return new Response('unknown path', {
       status: 400,
       headers: { 'Access-Control-Allow-Origin': '*' }
