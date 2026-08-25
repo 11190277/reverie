@@ -995,7 +995,9 @@ async function send(text,img,file){
   cur.msgs.push(m);cur.ts=Date.now();
   if(cur.msgs.length===1){cur.title=text.trim().slice(0,18)||file?.name||'图片对话';updTitle();renderList()}
   renderChat();saveConv();
-  await callAPIStream();
+  const toolDefs=getAllMcpToolDefs();
+if(toolDefs.length>0)await callAPIWithTools(toolDefs);
+else await callAPIStream();
 }
 
 function sendOnly(){
