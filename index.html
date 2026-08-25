@@ -1938,8 +1938,9 @@ async function callMcpTool(name,args){
         const j=await res.json();
         if(j.error)return{error:j.error.message||JSON.stringify(j.error)};
         const content=j.result?.content||[];
-        const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');
-        return{result:text||JSON.stringify(j.result)};
+const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');
+const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});
+return{result:text||fallback};
       }catch(e){return{error:e.message}}
     }
   }
@@ -2066,7 +2067,9 @@ async function callAPIWithTools(toolDefs){
         const tc={id:tb.id,name:tb.name,args:tb.input,status:'running',result:null};
         aiMsg._toolCalls=[...(aiMsg._toolCalls||[]),tc];renderChat();
         const r=await callMcpTool(tb.name,tb.input);
-        tc.status=r.error?'err':'done';tc.result=r.error||r.result;renderChat();
+        tc.status=r.error?'err':'done';
+tc.result=r.error||(r.result||'（无返回内容）');
+renderChat();
         toolResults.push({type:'tool_result',tool_use_id:tb.id,content:tc.result||''});
       }
       messages.push({role:'user',content:toolResults});
