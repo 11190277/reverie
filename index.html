@@ -6,14 +6,30 @@
 <meta name="theme-color" content="#f7f7f7">
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>我们的小家</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200;300;400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bubble-user:rgba(252,228,236,0.72);--bubble-ai:rgba(255,255,255,0.72);--bg:#f7f7f7;--sidebar-bg:rgba(255,240,245,0.55);--glass:rgba(255,255,255,0.4);--glass2:rgba(255,255,255,0.55);--text:#1d1d1f;--text2:#86868b;--border:rgba(0,0,0,0.06);--input-bg:#ffffff;--send-bg:#c8c8c8;--hl:rgba(255,255,255,0.4);--soft:rgba(0,0,0,0.04);--keyboard-offset:0px}
+:root{--bubble-user:rgba(252,228,236,0.72);--bubble-ai:rgba(255,255,255,0.72);--bg:#f7f7f7;--sidebar-bg:rgba(255,240,245,0.55);--glass:rgba(255,255,255,0.4);--glass2:rgba(255,255,255,0.55);--text:#1d1d1f;--text2:#86868b;--border:rgba(0,0,0,0.06);--input-bg:#ffffff;--send-bg:#c8c8c8;--hl:rgba(255,255,255,0.4);--soft:rgba(0,0,0,0.04)}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:-webkit-fill-available;}
-html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif SC',Georgia,serif;font-weight:300;background:var(--bg);color:var(--text);height:100vh;height:calc(var(--real-vh,1vh)*100);overflow-y:hidden;font-size:14px}
+html,body{
+  width:100%;
+  max-width:100vw;
+  overflow-x:hidden;
+  font-family:'Noto Serif SC',Georgia,serif;
+  font-weight:300;
+  background:var(--bg);
+  color:var(--text);
+
+  height:100%;
+  overflow:hidden;
+  font-size:14px;
+}
+
+.app{
+  height:var(--app-height,100vh);
+}
 .app{display:flex;height:100%;width:100%;overflow:hidden}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:99;opacity:0;pointer-events:none;transition:opacity 0.3s}
 .overlay.on{opacity:1;pointer-events:auto}
@@ -23,6 +39,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .sb-avatar{width:68px;height:68px;border-radius:50%;background:#fff;border:1px solid var(--border);overflow:hidden;cursor:pointer}
 .sb-avatar img{width:100%;height:100%;object-fit:cover}
 .sb-name{font-size:17px;font-weight:400;letter-spacing:2px}
+/* AI 切换行 */
 .sb-ai-row{display:flex;align-items:center;justify-content:center;gap:6px;padding:0 20px 4px}
 .sb-ai-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
 .sb-ai-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;background:rgba(0,0,0,0.04);font-size:12px;cursor:pointer;border:1px solid transparent;transition:all 0.15s}
@@ -39,32 +56,35 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .conv-item:active,.conv-item.active{background:rgba(0,0,0,0.05)}
 .conv-title{font-size:13px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .conv-time{font-size:10px;color:var(--text2);margin-top:2px}
+/* 群聊标记 */
 .conv-group-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--text2);margin-top:2px}
 .conv-group-badge .gav{width:12px;height:12px;border-radius:50%;background:var(--soft);overflow:hidden;border:0.5px solid var(--border)}
 .conv-group-badge .gav img{width:100%;height:100%;object-fit:cover}
-.main{flex:1;display:flex;flex-direction:column;height:calc(var(--real-vh,1vh)*100 - var(--keyboard-offset,0px));width:100%;min-width:0;overflow:hidden;position:relative}
+.main{flex:1;display:flex;flex-direction:column;height:100%;width:100%;min-width:0;overflow:hidden;position:relative}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));background:rgba(255,255,255,0.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid rgba(255,255,255,0.3);z-index:10;width:100%}
 .top-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:8px;flex-shrink:0}
 .top-btn:active{background:rgba(0,0,0,0.04)}
 .top-btn svg{width:20px;height:20px;stroke:var(--text);fill:none;stroke-width:1.2}
 .top-title{font-size:15px;font-weight:400;flex:1;text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+/* 群聊 topbar AI 头像列 */
 .top-group-avs{display:flex;align-items:center;gap:-4px;margin-right:4px}
 .top-group-avs .gav{width:26px;height:26px;border-radius:50%;background:#fff;border:1.5px solid var(--glass2);overflow:hidden;margin-left:-6px}
 .top-group-avs .gav:first-child{margin-left:0}
 .top-group-avs .gav img{width:100%;height:100%;object-fit:cover}
 .chat-wrap{position:relative;flex:1;overflow:hidden;display:flex;flex-direction:column}
 .chat-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;background-repeat:no-repeat;pointer-events:none}
-.chat{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 12px 70px;-webkit-overflow-scrolling:touch;width:100%;position:relative;z-index:1}
+.chat{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 12px 8px;-webkit-overflow-scrolling:touch;width:100%;position:relative;z-index:1}
 .msg{display:flex;align-items:flex-end;margin-bottom:10px;gap:7px;width:100%;animation:msgIn 0.2s ease}
 .msg.user{flex-direction:row-reverse}
 .msg-av{width:28px;height:28px;border-radius:50%;background:#fff;border:1px solid var(--border);flex-shrink:0;overflow:hidden}
 .msg-av img{width:100%;height:100%;object-fit:cover}
-.msg-body{max-width:80%;display:flex;flex-direction:column;gap:2px;min-width:0}
+.msg-body{max-width:70%;display:flex;flex-direction:column;gap:2px;min-width:0}
 .bubble{padding:8px 12px;border-radius:18px;font-size:14px;line-height:1.6;word-break:break-word;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 1px 6px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.4)}
 .msg.assistant .bubble{background:var(--bubble-ai);border-bottom-left-radius:6px}
 .msg.user .bubble{background:var(--bubble-user);border-bottom-right-radius:6px}
 .msg-time{font-size:10px;color:var(--text2);padding:0 2px}
 .msg.user .msg-time{text-align:right}
+/* 群聊 AI 名字标签 */
 .msg-ai-name{font-size:10px;color:var(--text2);padding:0 2px;margin-bottom:1px}
 .file-bubble{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:18px;box-shadow:0 0.5px 1px rgba(0,0,0,0.03)}
 .msg.user .file-bubble{background:var(--bubble-user);border-bottom-right-radius:6px}
@@ -100,7 +120,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .typing-dots span:nth-child(2){animation-delay:0.2s}
 .typing-dots span:nth-child(3){animation-delay:0.4s}
 @keyframes blink{0%,60%,100%{opacity:0.3}30%{opacity:1}}
-.input-area{position:fixed;bottom:0;left:0;right:0;padding:7px 10px;padding-bottom:max(7px,env(safe-area-inset-bottom));background:rgba(255,255,255,0.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:0.5px solid rgba(255,255,255,0.3);display:flex;align-items:flex-end;gap:5px;width:100%;z-index:10;transition:bottom 0.1s ease}
+.input-area{position:fixed;bottom:max(12px,env(safe-area-inset-bottom));left:12px;right:12px;padding:8px 12px;background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:0.5px solid rgba(255,255,255,0.6);border-radius:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08);display:flex;align-items:flex-end;gap:5px;width:auto;z-index:10}
 .in-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;flex-shrink:0}
 .in-btn svg{width:19px;height:19px;stroke:var(--text2);fill:none;stroke-width:1.2}
 .in-box{flex:1;min-height:32px;max-height:100px;padding:6px 12px;border-radius:16px;border:0.5px solid rgba(0,0,0,0.1);background:#fff;font-size:14px;font-family:inherit;font-weight:300;line-height:1.5;resize:none;outline:none;color:var(--text);min-width:0}
@@ -200,6 +220,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .-incoming{animation:ring 1.5s ease infinite}
 @keyframes ring{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 ::-webkit-scrollbar{width:0}
+/* ===== Play界面 ===== */
 .play-view{position:fixed;inset:0;display:none;flex-direction:column;background:transparent;z-index:50;overflow:hidden}
 .play-view.on{display:flex}
 .play-topbar{display:flex;align-items:center;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));background:rgba(255,255,255,0.35);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:0.5px solid rgba(255,255,255,0.4);z-index:10;gap:8px}
@@ -240,6 +261,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .release-ripple{position:fixed;top:50%;left:50%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;background:radial-gradient(circle,rgba(251,194,235,0.6),rgba(247,121,125,0.2),transparent);pointer-events:none;z-index:999;animation:ripple 1.2s ease forwards}
 @keyframes heartbeat{0%{transform:scale(1)}15%{transform:scale(1.15)}30%{transform:scale(0.95)}45%{transform:scale(1.08)}60%{transform:scale(1)}100%{transform:scale(1)}}
 .body-panel.beating{animation:heartbeat 0.8s ease}
+/* ===== 主题变量接管 ===== */
 .sidebar{background:var(--sidebar-bg)!important}
 .topbar,.input-area{background:var(--glass)!important;border-color:var(--border)!important}
 .play-topbar,.play-input{background:var(--glass)!important;border-color:var(--border)!important}
@@ -272,6 +294,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .cfg-card:active{background:var(--soft)!important}
 .batch-btn{background:var(--text)!important;color:var(--bg)!important}
 .play-char-card .char-av{background:var(--soft)!important}
+/* 主题卡片 */
 .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:6px 0}
 .theme-card{background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;box-shadow:0 1px 6px rgba(0,0,0,0.04)}
 .theme-card:active{opacity:0.7}
@@ -279,6 +302,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .theme-dots{display:flex;gap:5px}
 .theme-dots i{width:16px;height:16px;border-radius:50%;border:0.5px solid rgba(0,0,0,0.08)}
 .theme-nm{font-size:13px}
+/* 五子棋 */
 .gomoku-board-big{display:grid;grid-template-columns:repeat(15,1fr);gap:0;background:linear-gradient(135deg,#e8c896,#d4a85c);border-radius:10px;padding:3px;box-shadow:inset 0 2px 8px rgba(0,0,0,0.12)}
 .gomoku-cell-big{aspect-ratio:1;position:relative;cursor:pointer}
 .gomoku-cell-big::before{content:'';position:absolute;inset:0;border:0.5px solid rgba(0,0,0,0.3)}
@@ -306,6 +330,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .mcp-header-row:last-child{border-bottom:none}
 .mcp-header-row input{flex:1;padding:6px 8px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.08);background:var(--bg);font-size:12px;font-family:inherit;outline:none;color:var(--text);min-width:0}
 .mcp-header-del{width:22px;height:22px;border-radius:50%;border:none;background:rgba(255,59,48,0.1);color:#ff3b30;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;line-height:1}
+/* AI 卡片 */
 .ai-card{background:rgba(255,255,255,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.5)}
 .ai-card:active{background:rgba(255,255,255,0.6)}
 .ai-card .ai-card-av{width:44px;height:44px;border-radius:50%;background:var(--soft);overflow:hidden;flex-shrink:0;border:1px solid var(--border)}
@@ -313,6 +338,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .ai-card .ai-card-info{flex:1;min-width:0}
 .ai-card .ai-card-name{font-size:14px;font-weight:400}
 .ai-card .ai-card-sub{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 群聊选择面板 */
 .group-sheet{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top-left-radius:18px;border-top-right-radius:18px;z-index:300;transform:translateY(100%);transition:transform 0.28s ease;padding:0 16px 32px;box-shadow:0 -4px 20px rgba(0,0,0,0.08)}
 .group-sheet.on{transform:translateY(0)}
 .group-sheet-hd{padding:14px 0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border)}
@@ -340,6 +366,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
       <div class="sb-avatar" id="avatarBtn"></div>
       <div class="sb-name" id="sbAiName">我们的小家</div>
     </div>
+    <!-- AI 切换器 -->
     <div class="sb-ai-row">
       <div class="sb-ai-chips" id="sbAiChips"></div>
       <div class="sb-ai-chip-add" id="sbAiManageBtn">+</div>
@@ -369,13 +396,14 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="chat" id="chatArea"></div>
 </div>
 
-    <div class="input-area" id="inputArea">
+    <div class="input-area">
       <button class="in-btn" id="attachBtn"><svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
       <button class="in-btn" id="emojiBtn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg></button>
       <textarea class="in-box" id="inBox" rows="1" placeholder="说点什么..."></textarea>
       <button class="send-btn" id="sendBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
       <button class="stop-btn" id="stopBtn"></button>
     </div>
+<!-- Play界面 -->
 <div class="play-view" id="playView">
   <div class="play-topbar">
     <button class="top-btn" id="playMenuBtn"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
@@ -396,6 +424,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div>
 </div>
 </div>
+<!-- Play角色选择页 -->
 <div class="page" id="playCharPage">
   <div class="page-hd">
     <button class="page-back" id="playCharBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -405,6 +434,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="play-char-list" id="playCharList"></div>
 </div>
 
+<!-- Play角色编辑页 -->
 <div class="page" id="playCharEditPage">
   <div class="page-hd">
     <button class="page-back" id="playCharEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -426,6 +456,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div></div>
 </div>
 
+<!-- Play历史页 -->
 <div class="page" id="playHistPage">
   <div class="page-hd">
     <button class="page-back" id="playHistBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -435,6 +466,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="playHistList"></div>
 </div>
 
+<!-- Play角色记忆列表页 -->
 <div class="page" id="playMemPage">
   <div class="page-hd">
     <button class="page-back" id="playMemBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -444,6 +476,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="playMemList"></div>
 </div>
 
+<!-- Play角色记忆编辑页 -->
 <div class="page" id="playMemEditPage">
   <div class="page-hd">
     <button class="page-back" id="playMemEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -454,6 +487,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div></div>
 </div>
 </div>
+<!-- 游戏页 -->
 <div class="page" id="gamePage">
   <div class="page-hd">
     <button class="page-back" id="gameBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -464,6 +498,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div>
 </div>
 
+<!-- 五子棋页 -->
 <div class="page" id="gomokuPage">
   <div class="page-hd">
     <button class="page-back" id="gomokuBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -478,6 +513,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <button class="send-btn" id="gomokuSendBtn"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
   </div>
 </div>
+<!-- 消息菜单 -->
 <div class="msg-menu" id="msgMenu">
   <div class="msg-menu-item" data-a="copy">复制</div>
   <div class="msg-menu-item" data-a="edit">编辑</div>
@@ -486,6 +522,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="msg-menu-item danger" data-a="del">删除</div>
 </div>
 
+<!-- 身体状态面板 -->
 <div class="body-panel page" id="bodyPage">
   <div class="page-hd">
     <button class="page-back" id="bodyBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -494,6 +531,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div id="bodyContent" style="padding:10px 0"></div>
 </div>
 
+<!-- 设置主页 -->
 <div class="page" id="setPage">
   <div class="page-hd">
     <button class="page-back" id="setBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -533,6 +571,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <div class="set-item" id="doImport"><label>导入数据</label><span class="arrow">›</span></div>
   </div></div>
 </div>
+<!-- 外观主题页 -->
 <div class="page" id="themePage">
   <div class="page-hd">
     <button class="page-back" id="themeBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -540,6 +579,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div>
   <div class="theme-grid" id="themeGrid"></div>
 </div>
+<!-- API卡片列表页 -->
 <div class="page" id="apiListPage">
   <div class="page-hd">
     <button class="page-back" id="apiListBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -549,6 +589,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="apiCards"></div>
 </div>
 
+<!-- API详情编辑页 -->
 <div class="page" id="apiEditPage">
   <div class="page-hd">
     <button class="page-back" id="apiEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -562,6 +603,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div></div>
 </div>
 
+<!-- SP卡片列表页 -->
 <div class="page" id="spListPage">
   <div class="page-hd">
     <button class="page-back" id="spListBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -571,6 +613,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="spCards"></div>
 </div>
 
+<!-- SP详情编辑页 -->
 <div class="page" id="spEditPage">
   <div class="page-hd">
     <button class="page-back" id="spEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -582,6 +625,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div></div>
 </div>
 
+<!-- TTS卡片列表页 -->
 <div class="page" id="ttsListPage">
   <div class="page-hd">
     <button class="page-back" id="ttsListBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -591,6 +635,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="ttsCards"></div>
 </div>
 
+<!-- TTS详情编辑页 -->
 <div class="page" id="ttsEditPage">
   <div class="page-hd">
     <button class="page-back" id="ttsEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -604,6 +649,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <div class="set-item col"><label>音色ID</label><input class="set-input" id="ttsVoice" placeholder="6957f6296c1b4708cec7c5de"></div>
   </div></div>
 </div>
+<!-- 通话记录页 -->
 <div class="page" id="callLogPage">
   <div class="page-hd">
     <button class="page-back" id="callLogBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -612,6 +658,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="callLogList"></div>
 </div>
 
+<!-- 记忆页 -->
 <div class="page" id="memPage">
   <div class="page-hd">
     <button class="page-back" id="memBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -620,6 +667,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div>
   <div class="card-list" id="memList"></div>
 </div>
+<!-- 记忆编辑页 -->
 <div class="page" id="memEditPage">
   <div class="page-hd">
     <button class="page-back" id="memEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -630,6 +678,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div></div>
 </div>
 
+<!-- MCP列表页 -->
 <div class="page" id="mcpListPage">
   <div class="page-hd">
     <button class="page-back" id="mcpListBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -639,6 +688,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="mcpCards"></div>
 </div>
 
+<!-- MCP编辑页 -->
 <div class="page" id="mcpEditPage">
   <div class="page-hd">
     <button class="page-back" id="mcpEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -659,6 +709,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div></div>
 </div>
 
+<!-- 表情包库页 -->
 <div class="page" id="emojiPage">
   <div class="page-hd">
     <button class="page-back" id="emojiBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -673,10 +724,12 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="emoji-lib-grid"></div>
 </div>
 
+<!-- 表情包面板 -->
 <div class="emoji-panel" id="emojiPanel">
   <div class="emoji-panel-hd"><span>表情包</span><button class="emoji-panel-close" id="emojiPanelClose">×</button></div>
   <div class="emoji-grid" id="emojiGrid"></div>
 </div>
+<!-- 通话界面 -->
 <div class="call-page" id="callPage">
   <div class="call-info">
     <div class="call-avatar" id="callAvatar"></div>
@@ -695,6 +748,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div>
 </div>
 
+<!-- AI 管理页 -->
 <div class="page" id="aiListPage">
   <div class="page-hd">
     <button class="page-back" id="aiListBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -704,6 +758,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="card-list" id="aiCards" style="padding:10px 0"></div>
 </div>
 
+<!-- AI 编辑页 -->
 <div class="page" id="aiEditPage">
   <div class="page-hd">
     <button class="page-back" id="aiEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -721,6 +776,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div></div>
 </div>
 
+<!-- 群聊选择面板 -->
 <div class="group-sheet" id="groupSheet">
   <div class="group-sheet-hd">
     <span>选择参与的 AI</span>
@@ -1739,44 +1795,6 @@ function initPlay(){
 }
 initPlay();
 
-// ===== 键盘修复函数 =====
-function handleKeyboard() {
-  const ia = document.getElementById('inputArea');
-  if (!ia) return;
-  const vv = window.visualViewport;
-  if (!vv) return;
-
-  let kbH = Math.max(0, window.innerHeight - vv.height);
-  if (kbH < 20) {
-    kbH = Math.max(0, document.documentElement.clientHeight - vv.height);
-  }
-  if (kbH < 20 && vv.offsetTop > 0) {
-    kbH = vv.offsetTop;
-  }
-
-  if (kbH > 20) {
-    ia.style.bottom = kbH + 'px';
-    document.documentElement.style.setProperty('--keyboard-offset', kbH + 'px');
-  } else {
-    ia.style.bottom = '';
-    document.documentElement.style.setProperty('--keyboard-offset', '0px');
-  }
-
-  if (kbH > 50) scrollEnd();
-}
-
-// ===== visualViewport 监听 =====
-if (window.visualViewport) {
-  let kbTimer;
-  window.visualViewport.addEventListener('resize', function() {
-    clearTimeout(kbTimer);
-    kbTimer = setTimeout(function() {
-      fixVh();
-      handleKeyboard();
-    }, 80);
-  });
-}
-
 async function init(){
   await openDB();
   const allCfg=await dbAll('cfg');
@@ -1812,6 +1830,7 @@ async function init(){
 
   $('menuBtn').onclick=openSB;$('ov').onclick=()=>{closeSB();closeGroupSheet()};
   $('newBtn').onclick=newConv;
+  // 长按新建按钮 → 群聊
   let newBtnT;$('newBtn').ontouchstart=()=>{newBtnT=setTimeout(()=>openGroupSheet(),500)};$('newBtn').ontouchend=()=>clearTimeout(newBtnT);$('newBtn').ontouchmove=()=>clearTimeout(newBtnT);
   topTitle.onclick=editTitle;
   $('callBtn').onclick=startCall;$('callHangup').onclick=endCall;
@@ -1896,36 +1915,6 @@ $('goAiMgr').onclick=()=>{renderAiCards();$('aiListPage').classList.add('open')}
   stopBtn.onclick=()=>{if(abortCtrl)abortCtrl.abort();finish()};
   let st;sendBtn.ontouchstart=()=>{st=setTimeout(()=>{const text=inBox.value.trim();if(!text)return;if(!cur)newConv();cur.msgs.push({role:'user',content:text,ts:Date.now()});cur.ts=Date.now();if(cur.msgs.length===1){cur.title=text.slice(0,18);updTitle();renderList()}inBox.value='';autoH();renderChat();saveConv()},500)};sendBtn.ontouchend=()=>clearTimeout(st);sendBtn.ontouchmove=()=>clearTimeout(st);
 
-  // ===== inBox focus 轮询 =====
-  inBox.addEventListener('focus', function() {
-    let checks = 0;
-    const poll = setInterval(function() {
-      checks++;
-      const vv = window.visualViewport;
-      if (!vv) { if (checks > 10) clearInterval(poll); return; }
-      let kbH = Math.max(0, window.innerHeight - vv.height);
-      if (kbH < 20) {
-        kbH = Math.max(0, document.documentElement.clientHeight - vv.height);
-      }
-      if (kbH < 20 && vv.offsetTop > 0) {
-        kbH = vv.offsetTop;
-      }
-      if (kbH > 100) {
-        const ia = document.getElementById('inputArea');
-        if (ia) { ia.style.bottom = kbH + 'px'; scrollEnd(); }
-        clearInterval(poll);
-      }
-      if (checks > 20) clearInterval(poll);
-    }, 100);
-  });
-
-  // ===== inBox blur =====
-  inBox.addEventListener('blur', function() {
-    const ia = document.getElementById('inputArea');
-    if (ia) ia.style.bottom = '';
-    document.documentElement.style.setProperty('--keyboard-offset', '0px');
-  });
-
   $('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();const r=new FileReader();r.onload=ev=>{img.onload=()=>{const c=document.createElement('canvas');const maxW=1920;const ratio=Math.min(maxW/img.width,maxW/img.height,1);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const url=c.toDataURL('image/jpeg',0.92);dbPut('cfg',{id:'_chatBg',type:'_chatBg',data:url});$('chatBg').style.backgroundImage='url('+url+')'};img.src=ev.target.result};r.readAsDataURL(f);e.target.value=''};
   $('attachBtn').onclick=()=>$('fileIn').click();$('fileIn').onchange=e=>{handleFile(e.target.files[0]);e.target.value=''};
 
@@ -1952,11 +1941,33 @@ setTimeout(async()=>{
 },2000);
 
 init();
-function fixVh(){const h=window.visualViewport?window.visualViewport.height:window.innerHeight;document.documentElement.style.setProperty('--real-vh',h*0.01+'px')}
-function handleKeyboardOld(){handleKeyboard();}
-window.addEventListener('resize',fixVh);
-window.addEventListener('orientationchange',()=>setTimeout(fixVh,500));
-fixVh();setTimeout(fixVh,100);setTimeout(fixVh,500);setTimeout(fixVh,1000);
+
+function updateAppHeight() {
+  const viewport = window.visualViewport;
+
+  if (viewport) {
+    document.documentElement.style.setProperty(
+      '--app-height',
+      `${viewport.height}px`
+    );
+  } else {
+    document.documentElement.style.setProperty(
+      '--app-height',
+      `${window.innerHeight}px`
+    );
+  }
+}
+
+updateAppHeight();
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', updateAppHeight);
+}
+
+window.addEventListener('resize', updateAppHeight);
+window.addEventListener('orientationchange', () => {
+  setTimeout(updateAppHeight, 300);
+});
 </script>
 <script>
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
