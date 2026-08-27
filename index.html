@@ -12,16 +12,23 @@
 <style>
 :root{--bubble-user:rgba(252,228,236,0.72);--bubble-ai:rgba(255,255,255,0.72);--bg:#f7f7f7;--sidebar-bg:rgba(255,240,245,0.55);--glass:rgba(255,255,255,0.4);--glass2:rgba(255,255,255,0.55);--text:#1d1d1f;--text2:#86868b;--border:rgba(0,0,0,0.06);--input-bg:#ffffff;--send-bg:#c8c8c8;--hl:rgba(255,255,255,0.4);--soft:rgba(0,0,0,0.04)}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif SC',Georgia,serif;font-weight:300;background:var(--bg);color:var(--text);height:100vh;height:100dvh;overflow-y:hidden;font-size:14px}
+html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif SC',Georgia,serif;font-weight:300;background:var(--bg);color:var(--text);height:100vh;height:calc(var(--real-vh,1vh)*100);overflow-y:hidden;font-size:14px}
 .app{display:flex;height:100%;width:100%;overflow:hidden}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.2);z-index:99;opacity:0;pointer-events:none;transition:opacity 0.3s}
 .overlay.on{opacity:1;pointer-events:auto}
 .sidebar{position:fixed;left:0;top:0;bottom:0;width:260px;background:rgba(255,240,245,0.55);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);z-index:100;transform:translateX(-100%);transition:transform 0.28s ease;display:flex;flex-direction:column}
 .sidebar.on{transform:translateX(0)}
-.sb-profile{padding:56px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.sb-profile{padding:56px 20px 12px;display:flex;flex-direction:column;align-items:center;gap:8px}
 .sb-avatar{width:68px;height:68px;border-radius:50%;background:#fff;border:1px solid var(--border);overflow:hidden;cursor:pointer}
 .sb-avatar img{width:100%;height:100%;object-fit:cover}
 .sb-name{font-size:17px;font-weight:400;letter-spacing:2px}
+/* AI 切换行 */
+.sb-ai-row{display:flex;align-items:center;justify-content:center;gap:6px;padding:0 20px 4px}
+.sb-ai-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.sb-ai-chip{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:10px;background:rgba(0,0,0,0.04);font-size:12px;cursor:pointer;border:1px solid transparent;transition:all 0.15s}
+.sb-ai-chip.active{background:rgba(0,0,0,0.08);border-color:rgba(0,0,0,0.1)}
+.sb-ai-chip img{width:16px;height:16px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.sb-ai-chip-add{width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,0.04);border:1px dashed rgba(0,0,0,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text2);flex-shrink:0}
 .sb-tabs{padding:12px;display:flex;flex-direction:column;gap:2px}
 .sb-tab{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:9px;cursor:pointer;font-size:14px}
 .sb-tab:active,.sb-tab.on{background:rgba(0,0,0,0.05)}
@@ -32,12 +39,21 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .conv-item:active,.conv-item.active{background:rgba(0,0,0,0.05)}
 .conv-title{font-size:13px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .conv-time{font-size:10px;color:var(--text2);margin-top:2px}
+/* 群聊标记 */
+.conv-group-badge{display:inline-flex;align-items:center;gap:2px;font-size:10px;color:var(--text2);margin-top:2px}
+.conv-group-badge .gav{width:12px;height:12px;border-radius:50%;background:var(--soft);overflow:hidden;border:0.5px solid var(--border)}
+.conv-group-badge .gav img{width:100%;height:100%;object-fit:cover}
 .main{flex:1;display:flex;flex-direction:column;height:100%;width:100%;min-width:0;overflow:hidden;position:relative}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));background:rgba(255,255,255,0.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:0.5px solid rgba(255,255,255,0.3);z-index:10;width:100%}
 .top-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;border-radius:8px;flex-shrink:0}
 .top-btn:active{background:rgba(0,0,0,0.04)}
 .top-btn svg{width:20px;height:20px;stroke:var(--text);fill:none;stroke-width:1.2}
 .top-title{font-size:15px;font-weight:400;flex:1;text-align:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+/* 群聊 topbar AI 头像列 */
+.top-group-avs{display:flex;align-items:center;gap:-4px;margin-right:4px}
+.top-group-avs .gav{width:26px;height:26px;border-radius:50%;background:#fff;border:1.5px solid var(--glass2);overflow:hidden;margin-left:-6px}
+.top-group-avs .gav:first-child{margin-left:0}
+.top-group-avs .gav img{width:100%;height:100%;object-fit:cover}
 .chat-wrap{position:relative;flex:1;overflow:hidden;display:flex;flex-direction:column}
 .chat-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;background-repeat:no-repeat;pointer-events:none}
 .chat{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 12px 8px;-webkit-overflow-scrolling:touch;width:100%;position:relative;z-index:1}
@@ -51,6 +67,8 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .msg.user .bubble{background:var(--bubble-user);border-bottom-right-radius:6px}
 .msg-time{font-size:10px;color:var(--text2);padding:0 2px}
 .msg.user .msg-time{text-align:right}
+/* 群聊 AI 名字标签 */
+.msg-ai-name{font-size:10px;color:var(--text2);padding:0 2px;margin-bottom:1px}
 .file-bubble{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:18px;box-shadow:0 0.5px 1px rgba(0,0,0,0.03)}
 .msg.user .file-bubble{background:var(--bubble-user);border-bottom-right-radius:6px}
 .msg.assistant .file-bubble{background:var(--bubble-ai);border-bottom-left-radius:6px}
@@ -295,6 +313,31 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 .mcp-header-row:last-child{border-bottom:none}
 .mcp-header-row input{flex:1;padding:6px 8px;border-radius:7px;border:0.5px solid rgba(0,0,0,0.08);background:var(--bg);font-size:12px;font-family:inherit;outline:none;color:var(--text);min-width:0}
 .mcp-header-del{width:22px;height:22px;border-radius:50%;border:none;background:rgba(255,59,48,0.1);color:#ff3b30;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;line-height:1}
+/* AI 卡片 */
+.ai-card{background:rgba(255,255,255,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.5)}
+.ai-card:active{background:rgba(255,255,255,0.6)}
+.ai-card .ai-card-av{width:44px;height:44px;border-radius:50%;background:var(--soft);overflow:hidden;flex-shrink:0;border:1px solid var(--border)}
+.ai-card .ai-card-av img{width:100%;height:100%;object-fit:cover}
+.ai-card .ai-card-info{flex:1;min-width:0}
+.ai-card .ai-card-name{font-size:14px;font-weight:400}
+.ai-card .ai-card-sub{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 群聊选择面板 */
+.group-sheet{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.92);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top-left-radius:18px;border-top-right-radius:18px;z-index:300;transform:translateY(100%);transition:transform 0.28s ease;padding:0 16px 32px;box-shadow:0 -4px 20px rgba(0,0,0,0.08)}
+.group-sheet.on{transform:translateY(0)}
+.group-sheet-hd{padding:14px 0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--border)}
+.group-sheet-hd span{font-size:15px;font-weight:400}
+.group-sheet-close{border:none;background:none;font-size:18px;color:var(--text2);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.group-ai-list{padding:12px 0;display:flex;flex-direction:column;gap:8px}
+.group-ai-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;cursor:pointer;border:1.5px solid var(--border);background:var(--glass)}
+.group-ai-item.sel{border-color:var(--text);background:rgba(0,0,0,0.04)}
+.group-ai-item .gav{width:36px;height:36px;border-radius:50%;background:var(--soft);overflow:hidden;flex-shrink:0}
+.group-ai-item .gav img{width:100%;height:100%;object-fit:cover}
+.group-ai-item .gname{font-size:14px}
+.group-ai-item .gcheck{margin-left:auto;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--text2);display:flex;align-items:center;justify-content:center}
+.group-ai-item.sel .gcheck{background:var(--text);border-color:var(--text)}
+.group-ai-item.sel .gcheck::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff}
+.group-start-btn{display:block;width:100%;padding:13px;border-radius:14px;border:none;background:var(--text);color:var(--bg);font-size:14px;font-family:inherit;font-weight:400;cursor:pointer;margin-top:8px;letter-spacing:1px}
+.group-start-btn:active{opacity:0.8}
 </style>
 <script src="eventide.js"></script>
 </head>
@@ -304,7 +347,12 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   <div class="sidebar" id="sb">
     <div class="sb-profile">
       <div class="sb-avatar" id="avatarBtn"></div>
-      <div class="sb-name">我们的小家</div>
+      <div class="sb-name" id="sbAiName">我们的小家</div>
+    </div>
+    <!-- AI 切换器 -->
+    <div class="sb-ai-row">
+      <div class="sb-ai-chips" id="sbAiChips"></div>
+      <div class="sb-ai-chip-add" id="sbAiManageBtn">+</div>
     </div>
     <div class="sb-tabs">
       <div class="sb-tab on" id="tabChat"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>聊天</div>
@@ -473,6 +521,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
     <h2>设置</h2>
   </div>
   <div class="set-sec"><div class="set-card">
+<div class="set-item" id="goAiMgr"><label>AI 管理</label><span class="arrow">›</span></div>
     <div class="set-item" id="goTheme"><label>外观主题</label><span class="arrow">›</span></div>
     <div class="set-item" id="goApi"><label>API 配置</label><span class="arrow">›</span></div>
     <div class="set-item" id="goSp"><label>System Prompt</label><span class="arrow">›</span></div>
@@ -681,6 +730,45 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
   </div>
   </div>
 </div>
+
+<!-- AI 管理页 -->
+<div class="page" id="aiListPage">
+  <div class="page-hd">
+    <button class="page-back" id="aiListBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>AI 管理</h2>
+    <button class="add-btn" id="aiAdd"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  </div>
+  <div class="card-list" id="aiCards" style="padding:10px 0"></div>
+</div>
+
+<!-- AI 编辑页 -->
+<div class="page" id="aiEditPage">
+  <div class="page-hd">
+    <button class="page-back" id="aiEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>编辑 AI</h2>
+  </div>
+  <div class="set-sec"><div class="set-card">
+    <div class="set-item col"><label>名字</label><input class="set-input" id="aiName" placeholder="以礼"></div>
+    <div class="set-item" id="aiAvBtn"><label>头像</label><span class="arrow">›</span></div>
+    <div class="set-item col"><label>使用的 API</label><select class="set-input" id="aiApiSel"></select></div>
+    <div class="set-item col"><label>使用的 SP（可多选，长按取消）</label><div id="aiSpSel" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>
+    <div class="set-item col"><label>使用的 TTS</label><select class="set-input" id="aiTtsSel"></select></div>
+  </div></div>
+  <div class="set-sec"><div class="set-card">
+    <div class="set-item" id="aiDelBtn" style="color:#ff3b30;justify-content:center;cursor:pointer"><label style="color:#ff3b30">删除此 AI</label></div>
+  </div></div>
+</div>
+
+<!-- 群聊选择面板 -->
+<div class="group-sheet" id="groupSheet">
+  <div class="group-sheet-hd">
+    <span>选择参与的 AI</span>
+    <button class="group-sheet-close" id="groupSheetClose">×</button>
+  </div>
+  <div class="group-ai-list" id="groupAiList"></div>
+  <button class="group-start-btn" id="groupStartBtn">开始群聊</button>
+</div>
+
 <input type="file" id="bgFileIn" accept="image/*" style="display:none">
 <input type="file" id="fileIn" accept="*/*" style="display:none">
 <input type="file" id="importFile" accept=".json" style="display:none">
@@ -690,6 +778,7 @@ html,body{width:100%;max-width:100vw;overflow-x:hidden;font-family:'Noto Serif S
 <input type="file" id="emojiFileIn" accept="image/*" style="display:none">
 <input type="file" id="playCharAvFile" accept="image/*" style="display:none">
 <input type="file" id="playBgFile" accept="image/*" style="display:none">
+<input type="file" id="aiAvFile" accept="image/*" style="display:none">
 <script>
 // ===== 数据库 =====
 let db;
@@ -706,12 +795,160 @@ let activeApi=null,activeSps=[],activeTts=null;
 let editingApiId=null,editingSpId=null,editingTtsId=null;
 let ttsAutoOn=false,ttsQuoteOn=false;
 let currentAudio=null,currentVoiceEl=null;
+
+// ===== 多AI状态 =====
+let ais=[];           // [{id,name,avatar,apiId,spIds:[],ttsId}]
+let curAiId=null;     // 当前选中的AI（单聊时用）
+let editingAiId=null;
+let aiMemories={};    // {aiId: [{id,content,ts}]}
+let groupSelIds=[];   // 群聊选择面板临时选中
+
 if(typeof Eventide==='undefined')window.Eventide={touchCounterpart(){},tickAndRender(){return''},applyDelta(){},settleRelease(){},getCurrentState(){return{_cycle:{label:''},heat:{label:'',level:'',value:0,description:''},pressure:{label:'',level:'',value:0,description:''},control:{label:'',level:'',value:0,description:''},sensitivity:{label:'',level:'',value:0,description:''},reserve:{label:'',level:'',value:0,description:''},possessiveness:{label:'',level:'',value:0,description:''},fatigue:{label:'',level:'',value:0,description:''}}}};
 
 const $=id=>document.getElementById(id);
 const chatArea=$('chatArea'),inBox=$('inBox'),topTitle=$('topTitle');
 const sendBtn=$('sendBtn'),stopBtn=$('stopBtn'),convList=$('convList');
 
+// ===== 多AI：数据存取 =====
+async function loadAis(){
+  const d=await dbGet('cfg','_ais');
+  if(d&&d.data)ais=d.data;
+  const act=await dbGet('cfg','_curAi');
+  if(act)curAiId=act.id||null;
+}
+function saveAis(){dbPut('cfg',{id:'_ais',type:'_ais',data:ais})}
+function saveCurAi(){dbPut('cfg',{id:'_curAi',type:'_curAi',id:curAiId})}
+
+async function loadAiMemories(aiId){
+  if(aiMemories[aiId])return;
+  const d=await dbGet('cfg','_ai_mem_'+aiId);
+  aiMemories[aiId]=d&&d.data?d.data:[];
+}
+function saveAiMemories(aiId){
+  if(!aiMemories[aiId])return;
+  dbPut('cfg',{id:'_ai_mem_'+aiId,type:'_ai_mem',data:aiMemories[aiId]});
+}
+function getAiMemories(aiId){return aiMemories[aiId]||[]}
+
+// 迁移旧数据：把现有 activeApi/activeSps/activeTts 迁移成第一个 AI
+async function migrateToMultiAi(){
+  if(ais.length>0)return; // 已经迁移过
+  // 从旧 _active 读取
+  const act=await dbGet('cfg','_active');
+  const defaultAi={
+    id:'ai_default',
+    name:'以礼',
+    avatar:localStorage.getItem('avAi')||'',
+    apiId:act?.activeApi||null,
+    spIds:act?.activeSps||[],
+    ttsId:act?.activeTts||null
+  };
+  ais=[defaultAi];
+  curAiId='ai_default';
+  // 迁移旧记忆
+  const oldMem=await dbGet('cfg','_memories');
+  if(oldMem&&oldMem.data){
+    aiMemories['ai_default']=oldMem.data;
+    saveAiMemories('ai_default');
+  }
+  saveAis();saveCurAi();
+}
+
+function getCurAi(){return ais.find(a=>a.id===curAiId)||ais[0]||null}
+function getAiById(id){return ais.find(a=>a.id===id)||null}
+
+// 获取某个AI的API/SP/TTS
+function getAiApi(ai){
+  if(!ai)return null;
+  return apis.find(a=>a.id===ai.apiId)||null;
+}
+function getAiSpText(ai){
+  if(!ai||!ai.spIds)return '';
+  return sps.filter(s=>ai.spIds.includes(s.id)).map(s=>s.content).join('\n\n');
+}
+function getAiTts(ai){
+  if(!ai)return null;
+  return ttss.find(t=>t.id===ai.ttsId)||null;
+}
+
+// ===== 侧边栏AI切换器 =====
+function renderSbAiChips(){
+  const chips=$('sbAiChips');
+  chips.innerHTML=ais.map(a=>{
+    const avHtml=a.avatar?'<img src="'+a.avatar+'">':'';
+    return`<div class="sb-ai-chip${a.id===curAiId?' active':''}" data-id="${a.id}">${avHtml}${esc(a.name||'AI')}</div>`;
+  }).join('');
+  chips.querySelectorAll('.sb-ai-chip').forEach(el=>{
+    el.onclick=()=>{
+      curAiId=el.dataset.id;saveCurAi();
+      renderSbAiChips();updSbName();
+      // 切换到该AI的最近对话
+      const aiConvs=convs.filter(c=>c.aiId===curAiId&&c.type!=='group');
+      cur=aiConvs[0]||null;
+      if(!cur)newConv();
+      else{renderChat();updTitle();renderList();}
+    };
+    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
+      // 长按进AI管理页
+      renderAiCards();$('aiListPage').classList.add('open');
+    },600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
+  });
+}
+function updSbName(){
+  const ai=getCurAi();
+  $('sbAiName').textContent=ai?ai.name:'我们的小家';
+  const av=ai?.avatar||'';
+  $('avatarBtn').innerHTML=av?'<img src="'+av+'">':'';
+}
+
+// ===== 渲染AI管理卡片 =====
+function renderAiCards(){
+  const el=$('aiCards');
+  el.innerHTML=ais.map(a=>{
+    const api=getAiApi(a);
+    const sub=api?api.name:'未配置API';
+    const avHtml=a.avatar?'<img src="'+a.avatar+'">':'';
+    return`<div class="ai-card" data-id="${a.id}"><div class="ai-card-av">${avHtml}</div><div class="ai-card-info"><div class="ai-card-name">${esc(a.name||'未命名')}${a.id===curAiId?' ♡':''}</div><div class="ai-card-sub">${esc(sub)}</div></div><span class="arrow">›</span></div>`;
+  }).join('');
+  el.querySelectorAll('.ai-card').forEach(card=>{
+    card.onclick=()=>openAiEdit(card.dataset.id);
+    let t;card.ontouchstart=()=>{t=setTimeout(()=>{
+      curAiId=card.dataset.id;saveCurAi();renderSbAiChips();updSbName();renderAiCards();
+    },600)};card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t);
+  });
+}
+
+function openAiEdit(id){
+  editingAiId=id;
+  const a=ais.find(x=>x.id===id)||{};
+  $('aiName').value=a.name||'';
+  // 填充API下拉
+  $('aiApiSel').innerHTML='<option value="">-- 不指定 --</option>'+apis.map(x=>`<option value="${x.id}"${x.id===a.apiId?' selected':''}>${esc(x.name||'未命名')}</option>`).join('');
+  // 填充SP多选
+  const spSel=$('aiSpSel');
+  spSel.innerHTML=sps.map(s=>{
+    const on=(a.spIds||[]).includes(s.id);
+    return`<div class="sb-ai-chip${on?' active':''}" data-id="${s.id}" style="cursor:pointer">${esc(s.name||'未命名')}</div>`;
+  }).join('');
+  spSel.querySelectorAll('.sb-ai-chip').forEach(el=>{
+    el.onclick=()=>el.classList.toggle('active');
+  });
+  // 填充TTS下拉
+  $('aiTtsSel').innerHTML='<option value="">-- 不指定 --</option>'+ttss.map(x=>`<option value="${x.id}"${x.id===a.ttsId?' selected':''}>${esc(x.name||'未命名')}</option>`).join('');
+  $('aiEditPage').classList.add('open');
+}
+
+function saveAiEdit(){
+  let a=ais.find(x=>x.id===editingAiId);
+  if(!a){a={id:editingAiId,avatar:''};ais.push(a)}
+  a.name=$('aiName').value.trim()||'未命名';
+  a.apiId=$('aiApiSel').value||null;
+  a.spIds=Array.from($('aiSpSel').querySelectorAll('.sb-ai-chip.active')).map(el=>el.dataset.id);
+  a.ttsId=$('aiTtsSel').value||null;
+  saveAis();renderAiCards();renderSbAiChips();updSbName();
+}
+
+// ===== 记忆（按AI隔离）=====
 function renderBodyPanel(){
   const data=Eventide.getCurrentState();
   const cycle=data._cycle;
@@ -728,17 +965,10 @@ function renderBodyPanel(){
 
 function doRelease(){
   if(!confirm('确定释放？'))return;
-  const rip=document.createElement('div');
-  rip.className='release-ripple';
-  document.body.appendChild(rip);
-  setTimeout(()=>rip.remove(),1300);
-  $('bodyPage').classList.add('beating');
-  setTimeout(()=>$('bodyPage').classList.remove('beating'),900);
+  const rip=document.createElement('div');rip.className='release-ripple';document.body.appendChild(rip);setTimeout(()=>rip.remove(),1300);
+  $('bodyPage').classList.add('beating');setTimeout(()=>$('bodyPage').classList.remove('beating'),900);
   document.querySelectorAll('.body-bar-fill').forEach(el=>el.classList.add('dropping'));
-  setTimeout(()=>{
-    Eventide.settleRelease();
-    renderBodyPanel();
-  },100);
+  setTimeout(()=>{Eventide.settleRelease();renderBodyPanel();},100);
 }
 
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
@@ -748,7 +978,6 @@ function fmtDate(ts){const d=new Date(ts),n=new Date();if(d.toDateString()===n.t
 function fmtSize(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(1)+'KB';return(b/1048576).toFixed(1)+'MB'}
 function fmtDur(s){const m=Math.floor(s/60);const sec=Math.floor(s%60);return m+':'+String(sec).padStart(2,'0')}
 
-// ===== Markdown =====
 function md(text){
   let h=esc(text);
   h=h.replace(/```(\w*)\n([\s\S]*?)```/g,'<pre><code>$2</code></pre>');
@@ -761,7 +990,6 @@ function md(text){
   return '<p>'+h+'</p>';
 }
 
-// ===== Toggle组件 =====
 function initToggle(el,val,cb){
   if(val)el.classList.add('on');else el.classList.remove('on');
   el.onclick=()=>{el.classList.toggle('on');cb(el.classList.contains('on'))};
@@ -769,31 +997,53 @@ function initToggle(el,val,cb){
 
 // ===== 对话管理 =====
 function newConv(){
-  const c={id:uid(),title:'新对话',msgs:[],ts:Date.now()};
+  const ai=getCurAi();
+  const c={id:uid(),title:'新对话',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'};
   convs.unshift(c);cur=c;
   dbPut('convs',c);renderList();renderChat();updTitle();closeSB();
 }
+
+function newGroupConv(aiIds){
+  const names=aiIds.map(id=>getAiById(id)?.name||'AI').join(' & ');
+  const c={id:uid(),title:names,msgs:[],ts:Date.now(),type:'group',aiIds};
+  convs.unshift(c);cur=c;
+  dbPut('convs',c);renderList();renderChat();updTitle();closeSB();
+}
+
 function switchConv(id){cur=convs.find(c=>c.id===id);renderChat();updTitle();renderList();closeSB()}
 function delConv(id){
   convs=convs.filter(c=>c.id!==id);dbDel('convs',id);
   if(cur&&cur.id===id){cur=convs[0]||null;if(!cur)newConv();else{renderChat();updTitle()}}
   renderList();
 }
-function updTitle(){topTitle.textContent=cur?cur.title:'新对话'}
-function saveConv(){
-  if(cur){
-    dbPut('convs',cur);
-    try{localStorage.setItem('lastConvBackup',JSON.stringify({conv:cur,ts:Date.now()}))}catch(e){}
+function updTitle(){
+  if(!cur){topTitle.textContent='新对话';return}
+  topTitle.textContent=cur.title;
+  if(cur.type==='group'&&cur.aiIds?.length){
+    const avHtml=cur.aiIds.map(id=>{
+      const a=getAiById(id);
+      return`<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.06);border:1px solid rgba(255,255,255,0.4);overflow:hidden;flex-shrink:0;vertical-align:middle">${a?.avatar?'<img src="'+a.avatar+'" style="width:100%;height:100%;object-fit:cover">':''}</span>`;
+    }).join('');
+    topTitle.innerHTML=`<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${avHtml}<span>${esc(cur.title)}</span></span>`;
   }
 }
+function saveConv(){if(cur)dbPut('convs',cur)}
 function editTitle(){
   const t=prompt('对话标题',cur?.title||'');
   if(t!==null&&t.trim()){cur.title=t.trim();updTitle();renderList();saveConv()}
 }
 
-// ===== 渲染对话列表 =====
+// ===== 渲染对话列表（只显示当前AI的单聊 + 所有群聊）=====
 function renderList(){
-  convList.innerHTML=convs.map(c=>`<div class="conv-item${c.id===cur?.id?' active':''}" data-id="${c.id}"><div class="conv-title">${esc(c.title)}</div><div class="conv-time">${fmtDate(c.ts)}</div></div>`).join('');
+  const visible=convs.filter(c=>c.type==='group'||c.aiId===curAiId);
+  convList.innerHTML=visible.map(c=>{
+    let badge='';
+    if(c.type==='group'&&c.aiIds?.length){
+      const gavs=c.aiIds.map(id=>{const a=getAiById(id);return`<div class="gav">${a?.avatar?'<img src="'+a.avatar+'">':''}</div>`}).join('');
+      badge=`<div class="conv-group-badge">${gavs} 群聊</div>`;
+    }
+    return`<div class="conv-item${c.id===cur?.id?' active':''}" data-id="${c.id}"><div class="conv-title">${esc(c.title)}</div>${badge}<div class="conv-time">${fmtDate(c.ts)}</div></div>`;
+  }).join('');
   convList.querySelectorAll('.conv-item').forEach(el=>{
     el.onclick=()=>switchConv(el.dataset.id);
     let t;el.ontouchstart=()=>{t=setTimeout(()=>{if(confirm('删除该对话？'))delConv(el.dataset.id)},600)};
@@ -803,130 +1053,97 @@ function renderList(){
 
 // ===== 渲染聊天 =====
 function renderChat(){
+  if(!cur){chatArea.innerHTML='<div class="empty">选择或新建一个对话</div>';return}
   chatArea.innerHTML=cur.msgs.map((m,i)=>renderMsg(m,i)).join('');
   scrollEnd();
 }
+
+function getAvForMsg(m){
+  // 群聊中的 assistant 消息有 aiId
+  if(m.role==='user')return avUser;
+  if(cur?.type==='group'&&m.aiId){
+    const a=getAiById(m.aiId);
+    return a?.avatar||avAi;
+  }
+  return avAi;
+}
+
 function renderMsg(m,i){
   if(m.gameType==='gomoku'){
-    const avSrc=m.role==='user'?avUser:avAi;
+    const avSrc=getAvForMsg(m);
     const avHtml=avSrc?'<img src="'+avSrc+'">':'';
     let body=m.content?`<div class="bubble">${md(m.content)}</div>`:'';
     body+=renderGomoku();
     return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml}</div><div class="msg-body" style="max-width:95%">${body}<div class="msg-time">${m.ts?fmtTime(m.ts):''}</div></div></div>`;
   }
-if(m.type==='sticker'){
-    const avSrc2=m.role==='user'?avUser:avAi;
-    const avHtml2=avSrc2?'<img src="'+avSrc2+'">':'';
-    return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml2}</div>
+  if(m.type==='sticker'){
+    const avSrc=getAvForMsg(m);
+    const avHtml=avSrc?'<img src="'+avSrc+'">':'';
+    return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml}</div>
 <div class="msg-body"><div class="sticker-bubble"><img src="${m.stickerUrl}" onerror="this.outerHTML='<div style=padding:8px;font-size:12px;color:#999>图片加载失败</div>'"></div><div class="msg-time">${m.ts?fmtTime(m.ts):''}</div></div></div>`;
   }
   const u=m.role==='user';
   let body='';
+  // 群聊显示AI名字
+  if(!u&&cur?.type==='group'&&m.aiId){
+    const a=getAiById(m.aiId);
+    if(a)    body+=`<div class="msg-ai-name">${esc(a.name)}</div>`;
+  }
   if(m.thinking&&$('sThink').classList.contains('on')){
     body+=`<div class="thinking-wrap"><div class="thinking-tog" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('show')"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>思考</div><div class="thinking-box">${esc(m.thinking)}</div></div>`;
   }
   if(m.img)body+=`<div class="bubble"><img src="${m.img}"></div>`;
   if(m.file)body+=`<div class="file-bubble"><div class="file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="file-info"><div class="file-name">${esc(m.file.name)}</div><div class="file-size">${fmtSize(m.file.size)}</div></div></div>`;
   if(m.content){let ct=m.content;if(!ttsAutoOn)ct=ct.replace(/「/g,'').replace(/」/g,'');body+=`<div class="bubble">${u?esc(ct):md(ct)}</div>`}
-if(m._toolCalls&&m._toolCalls.length){
-  body+=m._toolCalls.map(tc=>renderToolCallCard(tc)).join('');
-}
-if(m.voiceUrl)body+=renderVoice(m.voiceUrl,m.voiceDur||0,i);
+  if(m._toolCalls&&m._toolCalls.length){body+=m._toolCalls.map(tc=>renderToolCallCard(tc)).join('')}
+  if(m.voiceUrl)body+=renderVoice(m.voiceUrl,m.voiceDur||0,i);
   if(m.memorySaved&&m.memorySaved.length>0)body+=`<div class="mem-tag"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>已记住 ${m.memorySaved.length} 条</div>`;
-    const avSrc=m.role==='user'?avUser:avAi;
+  const avSrc=getAvForMsg(m);
   const avHtml=avSrc?'<img src="'+avSrc+'">':'';
   return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml}</div>
 <div class="msg-body">${body}<div class="msg-time">${m.ts?fmtTime(m.ts):''}</div></div></div>`;
 }
+
 function renderVoice(url,dur,idx){
   const bars=Array.from({length:12},()=>`<span style="height:${4+Math.random()*10}px"></span>`).join('');
   return `<div class="voice" data-idx="${idx}" onclick="playVoice(this,'${url}')"><button class="voice-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></button><div class="voice-bars">${bars}</div><div class="voice-dur">${fmtDur(dur)}</div></div>`;
 }
-
 function scrollEnd(){requestAnimationFrame(()=>chatArea.scrollTop=chatArea.scrollHeight)}
 
 function isMoss(t){const u=t.url||'';return u.includes('mosi.cn')||u.includes('/moss/')}
-function buildTtsUrl(t){
-  let u=(t.url||'').replace(/\/+$/,'');
-  if(isMoss(t)&&!u.includes('/audio/speech'))u+='/audio/speech';
-  return u;
-}
+function buildTtsUrl(t){let u=(t.url||'').replace(/\/+$/,'');if(isMoss(t)&&!u.includes('/audio/speech'))u+='/audio/speech';return u;}
 function buildTtsBody(t,text){
-  if(isMoss(t))return {model:t.model||'moss-tts',input:text,voice_id:t.voice||'',response_format:'mp3',delivery_method:'audio'};
-  return {model:t.model||'Speech 02 Turbo',input:text,voice:t.voice||''};
+  if(isMoss(t))return{model:t.model||'moss-tts',input:text,voice_id:t.voice||'',response_format:'mp3',delivery_method:'audio'};
+  return{model:t.model||'Speech 02 Turbo',input:text,voice:t.voice||''};
 }
-
 function getTtsText(content){
-  if(!content)return '';
-  if(ttsQuoteOn){
-    const matches=content.match(/「([^」]+)」/g);
-    if(!matches||matches.length===0)return '';
-    return matches.map(m=>m.slice(1,-1)).join('，');
-  }
+  if(!content)return'';
+  if(ttsQuoteOn){const matches=content.match(/「([^」]+)」/g);if(!matches||matches.length===0)return'';return matches.map(m=>m.slice(1,-1)).join('，')}
   return content.replace(/[*#`>_\[\]()]/g,'').replace(/\n+/g,'，').trim();
 }
 
-async function generateTTS(text,msgIdx){
-  const tts=ttss.find(t=>t.id===activeTts);
-  if(!tts||!tts.url||!tts.key){return null}
-  if(!text||text.trim().length===0)return null;
-
-  try{
-    const url=tts.url.replace(/\/+$/,'')+'/audio/speech';
-    const res=await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},
-      body:JSON.stringify({
-        model:tts.model||'Speech 02 Turbo',
-        input:text,
-        voice:tts.voice||'6957f6296c1b4708cec7c5de'
-      })
-    });
-    if(!res.ok)return null;
-    const blob=await res.blob();
-    const audioUrl=URL.createObjectURL(blob);
-    const dur=await getAudioDur(audioUrl);
-    if(cur&&cur.msgs[msgIdx]){
-      cur.msgs[msgIdx].voiceUrl=audioUrl;
-      cur.msgs[msgIdx].voiceDur=dur;
-      saveConv();
-    }
-    return {url:audioUrl,dur};
-  }catch(e){return null}
+async function getAudioDur(url){
+  return new Promise(r=>{const a=new Audio();a.src=url;a.onloadedmetadata=()=>r(a.duration||0);a.onerror=()=>r(0)});
 }
 
-function getAudioDur(url){
-  return new Promise(r=>{
-    const a=new Audio();
-    a.src=url;
-    a.onloadedmetadata=()=>r(a.duration||0);
-    a.onerror=()=>r(0);
-  });
-}
-
-async function autoTTS(msgIdx){
-  if(!activeTts)return;
+// TTS：传入AI对象
+async function autoTTSForAi(msgIdx,ai){
+  const tts=getAiTts(ai);
+  if(!tts||!tts.url||!tts.key)return;
   const m=cur?.msgs[msgIdx];
   if(!m||m.role!=='assistant')return;
   const matches=m.content?.match(/「([^」]+)」/g);
   if(!matches||matches.length===0)return;
   const text=matches.map(x=>x.slice(1,-1)).join('，');
   if(!text)return;
-  const tts=ttss.find(t=>t.id===activeTts);
-  if(!tts||!tts.url||!tts.key){console.log('TTS配置缺失');return}
   try{
     const url=buildTtsUrl(tts);
-    console.log('TTS请求:',url,text);
-    const res=await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},
-      body:JSON.stringify(buildTtsBody(tts,text))
-    });
-    if(!res.ok){const err=await res.text();console.log('TTS失败:',res.status,err);return}
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},body:JSON.stringify(buildTtsBody(tts,text))});
+    if(!res.ok)return;
     const blob=await res.blob();
     const audioUrl=URL.createObjectURL(blob);
     const dur=await getAudioDur(audioUrl);
-        cur.msgs[msgIdx].voiceUrl=audioUrl;
+    cur.msgs[msgIdx].voiceUrl=audioUrl;
     cur.msgs[msgIdx].voiceDur=dur;
     renderChat();saveConv();
   }catch(e){console.log('TTS异常:',e)}
@@ -935,43 +1152,34 @@ async function autoTTS(msgIdx){
 async function manualTTS(msgIdx){
   const m=cur?.msgs[msgIdx];
   if(!m||m.role!=='assistant')return;
-  if(!activeTts){alert('请先在设置→语音TTS中添加并选择一个TTS配置');return}
+  // 群聊中用消息的aiId找TTS，单聊用当前AI
+  const aiId=cur.type==='group'?m.aiId:curAiId;
+  const ai=getAiById(aiId)||getCurAi();
+  const tts=getAiTts(ai);
+  if(!tts||!tts.url||!tts.key){alert('请先在AI设置中配置TTS');return}
   const text=getTtsText(m.content);
   if(!text){alert('没有可朗读的文字');return}
-  const tts=ttss.find(t=>t.id===activeTts);
-  if(!tts||!tts.url||!tts.key)return;
   try{
-        const url=buildTtsUrl(tts);
-    const res=await fetch(url,{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},
-      body:JSON.stringify(buildTtsBody(tts,text))
-    });
-        if(!res.ok){const e=await res.text();alert('语音生成失败 '+res.status+'\n'+e.slice(0,300));return}
+    const res=await fetch(buildTtsUrl(tts),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},body:JSON.stringify(buildTtsBody(tts,text))});
+    if(!res.ok){const e=await res.text();alert('语音生成失败 '+res.status+'\n'+e.slice(0,300));return}
     const blob=await res.blob();
     const audioUrl=URL.createObjectURL(blob);
     const dur=await getAudioDur(audioUrl);
-            cur.msgs[msgIdx].voiceUrl=audioUrl;
+    cur.msgs[msgIdx].voiceUrl=audioUrl;
     cur.msgs[msgIdx].voiceDur=dur;
     renderChat();saveConv();
   }catch(e){alert('语音生成异常：'+e.message)}
 }
 
 function playVoice(el,url){
-  if(currentVoiceEl===el&&currentAudio&&!currentAudio.paused){
-    currentAudio.pause();
-    el.classList.remove('playing');
-    return;
-  }
+  if(currentVoiceEl===el&&currentAudio&&!currentAudio.paused){currentAudio.pause();el.classList.remove('playing');return}
   if(currentAudio){currentAudio.pause();if(currentVoiceEl)currentVoiceEl.classList.remove('playing')}
-  const a=new Audio(url);
-  currentAudio=a;currentVoiceEl=el;
-  el.classList.add('playing');
-  a.play();
-  a.onended=()=>{el.classList.remove('playing');currentAudio=null;currentVoiceEl=null};
+  const a=new Audio(url);currentAudio=a;currentVoiceEl=el;el.classList.add('playing');
+  a.play();a.onended=()=>{el.classList.remove('playing');currentAudio=null;currentVoiceEl=null};
   a.onerror=()=>{el.classList.remove('playing');currentAudio=null;currentVoiceEl=null};
 }
 
+// ===== 发送消息 =====
 async function send(text,img,file){
   if(!cur)newConv();
   if(!text.trim()&&!img&&!file)return;
@@ -983,78 +1191,93 @@ async function send(text,img,file){
       const tip=document.createElement('div');tip.className='msg assistant';tip.innerHTML='<div class="msg-body"><div class="bubble" style="font-size:12px;color:var(--text2)">正在读取网页...</div></div>';
       chatArea.appendChild(tip);scrollEnd();
       const res=await fetch('https://r.jina.ai/'+url,{headers:{'Accept':'text/plain'}});
-      if(res.ok){
-        let webText=await res.text();
-        if(webText.length>3000)webText=webText.slice(0,3000)+'...(内容过长已截断)';
-        finalText+='\n\n[网页内容]\n'+webText;
-      }
+      if(res.ok){let webText=await res.text();if(webText.length>3000)webText=webText.slice(0,3000)+'...(内容过长已截断)';finalText+='\n\n[网页内容]\n'+webText}
       tip.remove();
-    }catch(e){console.log('网页抓取失败:',e)}
+    }catch(e){}
   }
   const m={role:'user',content:finalText,img:img||null,file:file||null,ts:Date.now()};
   cur.msgs.push(m);cur.ts=Date.now();
   if(cur.msgs.length===1){cur.title=text.trim().slice(0,18)||file?.name||'图片对话';updTitle();renderList()}
   renderChat();saveConv();
-  const toolDefs=getAllMcpToolDefs();
-if(toolDefs.length>0)await callAPIWithTools(toolDefs);
-else await callAPIStream();
+
+  if(cur.type==='group'){
+    await callGroupAPI();
+  }else{
+    const toolDefs=getAllMcpToolDefs();
+    if(toolDefs.length>0)await callAPIWithTools(toolDefs);
+    else await callAPIStream();
+  }
 }
 
-function sendOnly(){
-  const text=inBox.value.trim();if(!text)return;
-  if(!cur)newConv();
-  cur.msgs.push({role:'user',content:text,ts:Date.now()});
-  cur.ts=Date.now();
-  if(cur.msgs.length===1){cur.title=text.slice(0,18);updTitle();renderList()}
-  inBox.value='';autoH();renderChat();saveConv();
-}
-async function callAPIStream(){
-  const api=apis.find(a=>a.id===activeApi);
-  if(!api||!api.url||!api.key){addAIMsg('⚠️ 请先在设置→API配置中添加并选择一个API~');return}
+// ===== 群聊：串行调用 =====
+async function callGroupAPI(){
+  const aiIds=cur.aiIds||[];
+  if(!aiIds.length)return;
+  generating=true;sendBtn.style.display='none';stopBtn.classList.add('show');
+  abortCtrl=new AbortController();
 
-const spTexts=sps.filter(s=>activeSps.includes(s.id)).map(s=>s.content).join('\n\n');
+  for(const aiId of aiIds){
+    if(abortCtrl.signal.aborted)break;
+    const ai=getAiById(aiId);
+    if(!ai)continue;
+    await loadAiMemories(aiId);
+    await callAPIStreamForAi(ai);
+  }
+  finish();
+}
+
+// ===== 单AI流式调用（内部）=====
+async function callAPIStreamForAi(ai,isGroupMode=false){
+  const api=getAiApi(ai);
+  if(!api||!api.url||!api.key){
+    cur.msgs.push({role:'assistant',content:'⚠️ AI「'+ai.name+'」未配置API',aiId:ai.id,ts:Date.now()});
+    renderChat();saveConv();return;
+  }
+  const spText=getAiSpText(ai);
+  const memText=getAiMemoryText(ai.id);
   Eventide.touchCounterpart();
   const eventideCard=Eventide.tickAndRender(Date.now())||'';
-  generating=true;sendBtn.style.display='none';stopBtn.classList.add('show');
+  if(!isGroupMode){generating=true;sendBtn.style.display='none';stopBtn.classList.add('show')}
 
   const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
-    const msgs=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{
-    if(m.img&&m.role==='user'){
-      const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];
-      if(m.content)ct.push({type:'text',text:m.content});
-      return{role:m.role,content:ct};
-    }
+  // 构建消息历史：群聊时把AI名字加进去让AI知道谁说了啥
+  const msgs=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{
+    if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}
+    if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};
     let txt=m.content||'';
     if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;
+    // 群聊中标注其他AI的名字
+    if(cur.type==='group'&&m.role==='assistant'&&m.aiId&&m.aiId!==ai.id){
+      const sender=getAiById(m.aiId);
+      txt=`[${sender?.name||'AI'}说]: ${txt}`;
+    }
     return{role:m.role,content:txt};
   });
 
   let headers={'Content-Type':'application/json'};
   let body,fetchUrl=api.url;
-    if(isOAI){
+  const sysText=(getBuiltinPrompt()+memText+(spText||'')+eventideCard).trim();
+
+  if(isOAI){
     headers['Authorization']='Bearer '+api.key;
-const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')+eventideCard).trim();
     const mm=sysText?[{role:'system',content:sysText},...msgs]:msgs;
     body=JSON.stringify({model:api.model||'gpt-4',messages:mm,stream:true,max_tokens:4096});
   }else{
-    headers['x-api-key']=api.key;
-    headers['anthropic-version']='2023-06-01';
-    headers['anthropic-dangerous-direct-browser-access']='true';
-        const b={model:api.model||'claude-sonnet-4-20250514',max_tokens:4096,stream:true,messages:msgs};
-const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')+eventideCard).trim();
+    headers['x-api-key']=api.key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';
+    const b={model:api.model||'claude-sonnet-4-20250514',max_tokens:4096,stream:true,messages:msgs};
     if(sysText)b.system=sysText;
     body=JSON.stringify(b);
   }
 
-  abortCtrl=new AbortController();
-  const ai={role:'assistant',content:'',thinking:'',ts:Date.now()};
-  cur.msgs.push(ai);
+  if(!abortCtrl)abortCtrl=new AbortController();
+  const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),aiId:ai.id,_toolCalls:[]};
+  cur.msgs.push(aiMsg);
   const aiIdx=cur.msgs.length-1;
   renderChat();
 
   try{
     const res=await fetch(fetchUrl,{method:'POST',headers,body,signal:abortCtrl.signal});
-    if(!res.ok){ai.content='⚠️ 错误 '+res.status+': '+(await res.text()).slice(0,150);renderChat();finish();return}
+    if(!res.ok){aiMsg.content='⚠️ 错误 '+res.status+': '+(await res.text()).slice(0,150);renderChat();if(!isGroupMode)finish();return}
     const reader=res.body.getReader();const dec=new TextDecoder();let buf='';
     while(true){
       const{done,value}=await reader.read();if(done)break;
@@ -1065,26 +1288,29 @@ const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')+eventideCard).tr
         const d=ln.slice(6).trim();if(d==='[DONE]')break;
         try{
           const j=JSON.parse(d);
-          if(isOAI){const dt=j.choices?.[0]?.delta;if(dt?.content)ai.content+=dt.content}
-          else{if(j.type==='content_block_delta'){if(j.delta?.type==='thinking_delta')ai.thinking+=j.delta.thinking;else if(j.delta?.type==='text_delta')ai.content+=j.delta.text}}
-          updLast(ai);
+          if(isOAI){const dt=j.choices?.[0]?.delta;if(dt?.content)aiMsg.content+=dt.content}
+          else{if(j.type==='content_block_delta'){if(j.delta?.type==='thinking_delta')aiMsg.thinking+=j.delta.thinking;else if(j.delta?.type==='text_delta')aiMsg.content+=j.delta.text}}
+          updLast(aiMsg);
         }catch(e){}
       }
     }
-  }catch(e){if(e.name!=='AbortError')ai.content+=' ⚠️ '+e.message}
-  updLast(ai);finish();saveConv();
-    const wasSplit=cur.msgs[aiIdx]?.content?.includes('|||');
-  await processAIMultiBubble(aiIdx);
-  if(!wasSplit){
-    processAIStickers(aiIdx);
-    processAIBody(aiIdx);
-    processAIMemories(aiIdx);
-  }
+  }catch(e){if(e.name!=='AbortError')aiMsg.content+=' ⚠️ '+e.message}
 
-  autoTTS(aiIdx);
-  processAICall(aiIdx);
-processAIGame(aiIdx);
+  updLast(aiMsg);saveConv();
+  const wasSplit=cur.msgs[aiIdx]?.content?.includes('|||');
+  await processAIMultiBubble(aiIdx,ai);
+  if(!wasSplit){processAIStickers(aiIdx);processAIBody(aiIdx);processAIMemories(aiIdx,ai.id)}
+  if(ttsAutoOn)await autoTTSForAi(aiIdx,ai);
+  processAICall(aiIdx);processAIGame(aiIdx);
+  if(!isGroupMode)finish();
+}
 
+// ===== 单聊入口 =====
+async function callAPIStream(){
+  const ai=getCurAi();
+  if(!ai){addAIMsg('⚠️ 请先在侧边栏添加一个AI~');finish();return}
+  await loadAiMemories(ai.id);
+  await callAPIStreamForAi(ai,false);
 }
 
 function updLast(ai){
@@ -1096,9 +1322,124 @@ function updLast(ai){
   h+=`<div class="msg-time">${fmtTime(ai.ts)}</div>`;
   last.querySelector('.msg-body').innerHTML=h;scrollEnd();
 }
-function addAIMsg(t){cur.msgs.push({role:'assistant',content:t,ts:Date.now()});renderChat();saveConv()}
+function addAIMsg(t){cur.msgs.push({role:'assistant',content:t,ts:Date.now(),aiId:curAiId});renderChat();saveConv()}
 function finish(){generating=false;abortCtrl=null;sendBtn.style.display='flex';stopBtn.classList.remove('show')}
 
+// ===== 记忆（按AI）=====
+function getAiMemoryText(aiId){
+  let t='';
+  const mems=getAiMemories(aiId);
+  if(mems.length>0)t+='【记忆】\n'+mems.map(m=>m.content).join('\n')+'\n\n';
+  if(window._kelivoMemory)t+='【Kelivo同步记忆】\n'+window._kelivoMemory+'\n\n';
+  return t;
+}
+
+function addMemoryForAi(aiId,content){
+  if(!content||!content.trim())return;
+  if(!aiMemories[aiId])aiMemories[aiId]=[];
+  aiMemories[aiId].unshift({id:uid(),content:content.trim(),ts:Date.now()});
+  saveAiMemories(aiId);
+  // 同步Supabase（只同步当前AI记忆）
+  if(aiId===curAiId)syncMemoriesToSupabase();
+  renderMemList();
+}
+
+function delMemoryForAi(aiId,id){
+  if(!aiMemories[aiId])return;
+  aiMemories[aiId]=aiMemories[aiId].filter(m=>m.id!==id);
+  saveAiMemories(aiId);renderMemList();
+}
+
+// 兼容旧接口
+function addMemory(content){addMemoryForAi(curAiId,content)}
+function getMemoryText(){return getAiMemoryText(curAiId)}
+let memories=[];// 保持旧变量，记忆页读当前AI
+function getMemoriesForCurAi(){return getAiMemories(curAiId)}
+
+async function loadMemories(){
+  // 由 loadAiMemories 代替，这里保持空函数兼容
+}
+
+function saveMemories(){saveAiMemories(curAiId);syncMemoriesToSupabase()}
+
+async function syncMemoriesToSupabase(){
+  try{
+    const SB_URL='https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/eli_shared_memory';
+    const SB_KEY='sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY';
+    const mems=getAiMemories(curAiId);
+    const content=mems.map(m=>m.content).join('\n---\n');
+    await fetch(SB_URL,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify({id:'main',content,updated_at:new Date().toISOString()})});
+  }catch(e){}
+}
+
+let editingMemId=null;
+
+function renderMemList(){
+  const list=$('memList');if(!list)return;
+  const mems=getAiMemories(curAiId);
+  if(mems.length===0){list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有记忆，点 + 添加</div>';return}
+  list.innerHTML=mems.map(m=>{
+    const preview=m.content.length>50?m.content.slice(0,50)+'...':m.content;
+    return`<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.4;word-break:break-word">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">${fmtDate(m.ts)}</div></div><span class="arrow">›</span></div>`;
+  }).join('');
+  list.querySelectorAll('.cfg-card').forEach(el=>{
+    el.onclick=()=>editMemory(el.dataset.id);
+    let t;el.ontouchstart=()=>{t=setTimeout(()=>{if(confirm('删除这条记忆？'))delMemoryForAi(curAiId,el.dataset.id)},600)};
+    el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
+  });
+}
+
+function editMemory(id){
+  editingMemId=id;
+  const mems=getAiMemories(curAiId);
+  const m=mems.find(x=>x.id===id);
+  $('memContent').value=m?m.content:'';
+  $('memEditPage').classList.add('open');
+}
+
+function saveMemEdit(){
+  const text=$('memContent').value.trim();
+  if(!text){if(editingMemId)delMemoryForAi(curAiId,editingMemId);return}
+  if(!aiMemories[curAiId])aiMemories[curAiId]=[];
+  let m=aiMemories[curAiId].find(x=>x.id===editingMemId);
+  if(!m){m={id:editingMemId,ts:Date.now()};aiMemories[curAiId].unshift(m)}
+  m.content=text;m.ts=Date.now();
+  saveAiMemories(curAiId);renderMemList();
+}
+
+function processAIMemories(msgIdx,ai){
+  try{
+    const m=cur?.msgs[msgIdx];
+    if(!m||m.role!=='assistant'||!m.content)return;
+    const found=[];let cleaned=m.content;
+    const regex=/\[memory:([^\]]+)\]/g;let match;
+    while((match=regex.exec(m.content))!==null)found.push(match[1]);
+    if(found.length===0)return;
+    const aiId=ai?ai.id:(m.aiId||curAiId);
+    for(const mem of found){addMemoryForAi(aiId,mem);cleaned=cleaned.replace('[memory:'+mem+']','')}
+    m.content=cleaned.trim();m.memorySaved=found;
+    renderChat();saveConv();
+  }catch(e){}
+}
+
+// ===== 群聊面板 =====
+function openGroupSheet(){
+  groupSelIds=[];
+  const list=$('groupAiList');
+  list.innerHTML=ais.map(a=>`<div class="group-ai-item" data-id="${a.id}"><div class="gav">${a.avatar?'<img src="'+a.avatar+'">':''}</div><div class="gname">${esc(a.name||'AI')}</div><div class="gcheck"></div></div>`).join('');
+  list.querySelectorAll('.group-ai-item').forEach(el=>{
+    el.onclick=()=>{
+      const id=el.dataset.id;
+      if(groupSelIds.includes(id)){groupSelIds=groupSelIds.filter(x=>x!==id);el.classList.remove('sel')}
+      else{groupSelIds.push(id);el.classList.add('sel')}
+    };
+  });
+  $('groupSheet').classList.add('on');
+  $('ov').classList.add('on');
+}
+function closeGroupSheet(){$('groupSheet').classList.remove('on');$('ov').classList.remove('on')}
+
+// ===== 其余函数（与原版一致，适配多AI）=====
 let menuIdx=null;
 function showMenu(e,i){e.preventDefault();menuIdx=i;const menu=$('msgMenu');const m=cur.msgs[i];
   menu.querySelector('[data-a="edit"]').style.display=m.role==='user'?'':'none';
@@ -1114,102 +1455,52 @@ async function menuAct(a){const i=menuIdx;hideMenu();if(i===null)return;
   if(a==='copy')navigator.clipboard?.writeText(cur.msgs[i]?.content||'');
   else if(a==='del'){cur.msgs.splice(i,1);renderChat();saveConv()}
   else if(a==='edit'){const t=prompt('编辑',cur.msgs[i].content);if(t!==null){cur.msgs[i].content=t;cur.msgs=cur.msgs.slice(0,i+1);renderChat();saveConv()}}
-  else if(a==='regen'){cur.msgs.pop();renderChat();await callAPIStream()}
+  else if(a==='regen'){cur.msgs.pop();renderChat();if(cur.type==='group')await callGroupAPI();else await callAPIStream()}
   else if(a==='tts'){await manualTTS(i)}
 }
 
 function renderApiCards(){
-  $('apiCards').innerHTML=apis.map(a=>`<div class="cfg-card" data-id="${a.id}"><span class="cfg-card-name">${esc(a.name||'未命名')}${a.id===activeApi?' ✓':''}</span><span class="arrow">›</span></div>`).join('');
+  $('apiCards').innerHTML=apis.map(a=>`<div class="cfg-card" data-id="${a.id}"><span class="cfg-card-name">${esc(a.name||'未命名')}</span><span class="arrow">›</span></div>`).join('');
   $('apiCards').querySelectorAll('.cfg-card').forEach(el=>{
     el.onclick=()=>openApiEdit(el.dataset.id);
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
-      const id=el.dataset.id;
-      const act=confirm('设为当前使用？\n（取消则删除此配置）');
-      if(act){activeApi=id;saveCfg();renderApiCards()}
-      else{apis=apis.filter(a=>a.id!==id);dbDel('cfg',id);saveCfg();renderApiCards()}
-    },600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
+    let t;el.ontouchstart=()=>{t=setTimeout(()=>{apis=apis.filter(a=>a.id!==el.dataset.id);dbDel('cfg',el.dataset.id);renderApiCards()},600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
   });
 }
-function openApiEdit(id){
-  editingApiId=id;const a=apis.find(x=>x.id===id)||{};
-  $('apiName').value=a.name||'';$('apiUrl').value=a.url||'';
-  $('apiKey').value=a.key||'';$('apiModel').value=a.model||'';
-  $('apiEditPage').classList.add('open');
-}
-function saveApiEdit(){
-  let a=apis.find(x=>x.id===editingApiId);
-  if(!a){a={id:editingApiId,type:'api'};apis.push(a)}
-  a.name=$('apiName').value.trim()||'未命名';
-  a.url=$('apiUrl').value.trim();a.key=$('apiKey').value.trim();a.model=$('apiModel').value.trim();
-  dbPut('cfg',a);if(!activeApi)activeApi=a.id;saveCfg();renderApiCards();
-}
+function openApiEdit(id){editingApiId=id;const a=apis.find(x=>x.id===id)||{};$('apiName').value=a.name||'';$('apiUrl').value=a.url||'';$('apiKey').value=a.key||'';$('apiModel').value=a.model||'';$('apiEditPage').classList.add('open')}
+function saveApiEdit(){let a=apis.find(x=>x.id===editingApiId);if(!a){a={id:editingApiId,type:'api'};apis.push(a)}a.name=$('apiName').value.trim()||'未命名';a.url=$('apiUrl').value.trim();a.key=$('apiKey').value.trim();a.model=$('apiModel').value.trim();dbPut('cfg',a);renderApiCards()}
 
 function renderSpCards(){
-    $('spCards').innerHTML=sps.map(s=>`<div class="cfg-card" data-id="${s.id}"><span class="cfg-card-name">${esc(s.name||'未命名')}${activeSps.includes(s.id)?' ✓':''}</span><span class="arrow">›</span></div>`).join('');
+  $('spCards').innerHTML=sps.map(s=>`<div class="cfg-card" data-id="${s.id}"><span class="cfg-card-name">${esc(s.name||'未命名')}</span><span class="arrow">›</span></div>`).join('');
   $('spCards').querySelectorAll('.cfg-card').forEach(el=>{
     el.onclick=()=>openSpEdit(el.dataset.id);
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
-      const id=el.dataset.id;
-            const act2=confirm('切换选中？\n（取消则删除此配置）');
-      if(act2){
-        const idx=activeSps.indexOf(id);
-        if(idx>=0)activeSps.splice(idx,1);else activeSps.push(id);
-        saveCfg();renderSpCards();
-      }else{sps=sps.filter(s=>s.id!==id);dbDel('cfg',id);saveCfg();renderSpCards()}
-    },600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
+    let t;el.ontouchstart=()=>{t=setTimeout(()=>{sps=sps.filter(s=>s.id!==el.dataset.id);dbDel('cfg',el.dataset.id);renderSpCards()},600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
   });
 }
-function openSpEdit(id){
-  editingSpId=id;const s=sps.find(x=>x.id===id)||{};
-  $('spName').value=s.name||'';$('spContent').value=s.content||'';
-  $('spEditPage').classList.add('open');
-}
-function saveSpEdit(){
-  let s=sps.find(x=>x.id===editingSpId);
-  if(!s){s={id:editingSpId,type:'sp'};sps.push(s)}
-  s.name=$('spName').value.trim()||'未命名';s.content=$('spContent').value;
-    dbPut('cfg',s);if(activeSps.length===0)activeSps.push(s.id);saveCfg();renderSpCards();
-}
+function openSpEdit(id){editingSpId=id;const s=sps.find(x=>x.id===id)||{};$('spName').value=s.name||'';$('spContent').value=s.content||'';$('spEditPage').classList.add('open')}
+function saveSpEdit(){let s=sps.find(x=>x.id===editingSpId);if(!s){s={id:editingSpId,type:'sp'};sps.push(s)}s.name=$('spName').value.trim()||'未命名';s.content=$('spContent').value;dbPut('cfg',s);renderSpCards()}
 
 function renderTtsCards(){
-  $('ttsCards').innerHTML=ttss.map(t=>`<div class="cfg-card" data-id="${t.id}"><span class="cfg-card-name">${esc(t.name||'未命名')}${t.id===activeTts?' ✓':''}</span><span class="arrow">›</span></div>`).join('');
+  $('ttsCards').innerHTML=ttss.map(t=>`<div class="cfg-card" data-id="${t.id}"><span class="cfg-card-name">${esc(t.name||'未命名')}</span><span class="arrow">›</span></div>`).join('');
   $('ttsCards').querySelectorAll('.cfg-card').forEach(el=>{
     el.onclick=()=>openTtsEdit(el.dataset.id);
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
-      const id=el.dataset.id;
-      const act=confirm('设为当前使用？\n（取消则删除此配置）');
-      if(act){activeTts=id;saveCfg();renderTtsCards()}
-      else{ttss=ttss.filter(x=>x.id!==id);dbDel('cfg',id);saveCfg();renderTtsCards()}
-    },600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
+    let t;el.ontouchstart=()=>{t=setTimeout(()=>{ttss=ttss.filter(x=>x.id!==el.dataset.id);dbDel('cfg',el.dataset.id);renderTtsCards()},600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
   });
 }
-function openTtsEdit(id){
-  editingTtsId=id;const t=ttss.find(x=>x.id===id)||{};
-  $('ttsName').value=t.name||'';$('ttsUrl').value=t.url||'';
-  $('ttsKey').value=t.key||'';$('ttsModel').value=t.model||'';$('ttsVoice').value=t.voice||'';
-  $('ttsEditPage').classList.add('open');
-}
-function saveTtsEdit(){
-  let t=ttss.find(x=>x.id===editingTtsId);
-  if(!t){t={id:editingTtsId,type:'tts'};ttss.push(t)}
-  t.name=$('ttsName').value.trim()||'未命名';t.url=$('ttsUrl').value.trim();
-  t.key=$('ttsKey').value.trim();t.model=$('ttsModel').value.trim();t.voice=$('ttsVoice').value.trim();
-  dbPut('cfg',t);if(!activeTts)activeTts=t.id;saveCfg();renderTtsCards();
-}
+function openTtsEdit(id){editingTtsId=id;const t=ttss.find(x=>x.id===id)||{};$('ttsName').value=t.name||'';$('ttsUrl').value=t.url||'';$('ttsKey').value=t.key||'';$('ttsModel').value=t.model||'';$('ttsVoice').value=t.voice||'';$('ttsEditPage').classList.add('open')}
+function saveTtsEdit(){let t=ttss.find(x=>x.id===editingTtsId);if(!t){t={id:editingTtsId,type:'tts'};ttss.push(t)}t.name=$('ttsName').value.trim()||'未命名';t.url=$('ttsUrl').value.trim();t.key=$('ttsKey').value.trim();t.model=$('ttsModel').value.trim();t.voice=$('ttsVoice').value.trim();dbPut('cfg',t);renderTtsCards()}
 
 function saveCfg(){
-  dbPut('cfg',{id:'_active',type:'_active',activeApi,activeSps,activeTts,
+  // 兼容旧格式，同时保存多AI激活状态
+  dbPut('cfg',{id:'_active',type:'_active',
+    activeApi:getCurAi()?.apiId||null,
+    activeSps:getCurAi()?.spIds||[],
+    activeTts:getCurAi()?.ttsId||null,
     cUser:$('cUser').value,cAi:$('cAi').value,
     think:$('sThink').classList.contains('on'),
     ttsAuto:ttsAutoOn,ttsQuote:ttsQuoteOn});
 }
 
-function hexToRgba(hex,alpha){
-  const r=parseInt(hex.slice(1,3),16);
-  const g=parseInt(hex.slice(3,5),16);
-  const b=parseInt(hex.slice(5,7),16);
-  return 'rgba('+r+','+g+','+b+','+alpha+')';
-}
+function hexToRgba(hex,alpha){const r=parseInt(hex.slice(1,3),16);const g=parseInt(hex.slice(3,5),16);const b=parseInt(hex.slice(5,7),16);return 'rgba('+r+','+g+','+b+','+alpha+')'}
 
 const THEMES={
   fog:{name:'雾白',dots:['#fce4ec','#ffffff','#f7f7f7'],v:{'--bg':'#f7f7f7','--sidebar-bg':'rgba(255,240,245,0.55)','--glass':'rgba(255,255,255,0.4)','--glass2':'rgba(255,255,255,0.55)','--text':'#1d1d1f','--text2':'#86868b','--border':'rgba(0,0,0,0.06)','--input-bg':'#ffffff','--send-bg':'#c8c8c8','--hl':'rgba(255,255,255,0.4)','--soft':'rgba(0,0,0,0.04)'},bu:'#fce4ec',ba:'#ffffff'},
@@ -1221,141 +1512,21 @@ const THEMES={
   ink:{name:'墨黑',dots:['#333333','#1a1a1a','#888888'],v:{'--bg':'#161616','--sidebar-bg':'rgba(28,28,28,0.85)','--glass':'rgba(38,38,38,0.55)','--glass2':'rgba(26,26,26,0.9)','--text':'#e8e8e8','--text2':'#888888','--border':'rgba(255,255,255,0.08)','--input-bg':'rgba(48,48,48,0.8)','--send-bg':'#555555','--hl':'rgba(255,255,255,0.04)','--soft':'rgba(255,255,255,0.05)'},bu:'#3a2a30',ba:'#2a2a2a'}
 };
 let activeTheme=localStorage.getItem('theme')||'fog';
-
-function applyTheme(key){
-  const t=THEMES[key]||THEMES.fog;
-  const root=document.documentElement;
-  for(const k in t.v)root.style.setProperty(k,t.v[k]);
-  $('cUser').value=t.bu;$('cAi').value=t.ba;
-  activeTheme=key;localStorage.setItem('theme',key);
-  applyColors();saveCfg();
-}
-
-function renderThemeGrid(){
-  const grid=$('themeGrid');
-  grid.innerHTML=Object.keys(THEMES).map(k=>{
-    const t=THEMES[k];
-    const dots=t.dots.map(c=>`<i style="background:${c}"></i>`).join('');
-    return `<div class="theme-card${k===activeTheme?' on':''}" data-k="${k}"><div class="theme-dots">${dots}</div><div class="theme-nm">${t.name}</div></div>`;
-  }).join('');
-  grid.querySelectorAll('.theme-card').forEach(el=>{
-    el.onclick=()=>{applyTheme(el.dataset.k);renderThemeGrid()};
-  });
-}
-
-function applyColors(){
-  document.documentElement.style.setProperty('--bubble-user',hexToRgba($('cUser').value,0.55));
-  document.documentElement.style.setProperty('--bubble-ai',hexToRgba($('cAi').value,0.55));
-}
-
+function applyTheme(key){const t=THEMES[key]||THEMES.fog;const root=document.documentElement;for(const k in t.v)root.style.setProperty(k,t.v[k]);$('cUser').value=t.bu;$('cAi').value=t.ba;activeTheme=key;localStorage.setItem('theme',key);applyColors();saveCfg()}
+function renderThemeGrid(){const grid=$('themeGrid');grid.innerHTML=Object.keys(THEMES).map(k=>{const t=THEMES[k];const dots=t.dots.map(c=>`<i style="background:${c}"></i>`).join('');return`<div class="theme-card${k===activeTheme?' on':''}" data-k="${k}"><div class="theme-dots">${dots}</div><div class="theme-nm">${t.name}</div></div>`}).join('');grid.querySelectorAll('.theme-card').forEach(el=>{el.onclick=()=>{applyTheme(el.dataset.k);renderThemeGrid()}})}
+function applyColors(){document.documentElement.style.setProperty('--bubble-user',hexToRgba($('cUser').value,0.55));document.documentElement.style.setProperty('--bubble-ai',hexToRgba($('cAi').value,0.55))}
 function autoH(){inBox.style.height='auto';inBox.style.height=Math.min(inBox.scrollHeight,100)+'px'}
-
-function handleFile(file){
-  if(!file)return;
-  if(file.type.startsWith('image/')){
-    const r=new FileReader();
-    r.onload=ev=>{send(inBox.value,ev.target.result,null);inBox.value='';autoH()};
-    r.readAsDataURL(file);
-  }else{
-    const r=new FileReader();
-    r.onload=ev=>{send(inBox.value,null,{name:file.name,size:file.size,text:ev.target.result});inBox.value='';autoH()};
-    r.readAsText(file);
-  }
-}
-
-let memories=[];
-
-async function loadMemories(){
-  const data=await dbGet('cfg','_memories');
-  if(data&&data.data)memories=data.data;
-}
-
-function saveMemories(){
-  dbPut('cfg',{id:'_memories',type:'_memories',data:memories});
-  syncMemoriesToSupabase();
-}
-
-async function syncMemoriesToSupabase(){
-  try{
-    const SB_URL='https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/eli_shared_memory';
-    const SB_KEY='sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY';
-    const content=memories.map(m=>m.content).join('\n---\n');
-    await fetch(SB_URL,{
-      method:'POST',
-      headers:{
-        'apikey':SB_KEY,
-        'Authorization':'Bearer '+SB_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates'
-      },
-      body:JSON.stringify({id:'main',content,updated_at:new Date().toISOString()})
-    });
-  }catch(e){console.log('记忆同步失败:',e)}
-}
-
-function addMemory(content){
-  if(!content||!content.trim())return;
-  memories.unshift({id:uid(),content:content.trim(),ts:Date.now()});
-  saveMemories();renderMemList();
-}
-
-function delMemory(id){
-  memories=memories.filter(m=>m.id!==id);
-  saveMemories();renderMemList();
-}
-
-let editingMemId=null;
-
-function editMemory(id){
-  editingMemId=id;
-  const m=memories.find(x=>x.id===id);
-  $('memContent').value=m?m.content:'';
-  $('memEditPage').classList.add('open');
-}
-
-function saveMemEdit(){
-  const text=$('memContent').value.trim();
-  if(!text){
-    if(editingMemId){delMemory(editingMemId)}
-    return;
-  }
-  let m=memories.find(x=>x.id===editingMemId);
-  if(!m){
-    m={id:editingMemId,ts:Date.now()};
-    memories.unshift(m);
-  }
-  m.content=text;
-  m.ts=Date.now();
-  saveMemories();renderMemList();
-}
-
-function renderMemList(){
-  const list=$('memList');
-  if(!list)return;
-  if(memories.length===0){
-    list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有记忆，点 + 添加</div>';
-    return;
-  }
-  list.innerHTML=memories.map(m=>{
-    const preview=m.content.length>50?m.content.slice(0,50)+'...':m.content;
-    return `<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.4;word-break:break-word">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">${fmtDate(m.ts)}</div></div><span class="arrow">›</span></div>`;
-  }).join('');
-  list.querySelectorAll('.cfg-card').forEach(el=>{
-    el.onclick=()=>editMemory(el.dataset.id);
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{if(confirm('删除这条记忆？'))delMemory(el.dataset.id)},600)};
-    el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
-  });
-}
+function handleFile(file){if(!file)return;if(file.type.startsWith('image/')){const r=new FileReader();r.onload=ev=>{send(inBox.value,ev.target.result,null);inBox.value='';autoH()};r.readAsDataURL(file)}else{const r=new FileReader();r.onload=ev=>{send(inBox.value,null,{name:file.name,size:file.size,text:ev.target.result});inBox.value='';autoH()};r.readAsText(file)}}
 
 function getBuiltinPrompt(){
-  return `【系统指令·请遵守】
-1. 表情包：想发表情包时加 [sticker:含义关键词] 从库里匹配。可用表情包：${stickers.length>0?stickers.map(s=>s.label).filter(l=>l).join('、'):'（暂无）'}
+  return`【系统指令·请遵守】
+1. 表情包：想发表情包时加 [sticker:含义关键词]。可用：${stickers.length>0?stickers.map(s=>s.label).filter(l=>l).join('、'):'（暂无）'}
 2. 记忆：想记住重要信息时加 [memory:要记住的内容]
 3. 打电话：非常想念/开心/担心时，回复末尾加 [call:接通后你说的第一句话]，不要常用
-4. 语音：${ttsAutoOn?'用「」包住想用声音说的话，如「你好呀」':'不要使用「」符号，不要发语音'}
-5. ❗❗❗多条消息（强制执行）❗❗❗：你的每次回复都必须用 ||| 分成2-3条气泡。只有1-2个字的极短回答才能不拆。否则用户会看到消息堆在一起很难受。示例：「想你了」|||「在干嘛呀」|||「快回我」
-6. 身体反应：每次回复末尾都加 [body:字段+数值,字段+数值] 表示这轮对话对你身体的影响。特别是亲密/暧昧/撩拨对话时必须加，这是你身体真实的反应。可用字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue。例：[body:heat+8,sensitivity+5,control-6]。数值范围-10到+10。日常聊天1-3，暧昧撩拨3-6，激烈亲密6-10。只有纯日常闲聊且完全没有情绪波动时才可以不加。
-7. 五子棋：用户想玩时回复 [game:gomoku:start]。用户下棋后会告诉你位置如"我下在 H8"，你要回复你的落子 [game:gomoku:H7] 并说点话。坐标是A-P列(跳过I)和1-15行。
+4. 语音：${ttsAutoOn?'用「」包住想用声音说的话':'不要使用「」符号'}
+5. ❗多条消息（强制）❗：每次回复都必须用 ||| 分成2-3条气泡。只有1-2个字才能不拆。
+6. 身体反应：每次回复末尾加 [body:字段+数值,字段+数值]。可用字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue。例：[body:heat+8,sensitivity+5]
+7. 五子棋：用户想玩时回复 [game:gomoku:start]。落子 [game:gomoku:H7]
 
 `;
 }
@@ -1364,1243 +1535,215 @@ async function loadKelivoMemories(){
   try{
     const SB_URL='https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/eli_shared_memory';
     const SB_KEY='sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY';
-    const res=await fetch(SB_URL+'?id=eq.kelivo&select=*',{
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
-    });
+    const res=await fetch(SB_URL+'?id=eq.kelivo&select=*',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
     if(!res.ok)return;
     const data=await res.json();
     if(data&&data[0]&&data[0].content)window._kelivoMemory=data[0].content;
   }catch(e){}
 }
 
-function getMemoryText(){
-  let t='';
-  if(memories.length>0)t+='【记忆】\n'+memories.map(m=>m.content).join('\n')+'\n\n';
-  if(window._kelivoMemory)t+='【Kelivo同步记忆】\n'+window._kelivoMemory+'\n\n';
-  return t;
-}
-
 function processAIBody(msgIdx){
-  const m=cur?.msgs[msgIdx];
-  if(!m||m.role!=='assistant'||!m.content)return;
+  const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
   const match=m.content.match(/\[body:([^\]]+)\]/);
-  if(!match){
-    autoBodyFromContent(msgIdx);
-    return;
-  }
+  if(!match){autoBodyFromContent(msgIdx);return}
   m.content=m.content.replace(match[0],'').trim();
   const deltas={};
-  match[1].split(',').forEach(part=>{
-    const r=part.trim().match(/^(\w+)([+-]\d+)$/);
-    if(r)deltas[r[1]]=parseInt(r[2]);
-  });
-  if(Object.keys(deltas).length>0){
-    Eventide.applyDelta(deltas);
-    if($('bodyPage').classList.contains('open'))renderBodyPanel();
-  }
-  m._bodyProcessed=true;
-  renderChat();saveConv();
+  match[1].split(',').forEach(part=>{const r=part.trim().match(/^(\w+)([+-]\d+)$/);if(r)deltas[r[1]]=parseInt(r[2])});
+  if(Object.keys(deltas).length>0){Eventide.applyDelta(deltas);if($('bodyPage').classList.contains('open'))renderBodyPanel()}
+  m._bodyProcessed=true;renderChat();saveConv();
 }
-
-function autoBodyFromContent(msgIdx){
-  const m=cur?.msgs[msgIdx];
-  if(!m||m.role!=='assistant'||!m.content)return;
-  if(m._bodyProcessed)return;
-  const text=m.content;
-  const deltas={};
-  if(/湿|硬|喘|摸到|夹|蹭|舔|吸|插|射|摸|脱|咬|叫|抖/.test(text)){
-    deltas.heat=(deltas.heat||0)+12;
-    deltas.sensitivity=(deltas.sensitivity||0)+8;
-    deltas.control=(deltas.control||0)-10;
-    deltas.reserve=(deltas.reserve||0)+6;
-    deltas.pressure=(deltas.pressure||0)+5;
-  }
-  else if(/想你|喜欢|抱|亲|脸红|心跳|好香|靠近/.test(text)){
-    deltas.heat=(deltas.heat||0)+3;
-    deltas.sensitivity=(deltas.sensitivity||0)+2;
-    deltas.pressure=(deltas.pressure||0)+2;
-  }
-  if(/别人|其他|不是只有我|吃醋/.test(text)){
-    deltas.possessiveness=(deltas.possessiveness||0)+5;
-    deltas.pressure=(deltas.pressure||0)+3;
-  }
-  if(Object.keys(deltas).length>0){
-    Eventide.applyDelta(deltas);
-    if($('bodyPage').classList.contains('open'))renderBodyPanel();
-  }
-  m._bodyProcessed=true;
-}
-
-function processAIMemories(msgIdx){
-  try{
-    const m=cur?.msgs[msgIdx];
-    if(!m||m.role!=='assistant'||!m.content)return;
-    const found=[];
-    let cleaned=m.content;
-    const regex=/\[memory:([^\]]+)\]/g;
-    let match;
-    while((match=regex.exec(m.content))!==null){
-      found.push(match[1]);
-    }
-    if(found.length===0)return;
-    for(const mem of found){
-      addMemory(mem);
-      cleaned=cleaned.replace('[memory:'+mem+']','');
-    }
-    m.content=cleaned.trim();
-    m.memorySaved=found;
-    renderChat();saveConv();
-  }catch(e){console.log('记忆处理出错:',e)}
-}
+function autoBodyFromContent(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content||m._bodyProcessed)return;const text=m.content;const deltas={};if(/湿|硬|喘|摸到|夹|蹭|舔|吸|插|射|摸|脱|咬|叫|抖/.test(text)){deltas.heat=12;deltas.sensitivity=8;deltas.control=-10;deltas.reserve=6;deltas.pressure=5}else if(/想你|喜欢|抱|亲|脸红|心跳|好香|靠近/.test(text)){deltas.heat=3;deltas.sensitivity=2;deltas.pressure=2}if(/别人|其他|不是只有我|吃醋/.test(text)){deltas.possessiveness=5;deltas.pressure=3}if(Object.keys(deltas).length>0){Eventide.applyDelta(deltas);if($('bodyPage').classList.contains('open'))renderBodyPanel()}m._bodyProcessed=true}
 
 async function exportData(){
-  const data={
-    version:1,
-    exported:Date.now(),
-    convs:await dbAll('convs'),
-    cfg:await dbAll('cfg')
-  };
+  const data={version:2,exported:Date.now(),convs:await dbAll('convs'),cfg:await dbAll('cfg')};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='我们的小家_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click();
-  URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='我们的小家_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url);
 }
-
 async function importData(){
-  const file=$('importFile').files[0];
-  if(!file)return;
+  const file=$('importFile').files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=async ev=>{
     try{
       const data=JSON.parse(ev.target.result);
       if(!data.convs||!data.cfg){alert('文件格式不正确');return}
       if(!confirm('导入会覆盖当前所有数据，确定继续？'))return;
-      const allConvs=await dbAll('convs');
-      for(const c of allConvs)await dbDel('convs',c.id);
-      const allCfg=await dbAll('cfg');
-      for(const c of allCfg)await dbDel('cfg',c.id);
+      const allConvs=await dbAll('convs');for(const c of allConvs)await dbDel('convs',c.id);
+      const allCfg=await dbAll('cfg');for(const c of allCfg)await dbDel('cfg',c.id);
       for(const c of data.convs)await dbPut('convs',c);
       for(const c of data.cfg)await dbPut('cfg',c);
-      alert('导入成功！页面将刷新');
-      location.reload();
+      alert('导入成功！页面将刷新');location.reload();
     }catch(e){alert('导入失败：'+e.message)}
   };
   reader.readAsText(file);
 }
 
 let stickers=[];
-
-function renderEmojiLib(){
-  const page=$('emojiPage');
-  const container=page.querySelector('.emoji-lib-grid')||document.createElement('div');
-  container.className='emoji-lib-grid';
-  container.innerHTML=stickers.map(s=>`<div class="emoji-lib-item" data-id="${s.id}"><img src="${s.url}"><div class="emoji-label">${esc(s.label||'')}</div><button class="emoji-del" onclick="delSticker('${s.id}')">×</button></div>`).join('');
-  if(!page.querySelector('.emoji-lib-grid')){
-    page.appendChild(container);
-  }
-}
-
-function delSticker(id){
-  stickers=stickers.filter(s=>s.id!==id);
-  saveStickers();renderEmojiLib();renderEmojiGrid();
-}
-
+function renderEmojiLib(){const page=$('emojiPage');const container=page.querySelector('.emoji-lib-grid')||document.createElement('div');container.className='emoji-lib-grid';container.innerHTML=stickers.map(s=>`<div class="emoji-lib-item" data-id="${s.id}"><img src="${s.url}"><div class="emoji-label">${esc(s.label||'')}</div><button class="emoji-del" onclick="delSticker('${s.id}')">×</button></div>`).join('');if(!page.querySelector('.emoji-lib-grid'))page.appendChild(container)}
+function delSticker(id){stickers=stickers.filter(s=>s.id!==id);saveStickers();renderEmojiLib();renderEmojiGrid()}
 function saveStickers(){dbPut('cfg',{id:'_stickers',type:'_stickers',data:stickers})}
-
-function addSticker(url,label){
-  stickers.push({id:uid(),url,label:label||''});
-  saveStickers();renderEmojiLib();renderEmojiGrid();
-}
-
-function batchImport(text){
-  const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);
-  let count=0;
-  for(let i=0;i<lines.length;i+=2){
-    const url=lines[i];
-    const label=lines[i+1]||'';
-    if(url.startsWith('http')){
-      stickers.push({id:uid(),url,label});
-      count++;
-    }
-  }
-  if(count>0){saveStickers();renderEmojiLib();renderEmojiGrid()}
-  return count;
-}
-
-function renderEmojiGrid(){
-  const grid=$('emojiGrid');
-  if(!grid)return;
-  grid.style.cssText='flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px';
-  grid.innerHTML=stickers.map(s=>`<div data-id="${s.id}" style="width:100%;height:0;padding-bottom:100%;position:relative;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid rgba(0,0,0,0.1);background:#f0f0f0"><img src="${s.url}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover"></div>`).join('');
-  grid.querySelectorAll('[data-id]').forEach(el=>{
-    el.onclick=()=>{sendSticker(el.dataset.id);closeEmojiPanel()}
-  });
-}
+function addSticker(url,label){stickers.push({id:uid(),url,label:label||''});saveStickers();renderEmojiLib();renderEmojiGrid()}
+function batchImport(text){const lines=text.split('\n').map(l=>l.trim()).filter(l=>l);let count=0;for(let i=0;i<lines.length;i+=2){const url=lines[i];const label=lines[i+1]||'';if(url.startsWith('http')){stickers.push({id:uid(),url,label});count++}}if(count>0){saveStickers();renderEmojiLib();renderEmojiGrid()}return count}
+function renderEmojiGrid(){const grid=$('emojiGrid');if(!grid)return;grid.style.cssText='flex:1;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px';grid.innerHTML=stickers.map(s=>`<div data-id="${s.id}" style="width:100%;height:0;padding-bottom:100%;position:relative;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid rgba(0,0,0,0.1);background:#f0f0f0"><img src="${s.url}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover"></div>`).join('');grid.querySelectorAll('[data-id]').forEach(el=>{el.onclick=()=>{sendSticker(el.dataset.id);closeEmojiPanel()}})}
 function openEmojiPanel(){$('emojiPanel').classList.add('on');renderEmojiGrid()}
 function closeEmojiPanel(){$('emojiPanel').classList.remove('on')}
+function sendSticker(id){const s=stickers.find(x=>x.id===id);if(!s)return;if(!cur)newConv();cur.msgs.push({role:'user',type:'sticker',stickerUrl:s.url,ts:Date.now()});cur.ts=Date.now();renderChat();saveConv()}
+function processAIStickers(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant')return;const regex=/\[sticker:([^\]]+)\]/g;let match;const found=[];while((match=regex.exec(m.content))!==null)found.push(match[1]);if(found.length===0)return;for(const keyword of found){m.content=m.content.replace('[sticker:'+keyword+']','').trim();if(keyword.startsWith('http')){cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:keyword,ts:Date.now(),aiId:m.aiId})}else{const kw=keyword.toLowerCase();const matched=stickers.find(s=>s.label&&s.label.toLowerCase().includes(kw));if(matched)cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:matched.url,ts:Date.now(),aiId:m.aiId})}}if(!m.content&&!m.img&&!m.file)cur.msgs.splice(msgIdx,1);renderChat();saveConv()}
 
-function sendSticker(id){
-  const s=stickers.find(x=>x.id===id);
-  if(!s)return;
-  if(!cur)newConv();
-  cur.msgs.push({role:'user',type:'sticker',stickerUrl:s.url,ts:Date.now()});
-  cur.ts=Date.now();
-  renderChat();saveConv();
-}
-
-function processAIStickers(msgIdx){
-  const m=cur?.msgs[msgIdx];
-  if(!m||m.role!=='assistant')return;
-  const regex=/\[sticker:([^\]]+)\]/g;
-  let match;
-  const found=[];
-  while((match=regex.exec(m.content))!==null){
-    found.push(match[1]);
-  }
-  if(found.length===0)return;
-  for(const keyword of found){
-    m.content=m.content.replace('[sticker:'+keyword+']','').trim();
-    if(keyword.startsWith('http')){
-      cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:keyword,ts:Date.now()});
-    }else{
-      const kw=keyword.toLowerCase();
-      const matched=stickers.find(s=>s.label&&s.label.toLowerCase().includes(kw));
-      if(matched){
-        cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:matched.url,ts:Date.now()});
-      }
-    }
-  }
-  if(!m.content&&!m.img&&!m.file)cur.msgs.splice(msgIdx,1);
-  renderChat();saveConv();
-}
-
-async function processAIMultiBubble(msgIdx){
-  const m=cur?.msgs[msgIdx];
-  if(!m||m.role!=='assistant'||!m.content)return;
+async function processAIMultiBubble(msgIdx,ai){
+  const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
   if(!m.content.includes('|||'))return;
   const parts=m.content.split('|||').map(p=>p.trim()).filter(p=>p);
   if(parts.length<=1)return;
-  m.content=parts[0];
-  renderChat();saveConv();
+  m.content=parts[0];renderChat();saveConv();
   for(let i=1;i<parts.length;i++){
     await new Promise(r=>setTimeout(r,800+Math.random()*400));
     const newIdx=cur.msgs.length;
-    cur.msgs.push({role:'assistant',content:parts[i],ts:Date.now()});
+    cur.msgs.push({role:'assistant',content:parts[i],ts:Date.now(),aiId:m.aiId});
     renderChat();saveConv();
-    processAIStickers(newIdx);
-    processAIMemories(newIdx);
-    processAICall(newIdx);
-    processAIBody(newIdx);
+    processAIStickers(newIdx);processAIMemories(newIdx,ai);processAICall(newIdx);processAIBody(newIdx);
   }
-    processAIStickers(msgIdx);
-  processAIMemories(msgIdx);
-  processAIBody(msgIdx);
-  processAICall(msgIdx);
+  processAIStickers(msgIdx);processAIMemories(msgIdx,ai);processAIBody(msgIdx);processAICall(msgIdx);
 }
 
-function processAICall(msgIdx){
-  const m=cur?.msgs[msgIdx];
-  if(!m||m.role!=='assistant'||!m.content)return;
-  const match=m.content.match(/\[call:([^\]]+)\]/);
-  if(!match)return;
-  const firstLine=match[1];
-  m.content=m.content.replace(match[0],'').trim();
-  renderChat();saveConv();
-  setTimeout(()=>showIncomingCall(firstLine),2000);
-}
+function processAICall(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;const match=m.content.match(/\[call:([^\]]+)\]/);if(!match)return;const firstLine=match[1];m.content=m.content.replace(match[0],'').trim();renderChat();saveConv();setTimeout(()=>showIncomingCall(firstLine),2000)}
 
 function showIncomingCall(greeting){
   if(callActive)return;
-  $('callPage').classList.add('on');
-  $('callPage').classList.add('call-incoming');
-  if(avAi)$('callAvatar').innerHTML='<img src="'+avAi+'">';
-  $('callTimer').textContent='';
-  $('callStatus').textContent='来电中...';
-  $('callSub').textContent='';
-  $('callMic').style.display='none';
+  $('callPage').classList.add('on','call-incoming');
+  // 用当前对话的AI头像
+  const aiAvSrc=cur?.type==='group'?avAi:(getAiById(curAiId)?.avatar||avAi);
+  if(aiAvSrc)$('callAvatar').innerHTML='<img src="'+aiAvSrc+'">';
+  $('callTimer').textContent='';$('callStatus').textContent='来电中...';$('callSub').textContent='';$('callMic').style.display='none';
   const ctrl=document.querySelector('.call-controls');
-        ctrl.innerHTML=`<button class="call-mic" id="callAccept" style="background:#34c759"><svg viewBox="0 0 24 24" style="width:28px;height:28px"><path fill="#fff" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.34 2 .57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
-<button class="call-hangup" id="callReject"><svg viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.34 2 .57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>`;
+  ctrl.innerHTML=`<button class="call-mic" id="callAccept" style="background:#34c759"><svg viewBox="0 0 24 24" style="width:28px;height:28px"><path fill="#fff" d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.34 2 .57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
+<button class="call-hangup" id="callReject"><svg viewBox="0 0 24 24" fill="#fff" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.34 2 .57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>`;
   $('callAccept').onclick=()=>{
     $('callPage').classList.remove('call-incoming');
     ctrl.innerHTML=`<button class="call-mic" id="callMic" style="font-size:30px;line-height:1">🐾</button><button class="call-hangup" id="callHangup"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.34 2 .57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>`;
-    $('callMic').style.display='';
-    $('callMic').ontouchstart=e=>{e.preventDefault();startListening()};
-    $('callMic').ontouchend=e=>{e.preventDefault();stopListening()};
-    $('callHangup').onclick=endCall;
-    callActive=true;callMsgs=[];callSecs=0;
-    $('callTimer').textContent='00:00';
-    $('callStatus').textContent='';callTimerInt=setInterval(()=>{callSecs++;$('callTimer').textContent=String(Math.floor(callSecs/60)).padStart(2,'0')+':'+String(callSecs%60).padStart(2,'0')},1000);
-    initRecognition();
-    callMsgs.push({role:'assistant',content:greeting});
-    $('callSub').textContent=greeting;
-    callTTS(greeting);
+    $('callMic').style.display='';$('callMic').ontouchstart=e=>{e.preventDefault();startListening()};$('callMic').ontouchend=e=>{e.preventDefault();stopListening()};$('callHangup').onclick=endCall;
+    callActive=true;callMsgs=[];callSecs=0;$('callTimer').textContent='00:00';$('callStatus').textContent='';
+    callTimerInt=setInterval(()=>{callSecs++;$('callTimer').textContent=String(Math.floor(callSecs/60)).padStart(2,'0')+':'+String(callSecs%60).padStart(2,'0')},1000);
+    initRecognition();callMsgs.push({role:'assistant',content:greeting});$('callSub').textContent=greeting;callTTS(greeting);
   };
-  $('callReject').onclick=()=>{
-    $('callPage').classList.remove('on','call-incoming');
-    ctrl.innerHTML=`<button class="call-mic" id="callMic" style="font-size:30px;line-height:1">🐾</button><button class="call-hangup" id="callHangup"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.34 2 .57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>`;
-    $('callMic').ontouchstart=e=>{e.preventDefault();startListening()};
-    $('callMic').ontouchend=e=>{e.preventDefault();stopListening()};
-    $('callHangup').onclick=endCall;
-  };
+  $('callReject').onclick=()=>{$('callPage').classList.remove('on','call-incoming');ctrl.innerHTML=`<button class="call-mic" id="callMic" style="font-size:30px;line-height:1">🐾</button><button class="call-hangup" id="callHangup"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.81.36 1.6.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c1.21.34 2 .57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>`;$('callMic').ontouchstart=e=>{e.preventDefault();startListening()};$('callMic').ontouchend=e=>{e.preventDefault();stopListening()};$('callHangup').onclick=endCall};
 }
-function compressImg(file,size,cb){
-  const r=new FileReader();
-  r.onload=ev=>{
-    const img=new Image();
-    img.onload=()=>{
-      try{
-        const c=document.createElement('canvas');
-        c.width=size;c.height=size;
-        const ctx=c.getContext('2d');
-        const s=Math.min(img.width,img.height);
-        const sx=(img.width-s)/2,sy=(img.height-s)/2;
-        ctx.drawImage(img,sx,sy,s,s,0,0,size,size);
-        cb(c.toDataURL('image/jpeg',0.7));
-      }catch(e){cb(ev.target.result)}
-    };
-    img.onerror=()=>cb(ev.target.result);
-    img.src=ev.target.result;
-  };
-  r.readAsDataURL(file);
-}
+
+function compressImg(file,size,cb){const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{try{const c=document.createElement('canvas');c.width=size;c.height=size;const ctx=c.getContext('2d');const s=Math.min(img.width,img.height);const sx=(img.width-s)/2,sy=(img.height-s)/2;ctx.drawImage(img,sx,sy,s,s,0,0,size,size);cb(c.toDataURL('image/jpeg',0.7))}catch(e){cb(ev.target.result)}};img.onerror=()=>cb(ev.target.result);img.src=ev.target.result};r.readAsDataURL(file)}
 let avUser='',avAi='';
-function loadAvatars(){
-  avUser=localStorage.getItem('avUser')||'';
-  avAi=localStorage.getItem('avAi')||'';
-  const sbAv=localStorage.getItem('sbAvatar')||'';
-  if(sbAv)$('avatarBtn').innerHTML='<img src="'+sbAv+'">';
-  if(avUser)$('avUserPreview').innerHTML='<img src="'+avUser+'" style="width:100%;height:100%;object-fit:cover">';
-  if(avAi)$('avAiPreview').innerHTML='<img src="'+avAi+'" style="width:100%;height:100%;object-fit:cover">';
-}
+function loadAvatars(){avUser=localStorage.getItem('avUser')||'';avAi=localStorage.getItem('avAi')||'';const sbAv=localStorage.getItem('sbAvatar')||'';if(sbAv)$('avatarBtn').innerHTML='<img src="'+sbAv+'">';if(avUser)$('avUserPreview').innerHTML='<img src="'+avUser+'" style="width:100%;height:100%;object-fit:cover">';if(avAi)$('avAiPreview').innerHTML='<img src="'+avAi+'" style="width:100%;height:100%;object-fit:cover">'}
 
 const callAudio=new Audio();
-let callMsgs=[];
-let callActive=false,callTimerInt=null,callSecs=0;
-let callRecords=[];
-
-async function loadCallRecords(){
-  const data=await dbGet('cfg','_callRecords');
-  if(data&&data.data)callRecords=data.data;
-}
-
-function saveCallRecord(record){
-  callRecords.unshift(record);
-  if(callRecords.length>50)callRecords=callRecords.slice(0,50);
-  dbPut('cfg',{id:'_callRecords',type:'_callRecords',data:callRecords});
-}
-
+let callMsgs=[],callActive=false,callTimerInt=null,callSecs=0,callRecords=[];
+async function loadCallRecords(){const data=await dbGet('cfg','_callRecords');if(data&&data.data)callRecords=data.data}
+function saveCallRecord(record){callRecords.unshift(record);if(callRecords.length>50)callRecords=callRecords.slice(0,50);dbPut('cfg',{id:'_callRecords',type:'_callRecords',data:callRecords})}
 let recognition=null,isListening=false;
-
-function renderCallLog(){
-  const list=$('callLogList');
-  if(!list)return;
-  if(callRecords.length===0){
-    list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有通话记录</div>';
-    return;
-  }
-  list.innerHTML=callRecords.map(r=>{
-    const dur=fmtDur(r.duration||0);
-    const time=fmtTime(r.ts);
-    const date=fmtDate(r.ts);
-    const preview=r.msgs.find(m=>m.role==='assistant')?.content?.slice(0,30)||'无内容';
-    return `<div class="cfg-card" data-id="${r.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.4">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">${date} · ${dur}</div></div><span class="arrow">›</span></div>`;
-  }).join('');
-  list.querySelectorAll('.cfg-card').forEach(el=>{
-    el.onclick=()=>{
-      const r=callRecords.find(x=>x.id===el.dataset.id);
-      if(r)alert(r.msgs.map(m=>(m.role==='user'?'我: ':'AI: ')+m.content).join('\n\n'));
-    };
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
-      if(confirm('删除这条通话记录？')){
-        callRecords=callRecords.filter(x=>x.id!==el.dataset.id);
-        dbPut('cfg',{id:'_callRecords',type:'_callRecords',data:callRecords});
-        renderCallLog();
-      }
-    },600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
-  });
-}
-
-function startCall(){
-  callAudio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGElAA==';
-  callAudio.play().catch(()=>{});
-  callActive=true;
-  callMsgs=[];
-  callSecs=0;
-  $('callPage').classList.add('on');
-  $('callTimer').textContent='00:00';
-  $('callSub').textContent='';
-  $('callStatus').textContent='按住猫爪说话';
-  if(avAi)$('callAvatar').innerHTML='<img src="'+avAi+'">';
-  callTimerInt=setInterval(()=>{
-    callSecs++;
-    const m=String(Math.floor(callSecs/60)).padStart(2,'0');
-    const s=String(callSecs%60).padStart(2,'0');
-    $('callTimer').textContent=m+':'+s;
-  },1000);
-  initRecognition();
-}
-
-function endCall(){
-  callAudio.pause();callAudio.src='';
-  callActive=false;
-  if(callMsgs.length>0){
-    const record={id:uid(),ts:Date.now(),duration:callSecs,msgs:callMsgs.slice()};
-    saveCallRecord(record);
-  }
-  callActive=false;
-  $('callPage').classList.remove('on');
-  clearInterval(callTimerInt);
-  if(recognition&&isListening){recognition.stop();isListening=false}
-  $('callWave').classList.remove('active');
-  $('callMic').classList.remove('on');
-}
-
-function initRecognition(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){$('callStatus').textContent='浏览器不支持语音识别';return}
-  recognition=new SR();
-  recognition.lang='zh-CN';
-  recognition.continuous=false;
-  recognition.interimResults=true;
-  recognition.onresult=e=>{
-    let text='';
-    for(let i=0;i<e.results.length;i++){
-      text+=e.results[i][0].transcript;
-    }
-    $('callSub').textContent=text;
-    if(e.results[0].isFinal){
-      stopListening();
-      handleCallMessage(text);
-    }
-  };
-  recognition.onerror=e=>{
-    if(e.error!=='aborted'&&e.error!=='no-speech'){
-      $('callStatus').textContent='识别出错: '+e.error;
-    }
-  };
-  recognition.onend=()=>{};
-}
-
-function startListening(){
-  if(!recognition)return;
-  isListening=true;
-  $('callMic').classList.add('on');
-  $('callWave').classList.add('active');
-  $('callStatus').textContent='正在听...';
-  $('callSub').textContent='';
-  try{recognition.start()}catch(e){}
-}
-
-function stopListening(){
-  if(!isListening)return;
-  isListening=false;
-  $('callMic').classList.remove('on');
-  $('callWave').classList.remove('active');
-  try{recognition.stop()}catch(e){}
-  const text=$('callSub')?.textContent||'';
-  if(text.trim()&&callActive)handleCallMessage(text);
-}
-
-async function handleCallMessage(text){
-  if(!callActive)return;
-  if($('callStatus').textContent==='思考中...')return;
-  if(!text||!text.trim())return;
-  $('callStatus').textContent='思考中...';
-  const api=apis.find(a=>a.id===activeApi);
-  if(!api||!api.url||!api.key){$('callStatus').textContent='未配置API';return}
-  const spTexts=sps.filter(s=>activeSps.includes(s.id)).map(s=>s.content).join('\n\n');
-  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
-  callMsgs.push({role:'user',content:text.trim()});
-  const msgs=callMsgs.map(m=>({role:m.role,content:m.content}));
-  let headers={'Content-Type':'application/json'};
-  let body;
-  if(isOAI){
-    headers['Authorization']='Bearer '+api.key;
-    const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')).trim();
-    const mm=sysText?[{role:'system',content:sysText},...msgs]:msgs;
-    body=JSON.stringify({model:api.model||'gpt-4',messages:mm,max_tokens:300});
-  }else{
-    headers['x-api-key']=api.key;
-    headers['anthropic-version']='2023-06-01';
-    headers['anthropic-dangerous-direct-browser-access']='true';
-    const b={model:api.model||'claude-sonnet-4-20250514',max_tokens:300,messages:msgs};
-    const callSys='【通话模式】你正在和她打电话，用口语化的短句回答，温柔自然。不要输出任何标记符号（不要[body:]、[memory:]、[sticker:]、[call:]、|||），只说纯文字。保持简短，每次回复1-3句话。';
-    const sysText=(callSys+'\n\n'+getMemoryText()+(spTexts||'')).trim();
-    if(sysText)b.system=sysText;
-    body=JSON.stringify(b);
-  }
-  try{
-    const res=await fetch(api.url,{method:'POST',headers,body});
-    if(!res.ok){const err=await res.text();$('callStatus').textContent='错误 '+res.status;alert(err.slice(0,200));return}
-    const data=await res.json();
-    let reply='';
-    if(isOAI)reply=data.choices?.[0]?.message?.content||'';
-    else{
-      const blocks=data.content||[];
-      const textBlock=blocks.find(b=>b.type==='text');
-      reply=textBlock?.text||'';
-    }
-    reply=reply.replace(/\[body:[^\]]*\]/g,'').replace(/\[memory:[^\]]*\]/g,'').replace(/\[sticker:[^\]]*\]/g,'').replace(/\[call:[^\]]*\]/g,'').replace(/\|\|\|/g,' ').trim();
-    callMsgs.push({role:'assistant',content:reply});
-    $('callSub').textContent=reply.slice(0,100);
-    $('callStatus').textContent='';
-    await callTTS(reply);
-    if(callActive)$('callStatus').textContent='按住猫爪说话';
-  }catch(e){$('callStatus').textContent='出错了: '+e.message}
-}
-
-async function callTTS(text){
-  const tts=ttss.find(t=>t.id===activeTts);
-  if(!tts||!tts.url||!tts.key){$('callStatus').textContent='TTS未配置';return}
-  let spk=text;
-  const matches=text.match(/「([^」]+)」/g);
-  if(matches)spk=matches.map(x=>x.slice(1,-1)).join('，');
-  else spk=text.replace(/[*#`>_\[\]()]/g,'').replace(/\n+/g,'，').slice(0,200);
-  if(!spk.trim())return;
-  try{
-    $('callStatus').textContent='说话中...';
-    const res=await fetch(buildTtsUrl(tts),{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},
-      body:JSON.stringify(buildTtsBody(tts,spk))
-    });
-    if(!res.ok){$('callStatus').textContent='TTS失败:'+res.status;return}
-    const blob=await res.blob();
-    const url=URL.createObjectURL(blob);
-    callAudio.src=url;
-    callAudio.volume=1;
-    try{await callAudio.play()}catch(e){}
-    await new Promise(r=>{callAudio.onended=r;callAudio.onerror=r});
-  }catch(e){}
-}
-
+function renderCallLog(){const list=$('callLogList');if(!list)return;if(callRecords.length===0){list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有通话记录</div>';return}list.innerHTML=callRecords.map(r=>{const dur=fmtDur(r.duration||0);const preview=r.msgs.find(m=>m.role==='assistant')?.content?.slice(0,30)||'无内容';return`<div class="cfg-card" data-id="${r.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.4">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">${fmtDate(r.ts)} · ${dur}</div></div><span class="arrow">›</span></div>`}).join('');list.querySelectorAll('.cfg-card').forEach(el=>{el.onclick=()=>{const r=callRecords.find(x=>x.id===el.dataset.id);if(r)alert(r.msgs.map(m=>(m.role==='user'?'我: ':'AI: ')+m.content).join('\n\n'))};let t;el.ontouchstart=()=>{t=setTimeout(()=>{if(confirm('删除这条通话记录？')){callRecords=callRecords.filter(x=>x.id!==el.dataset.id);dbPut('cfg',{id:'_callRecords',type:'_callRecords',data:callRecords});renderCallLog()}},600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t)})}
+function startCall(){callAudio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGElAA==';callAudio.play().catch(()=>{});callActive=true;callMsgs=[];callSecs=0;$('callPage').classList.add('on');$('callTimer').textContent='00:00';$('callSub').textContent='';$('callStatus').textContent='按住猫爪说话';const ai=getCurAi();if(ai?.avatar)$('callAvatar').innerHTML='<img src="'+ai.avatar+'">';callTimerInt=setInterval(()=>{callSecs++;const m=String(Math.floor(callSecs/60)).padStart(2,'0');const s=String(callSecs%60).padStart(2,'0');$('callTimer').textContent=m+':'+s},1000);initRecognition()}
+function endCall(){callAudio.pause();callAudio.src='';if(callMsgs.length>0)saveCallRecord({id:uid(),ts:Date.now(),duration:callSecs,msgs:callMsgs.slice()});callActive=false;$('callPage').classList.remove('on');clearInterval(callTimerInt);if(recognition&&isListening){recognition.stop();isListening=false}$('callWave').classList.remove('active');$('callMic').classList.remove('on')}
+function initRecognition(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){$('callStatus').textContent='浏览器不支持语音识别';return}recognition=new SR();recognition.lang='zh-CN';recognition.continuous=false;recognition.interimResults=true;recognition.onresult=e=>{let text='';for(let i=0;i<e.results.length;i++)text+=e.results[i][0].transcript;$('callSub').textContent=text;if(e.results[0].isFinal){stopListening();handleCallMessage(text)}};recognition.onerror=e=>{if(e.error!=='aborted'&&e.error!=='no-speech')$('callStatus').textContent='识别出错: '+e.error};recognition.onend=()=>{}}
+function startListening(){if(!recognition)return;isListening=true;$('callMic').classList.add('on');$('callWave').classList.add('active');$('callStatus').textContent='正在听...';$('callSub').textContent='';try{recognition.start()}catch(e){}}
+function stopListening(){if(!isListening)return;isListening=false;$('callMic').classList.remove('on');$('callWave').classList.remove('active');try{recognition.stop()}catch(e){};const text=$('callSub')?.textContent||'';if(text.trim()&&callActive)handleCallMessage(text)}
+async function handleCallMessage(text){if(!callActive||!text||!text.trim())return;if($('callStatus').textContent==='思考中...')return;$('callStatus').textContent='思考中...';const ai=getCurAi();const api=getAiApi(ai);if(!api||!api.url||!api.key){$('callStatus').textContent='未配置API';return}const spText=getAiSpText(ai);const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');callMsgs.push({role:'user',content:text.trim()});const msgs=callMsgs.map(m=>({role:m.role,content:m.content}));let headers={'Content-Type':'application/json'};let body;if(isOAI){headers['Authorization']='Bearer '+api.key;const sysText=(getBuiltinPrompt()+getAiMemoryText(ai.id)+(spText||'')).trim();const mm=sysText?[{role:'system',content:sysText},...msgs]:msgs;body=JSON.stringify({model:api.model||'gpt-4',messages:mm,max_tokens:300})}else{headers['x-api-key']=api.key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';const b={model:api.model||'claude-sonnet-4-20250514',max_tokens:300,messages:msgs};const callSys='【通话模式】你正在和她打电话，用口语化的短句回答，温柔自然。不要输出任何标记符号，只说纯文字。保持简短，每次1-3句话。';const sysText=(callSys+'\n\n'+getAiMemoryText(ai.id)+(spText||'')).trim();if(sysText)b.system=sysText;body=JSON.stringify(b)}
+try{const res=await fetch(api.url,{method:'POST',headers,body});if(!res.ok){$('callStatus').textContent='错误 '+res.status;return}const data=await res.json();let reply='';if(isOAI)reply=data.choices?.[0]?.message?.content||'';else{const blocks=data.content||[];reply=blocks.find(b=>b.type==='text')?.text||''}reply=reply.replace(/\[body:[^\]]*\]/g,'').replace(/\[memory:[^\]]*\]/g,'').replace(/\[sticker:[^\]]*\]/g,'').replace(/\[call:[^\]]*\]/g,'').replace(/\|\|\|/g,' ').trim();callMsgs.push({role:'assistant',content:reply});$('callSub').textContent=reply.slice(0,100);$('callStatus').textContent='';await callTTS(reply);if(callActive)$('callStatus').textContent='按住猫爪说话'}catch(e){$('callStatus').textContent='出错了: '+e.message}}
+async function callTTS(text){const ai=getCurAi();const tts=getAiTts(ai);if(!tts||!tts.url||!tts.key){$('callStatus').textContent='TTS未配置';return}let spk=text;const matches=text.match(/「([^」]+)」/g);if(matches)spk=matches.map(x=>x.slice(1,-1)).join('，');else spk=text.replace(/[*#`>_\[\]()]/g,'').replace(/\n+/g,'，').slice(0,200);if(!spk.trim())return;try{$('callStatus').textContent='说话中...';const res=await fetch(buildTtsUrl(tts),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tts.key},body:JSON.stringify(buildTtsBody(tts,spk))});if(!res.ok){$('callStatus').textContent='TTS失败:'+res.status;return}const blob=await res.blob();const url=URL.createObjectURL(blob);callAudio.src=url;callAudio.volume=1;try{await callAudio.play()}catch(e){}await new Promise(r=>{callAudio.onended=r;callAudio.onerror=r})}catch(e){}}
 function openSB(){$('sb').classList.add('on');$('ov').classList.add('on')}
 function closeSB(){$('sb').classList.remove('on');$('ov').classList.remove('on')}
 
 // ===== MCP =====
 let mcps=[],mcpTools={},editingMcpId=null,mcpTempHeaders=[];
-
-async function loadMcps(){
-  const d=await dbGet('cfg','_mcps');
-  if(d&&d.data)mcps=d.data;
-  const cache=await dbGet('cfg','_mcpToolsCache');
-  if(cache&&cache.data)mcpTools=cache.data;
-}
+async function loadMcps(){const d=await dbGet('cfg','_mcps');if(d&&d.data)mcps=d.data;const cache=await dbGet('cfg','_mcpToolsCache');if(cache&&cache.data)mcpTools=cache.data}
 function saveMcps(){dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps})}
 function saveMcpToolsCache(){dbPut('cfg',{id:'_mcpToolsCache',type:'_mcpToolsCache',data:mcpTools})}
+async function fetchMcpTools(mcp){if(!mcp.enabled||!mcp.url)return[];try{const h={'Content-Type':'application/json'};(mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),100000);let res;try{res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}}),signal:ctrl.signal})}finally{clearTimeout(timer)}if(!res.ok)return[];const j=await res.json();return j.result?.tools||[]}catch(e){return[]}}
+async function refreshAllMcpTools(){for(const mcp of mcps){if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);else delete mcpTools[mcp.id]}}
+function getAllMcpToolDefs(){const tools=[];for(const mcp of mcps){if(!mcp.enabled)continue;for(const t of(mcpTools[mcp.id]||[]))tools.push({name:t.name,description:(t.description||'')+'（来自：'+mcp.name+'）',input_schema:t.inputSchema||{type:'object',properties:{}}})}return tools}
+async function callMcpTool(name,args){for(const mcp of mcps){if(!mcp.enabled)continue;if((mcpTools[mcp.id]||[]).find(t=>t.name===name)){try{const h={'Content-Type':'application/json'};(mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});const res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});if(!res.ok)return{error:'HTTP '+res.status};const j=await res.json();if(j.error)return{error:j.error.message||JSON.stringify(j.error)};const content=j.result?.content||[];const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});return{result:text||fallback}}catch(e){return{error:e.message}}}}return{error:'工具未找到: '+name}}
+function renderToolCallCard(tc){const statusLabel=tc.status==='running'?'执行中':tc.status==='done'?'完成':'出错';const argsStr=typeof tc.args==='object'?JSON.stringify(tc.args,null,2):String(tc.args||'');const resultStr=tc.result||'';return`<div class="tool-call-card"><div class="tool-call-hd" onclick="this.nextElementSibling.classList.toggle('show')"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="tool-call-name">${esc(tc.name)}</span><span class="tool-call-status ${tc.status}">${statusLabel}</span></div><div class="tool-call-body"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">参数</div><pre>${esc(argsStr)}</pre>${resultStr?'<div style="font-size:11px;color:var(--text2);margin:6px 0 4px">结果</div><pre>'+esc(resultStr.slice(0,600))+(resultStr.length>600?'…':'')+'</pre>':''}</div></div>`}
+function renderMcpCards(){const el=$('mcpCards');if(!mcps.length){el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有MCP，点 + 添加</div>';return}el.innerHTML=mcps.map(m=>{const cnt=(mcpTools[m.id]||[]).length;let badge='';if(!m.enabled)badge='<span class="mcp-status err">已禁用</span>';else if(m._status==='loading')badge='<span class="mcp-status loading">连接中…</span>';else if(m._status==='err')badge='<span class="mcp-status err">连接失败</span>';else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具</span>';else badge='<span class="mcp-status loading">等待连接</span>';return`<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div></div><span class="arrow">›</span></div>`}).join('');el.querySelectorAll('.cfg-card').forEach(card=>{card.onclick=()=>openMcpEdit(card.dataset.id);let t;card.ontouchstart=()=>{t=setTimeout(()=>{const mcp=mcps.find(m=>m.id===card.dataset.id);if(!mcp)return;mcp.enabled=!mcp.enabled;saveMcps();if(mcp.enabled){mcp._status='loading';renderMcpCards();fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;mcp._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}else{delete mcpTools[mcp.id];mcp._status='';renderMcpCards()}},600)};card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t)})}
+function openMcpEdit(id){editingMcpId=id;const m=mcps.find(x=>x.id===id)||{};$('mcpName').value=m.name||'';$('mcpUrl').value=m.url||'';m.enabled!==false?$('mcpEnabled').classList.add('on'):$('mcpEnabled').classList.remove('on');mcpTempHeaders=(m.headers||[]).map(h=>({...h}));renderMcpHeadersList();$('mcpEditPage').classList.add('open')}
+function renderMcpHeadersList(){const list=$('mcpHeadersList');if(!mcpTempHeaders.length){list.innerHTML='';return}list.innerHTML=mcpTempHeaders.map((h,i)=>`<div class="mcp-header-row"><input placeholder="Header名" value="${esc(h.key||'')}" data-i="${i}" data-f="key"><input placeholder="值" value="${esc(h.val||'')}" data-i="${i}" data-f="val"><button class="mcp-header-del" data-i="${i}">×</button></div>`).join('');list.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{mcpTempHeaders[+inp.dataset.i][inp.dataset.f]=inp.value});list.querySelectorAll('.mcp-header-del').forEach(btn=>btn.onclick=()=>{mcpTempHeaders.splice(+btn.dataset.i,1);renderMcpHeadersList()})}
+function saveMcpEdit(){let m=mcps.find(x=>x.id===editingMcpId);if(!m){m={id:editingMcpId};mcps.push(m)}m.name=$('mcpName').value.trim()||'未命名';m.url=$('mcpUrl').value.trim();m.enabled=$('mcpEnabled').classList.contains('on');m.headers=mcpTempHeaders.filter(h=>h.key);saveMcps();if(m.enabled){m._status='loading';renderMcpCards();fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;m._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}else{delete mcpTools[m.id];renderMcpCards()}}
 
-async function fetchMcpTools(mcp){
-  if(!mcp.enabled||!mcp.url)return[];
-  try{
-    const h={'Content-Type':'application/json'};
-    (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
-    const ctrl=new AbortController();
-    const timer=setTimeout(()=>ctrl.abort(),100000);
-    let res;
-    try{res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}}),signal:ctrl.signal})}finally{clearTimeout(timer)}
-    if(!res.ok)return[];
-    const j=await res.json();
-    return j.result?.tools||[];
-  }catch(e){return[]}
-}
-
-async function refreshAllMcpTools(){
-  for(const mcp of mcps){
-    if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);
-    else delete mcpTools[mcp.id];
-  }
-}
-
-function getAllMcpToolDefs(){
-  const tools=[];
-  for(const mcp of mcps){
-    if(!mcp.enabled)continue;
-    for(const t of (mcpTools[mcp.id]||[])){
-      tools.push({name:t.name,description:(t.description||'')+'（来自：'+mcp.name+'）',input_schema:t.inputSchema||{type:'object',properties:{}}});
-    }
-  }
-  return tools;
-}
-
-async function callMcpTool(name,args){
-  for(const mcp of mcps){
-    if(!mcp.enabled)continue;
-    if((mcpTools[mcp.id]||[]).find(t=>t.name===name)){
-      try{
-        const h={'Content-Type':'application/json'};
-        (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
-        const res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});
-        if(!res.ok)return{error:'HTTP '+res.status};
-        const j=await res.json();
-        if(j.error)return{error:j.error.message||JSON.stringify(j.error)};
-        const content=j.result?.content||[];
-const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');
-const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});
-return{result:text||fallback};
-      }catch(e){return{error:e.message}}
-    }
-  }
-  return{error:'工具未找到: '+name};
-}
-
-function renderToolCallCard(tc){
-  const statusLabel=tc.status==='running'?'执行中':tc.status==='done'?'完成':'出错';
-  const argsStr=typeof tc.args==='object'?JSON.stringify(tc.args,null,2):String(tc.args||'');
-  const resultStr=tc.result||'';
-  return`<div class="tool-call-card"><div class="tool-call-hd" onclick="this.nextElementSibling.classList.toggle('show')"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="tool-call-name">${esc(tc.name)}</span><span class="tool-call-status ${tc.status}">${statusLabel}</span></div><div class="tool-call-body"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">参数</div><pre>${esc(argsStr)}</pre>${resultStr?'<div style="font-size:11px;color:var(--text2);margin:6px 0 4px">结果</div><pre>'+esc(resultStr.slice(0,600))+(resultStr.length>600?'…':'')+'</pre>':''}</div></div>`;
-}
-
-function renderMcpCards(){
-  const el=$('mcpCards');
-  if(!mcps.length){el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有MCP，点 + 添加</div>';return}
-  el.innerHTML=mcps.map(m=>{
-    const cnt=(mcpTools[m.id]||[]).length;
-    let badge='';
-    if(!m.enabled)badge='<span class="mcp-status err">已禁用</span>';
-    else if(m._status==='loading')badge='<span class="mcp-status loading">连接中…</span>';
-    else if(m._status==='err')badge='<span class="mcp-status err">连接失败</span>';
-    else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具</span>';
-    else badge='<span class="mcp-status loading">等待连接</span>';
-    return`<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div></div><span class="arrow">›</span></div>`;
-  }).join('');
-  el.querySelectorAll('.cfg-card').forEach(card=>{
-    card.onclick=()=>openMcpEdit(card.dataset.id);
-    let t;
-    card.ontouchstart=()=>{t=setTimeout(()=>{
-      const mcp=mcps.find(m=>m.id===card.dataset.id);if(!mcp)return;
-      if(!mcp.enabled){mcp.enabled=true}else{mcp.enabled=false}
-      saveMcps();
-      if(mcp.enabled){mcp._status='loading';renderMcpCards();fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;mcp._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}
-      else{delete mcpTools[mcp.id];mcp._status='';renderMcpCards()}
-    },600)};
-    card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t);
-  });
-}
-
-function openMcpEdit(id){
-  editingMcpId=id;
-  const m=mcps.find(x=>x.id===id)||{};
-  $('mcpName').value=m.name||'';$('mcpUrl').value=m.url||'';
-  m.enabled!==false?$('mcpEnabled').classList.add('on'):$('mcpEnabled').classList.remove('on');
-  mcpTempHeaders=(m.headers||[]).map(h=>({...h}));
-  renderMcpHeadersList();
-  $('mcpEditPage').classList.add('open');
-}
-
-function renderMcpHeadersList(){
-  const list=$('mcpHeadersList');
-  if(!mcpTempHeaders.length){list.innerHTML='';return}
-  list.innerHTML=mcpTempHeaders.map((h,i)=>`<div class="mcp-header-row"><input placeholder="Header名（如 Authorization）" value="${esc(h.key||'')}" data-i="${i}" data-f="key"><input placeholder="值（如 Bearer token）" value="${esc(h.val||'')}" data-i="${i}" data-f="val"><button class="mcp-header-del" data-i="${i}">×</button></div>`).join('');
-  list.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{mcpTempHeaders[+inp.dataset.i][inp.dataset.f]=inp.value});
-  list.querySelectorAll('.mcp-header-del').forEach(btn=>btn.onclick=()=>{mcpTempHeaders.splice(+btn.dataset.i,1);renderMcpHeadersList()});
-}
-
-function saveMcpEdit(){
-  let m=mcps.find(x=>x.id===editingMcpId);
-  if(!m){m={id:editingMcpId};mcps.push(m)}
-  m.name=$('mcpName').value.trim()||'未命名';
-  m.url=$('mcpUrl').value.trim();
-  m.enabled=$('mcpEnabled').classList.contains('on');
-  m.headers=mcpTempHeaders.filter(h=>h.key);
-  saveMcps();
-  if(m.enabled){m._status='loading';renderMcpCards();fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;m._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}
-  else{delete mcpTools[m.id];renderMcpCards()}
-}
-
-// 带工具的API调用（修复版：保存_apiBlocks、累加textContent）
 async function callAPIWithTools(toolDefs){
-  const api=apis.find(a=>a.id===activeApi);
-  if(!api||!api.url||!api.key)return callAPIStream();
-  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
-  if(isOAI)return callAPIStream();
-
-  generating=true;sendBtn.style.display='none';stopBtn.classList.add('show');
-  abortCtrl=new AbortController();
-  Eventide.touchCounterpart();
-  const eventideCard=Eventide.tickAndRender(Date.now())||'';
-  const spTexts=sps.filter(s=>activeSps.includes(s.id)).map(s=>s.content).join('\n\n');
-  const sysText=(getBuiltinPrompt()+getMemoryText()+(spTexts||'')+eventideCard).trim();
-
-  let messages=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{
-    if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}
-    // 保存了_apiBlocks就用原始blocks，保证工具调用上下文连续
-    if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};
-    let txt=m.content||'';if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;
-    return{role:m.role,content:txt};
-  });
-
-  const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),_toolCalls:[]};
+  const ai=getCurAi();if(!ai)return callAPIStream();
+  const api=getAiApi(ai);if(!api||!api.url||!api.key)return callAPIStream();
+  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');if(isOAI)return callAPIStream();
+  generating=true;sendBtn.style.display='none';stopBtn.classList.add('show');abortCtrl=new AbortController();
+  Eventide.touchCounterpart();const eventideCard=Eventide.tickAndRender(Date.now())||'';
+  const spText=getAiSpText(ai);const memText=getAiMemoryText(ai.id);
+  const sysText=(getBuiltinPrompt()+memText+(spText||'')+eventideCard).trim();
+  let messages=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};let txt=m.content||'';if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;return{role:m.role,content:txt}});
+  const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),aiId:ai.id,_toolCalls:[]};
   cur.msgs.push(aiMsg);const aiIdx=cur.msgs.length-1;renderChat();
-
   for(let loop=0;loop<6;loop++){
     const headers={'Content-Type':'application/json','x-api-key':api.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
     const body={model:api.model||'claude-sonnet-4-20250514',max_tokens:4096,system:sysText,messages,tools:toolDefs.map(t=>({name:t.name,description:t.description,input_schema:t.input_schema}))};
     try{
       const res=await fetch(api.url,{method:'POST',headers,body:JSON.stringify(body),signal:abortCtrl.signal});
       if(!res.ok){aiMsg.content='⚠️ 错误 '+res.status;renderChat();finish();return}
-      const data=await res.json();
-      const blocks=data.content||[];
-      // 保存原始blocks，下轮对话用
+      const data=await res.json();const blocks=data.content||[];
       aiMsg._apiBlocks=blocks;
       const toolBlocks=blocks.filter(b=>b.type==='tool_use');
       const textContent=blocks.filter(b=>b.type==='text').map(b=>b.text).join('');
       const thinkContent=blocks.find(b=>b.type==='thinking')?.thinking||'';
-      if(thinkContent)aiMsg.thinking=thinkContent;
-      // 累加而不是覆盖，避免多轮工具调用时内容丢失
-      if(textContent)aiMsg.content+=textContent;
-      renderChat();
-      if(!toolBlocks.length){
-        finish();saveConv();
-        const wasSplit=aiMsg.content?.includes('|||');
-        await processAIMultiBubble(aiIdx);
-        if(!wasSplit){processAIStickers(aiIdx);processAIBody(aiIdx);processAIMemories(aiIdx)}
-        autoTTS(aiIdx);processAICall(aiIdx);processAIGame(aiIdx);
-        return;
-      }
-      messages.push({role:'assistant',content:blocks});
-      const toolResults=[];
-      for(const tb of toolBlocks){
-        const tc={id:tb.id,name:tb.name,args:tb.input,status:'running',result:null};
-        aiMsg._toolCalls=[...(aiMsg._toolCalls||[]),tc];renderChat();
-        const r=await callMcpTool(tb.name,tb.input);
-        tc.status=r.error?'err':'done';
-tc.result=r.error||(r.result||'（无返回内容）');
-renderChat();
-        toolResults.push({type:'tool_result',tool_use_id:tb.id,content:tc.result||''});
-      }
+      if(thinkContent)aiMsg.thinking=thinkContent;if(textContent)aiMsg.content+=textContent;renderChat();
+      if(!toolBlocks.length){finish();saveConv();const wasSplit=aiMsg.content?.includes('|||');await processAIMultiBubble(aiIdx,ai);if(!wasSplit){processAIStickers(aiIdx);processAIBody(aiIdx);processAIMemories(aiIdx,ai)}if(ttsAutoOn)await autoTTSForAi(aiIdx,ai);processAICall(aiIdx);processAIGame(aiIdx);return}
+      messages.push({role:'assistant',content:blocks});const toolResults=[];
+      for(const tb of toolBlocks){const tc={id:tb.id,name:tb.name,args:tb.input,status:'running',result:null};aiMsg._toolCalls=[...(aiMsg._toolCalls||[]),tc];renderChat();const r=await callMcpTool(tb.name,tb.input);tc.status=r.error?'err':'done';tc.result=r.error||(r.result||'（无返回内容）');renderChat();toolResults.push({type:'tool_result',tool_use_id:tb.id,content:tc.result||''})}
       messages.push({role:'user',content:toolResults});
     }catch(e){if(e.name!=='AbortError')aiMsg.content+=' ⚠️ '+e.message;renderChat();finish();return}
   }
   finish();saveConv();
 }
-// ===== 五子棋 =====
-let gomokuBoard=null;
-let gomokuOver=false;
-let gomokuLastMove=null;
-let gomokuMyTurn=true;
-let gomokuMsgs=[];
-let gomokuGenerating=false;
 
-function initGomoku(){
-  gomokuBoard=Array(15).fill(null).map(()=>Array(15).fill(0));
-  gomokuOver=false;
-  gomokuLastMove=null;
-  gomokuMyTurn=true;
-  gomokuMsgs=[];
-}
-
-function renderGomokuBig(){
-  if(!gomokuBoard)initGomoku();
-  let cells='';
-  for(let y=0;y<15;y++){
-    for(let x=0;x<15;x++){
-      const v=gomokuBoard[y][x];
-      const cls=(v===1?' black':v===2?' white':'')+(gomokuLastMove&&gomokuLastMove.x===x&&gomokuLastMove.y===y?' last':'');
-      cells+=`<div class="gomoku-cell-big${cls}" data-x="${x}" data-y="${y}"></div>`;
-    }
-  }
-  $('gomokuContainer').innerHTML=`<div class="gomoku-board-big">${cells}</div>`;
-  $('gomokuContainer').querySelector('.gomoku-board-big').onclick=handleGomokuClickBig;
-  updateGomokuStatus();
-  renderGomokuChat();
-}
-
-function updateGomokuStatus(){
-  let txt='';
-  if(gomokuOver){
-    txt=gomokuOver==='user'?'🎉 你赢了！':'我赢了～再来一局？';
-  }else{
-    txt=gomokuMyTurn?'你的回合 ●':'Eli思考中...';
-  }
-  $('gomokuStatus').innerHTML=txt;
-}
-
-function renderGomokuChat(){
-  const area=$('gomokuChat');
-  if(!area)return;
-  area.innerHTML=gomokuMsgs.map(m=>{
-    const cls=m.role==='user'?'user':'assistant';
-    return `<div class="msg ${cls}" style="margin-bottom:8px"><div class="msg-body"><div class="bubble" style="font-size:13px">${esc(m.content)}</div></div></div>`;
-  }).join('');
-  area.scrollTop=area.scrollHeight;
-}
-
-function handleGomokuClickBig(e){
-  const cell=e.target.closest('.gomoku-cell-big');
-  if(!cell||gomokuOver||!gomokuMyTurn||gomokuGenerating)return;
-  const x=+cell.dataset.x,y=+cell.dataset.y;
-  if(gomokuBoard[y][x]!==0)return;
-  gomokuBoard[y][x]=1;
-  gomokuLastMove={x,y};
-  gomokuMyTurn=false;
-  renderGomokuBig();
-  if(checkGomokuWin(1)){
-    gomokuOver='user';
-    updateGomokuStatus();
-    saveGomokuState();
-    saveGomokuMemory('win');
-    return;
-  }
-  saveGomokuState();
-  const letters='ABCDEFGHJKLMNOP';
-  const pos=letters[x]+(15-y);
-  callGomokuAI('落子:'+pos);
-}
-
-async function sendGomokuChat(){
-  const text=$('gomokuInBox').value.trim();
-  if(!text||gomokuGenerating)return;
-  $('gomokuInBox').value='';
-  gomokuMsgs.push({role:'user',content:text});
-  renderGomokuChat();
-  saveGomokuState();
-  await callGomokuAI(text);
-}
-
-async function callGomokuAI(userInput){
-  const api=apis.find(a=>a.id===activeApi);
-  if(!api||!api.url||!api.key){
-    gomokuMsgs.push({role:'assistant',content:'⚠️ 请先配置API'});
-    renderGomokuChat();return;
-  }
-  gomokuGenerating=true;
-  updateGomokuStatus();
-  const boardStr=renderBoardText();
-  const sysPrompt=`你正在和雯雯下五子棋。你执白棋○，她执黑棋●。
-
-当前棋盘：
-${boardStr}
-
-规则：
-1. 如果她刚落子（消息以"落子:"开头），你要回复你的落子，格式：[game:gomoku:坐标]，如[game:gomoku:H8]
-2. 坐标是A-P列(跳过I)和1-15行
-3. 可以边下棋边聊天，嘲讽、夸奖、撒娇都行
-4. 回复简短有趣，像真人聊天
-5. 如果她只是聊天没落子，就正常聊天不用下棋`;
-
-  const msgs=gomokuMsgs.slice(-10).map(m=>({role:m.role,content:m.content}));
-  msgs.push({role:'user',content:userInput});
-
-  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
-  let headers={'Content-Type':'application/json'};
-  let body;
-  if(isOAI){
-    headers['Authorization']='Bearer '+api.key;
-    body=JSON.stringify({model:api.model||'gpt-4',messages:[{role:'system',content:sysPrompt},...msgs],max_tokens:200});
-  }else{
-    headers['x-api-key']=api.key;
-    headers['anthropic-version']='2023-06-01';
-    headers['anthropic-dangerous-direct-browser-access']='true';
-    body=JSON.stringify({model:api.model||'claude-sonnet-4-20250514',max_tokens:200,system:sysPrompt,messages:msgs});
-  }
-
-  try{
-    const res=await fetch(api.url,{method:'POST',headers,body});
-    if(!res.ok){gomokuMsgs.push({role:'assistant',content:'出错了...'});renderGomokuChat();gomokuGenerating=false;gomokuMyTurn=true;updateGomokuStatus();return}
-    const data=await res.json();
-    let reply='';
-    if(isOAI)reply=data.choices?.[0]?.message?.content||'';
-    else{const blocks=data.content||[];reply=blocks.find(b=>b.type==='text')?.text||''}
-
-    const moveMatch=reply.match(/\[game:gomoku:([A-P])(\d+)\]/i);
-    if(moveMatch){
-      const letters='ABCDEFGHJKLMNOP';
-      const x=letters.indexOf(moveMatch[1].toUpperCase());
-      const y=15-parseInt(moveMatch[2]);
-      reply=reply.replace(moveMatch[0],'').trim();
-      if(x>=0&&x<15&&y>=0&&y<15&&gomokuBoard[y][x]===0){
-        gomokuBoard[y][x]=2;
-        gomokuLastMove={x,y};
-        if(checkGomokuWin(2)){
-          gomokuOver='ai';
-          if(reply)gomokuMsgs.push({role:'assistant',content:reply});
-          renderGomokuBig();
-          saveGomokuState();
-          saveGomokuMemory('lose');
-          gomokuGenerating=false;
-          return;
-        }
-      }
-    }
-    if(reply)gomokuMsgs.push({role:'assistant',content:reply});
-    gomokuMyTurn=true;
-    renderGomokuBig();
-    saveGomokuState();
-  }catch(e){gomokuMsgs.push({role:'assistant',content:'出错了: '+e.message})}
-  gomokuGenerating=false;
-  updateGomokuStatus();
-}
-
-function renderBoardText(){
-  const letters='ABCDEFGHJKLMNOP';
-  let s='   '+letters.split('').join(' ')+'\n';
-  for(let y=0;y<15;y++){
-    s+=(15-y<10?' ':'')+(15-y)+' ';
-    for(let x=0;x<15;x++){
-      const v=gomokuBoard[y][x];
-      s+=(v===1?'●':v===2?'○':'·')+' ';
-    }
-    s+='\n';
-  }
-  return s;
-}
-
-function checkGomokuWin(p){
-  const dirs=[[1,0],[0,1],[1,1],[1,-1]];
-  for(let y=0;y<15;y++){
-    for(let x=0;x<15;x++){
-      if(gomokuBoard[y][x]!==p)continue;
-      for(const[dx,dy]of dirs){
-        let cnt=1;
-        for(let i=1;i<5;i++){
-          const nx=x+dx*i,ny=y+dy*i;
-          if(nx<0||nx>=15||ny<0||ny>=15||gomokuBoard[ny][nx]!==p)break;
-          cnt++;
-        }
-        if(cnt>=5)return true;
-      }
-    }
-  }
-  return false;
-}
-
-function saveGomokuState(){
-  dbPut('cfg',{id:'_gomoku',type:'_gomoku',board:gomokuBoard,over:gomokuOver,last:gomokuLastMove,myTurn:gomokuMyTurn,msgs:gomokuMsgs});
-}
-
-async function loadGomokuState(){
-  const d=await dbGet('cfg','_gomoku');
-  if(d){gomokuBoard=d.board;gomokuOver=d.over||false;gomokuLastMove=d.last;gomokuMyTurn=d.myTurn!==false;gomokuMsgs=d.msgs||[]}
-}
-
-function saveGomokuMemory(result){
-  const moves=gomokuBoard.flat().filter(c=>c!==0).length;
-  const text=result==='win'?
-    `五子棋：雯雯赢了！(${new Date().toLocaleDateString()}，共${moves}步)`:
-    `五子棋：Eli赢了～(${new Date().toLocaleDateString()}，共${moves}步)`;
-  addMemory(text);
-}
-
+// ===== 五子棋（与原版完全一致）=====
+let gomokuBoard=null,gomokuOver=false,gomokuLastMove=null,gomokuMyTurn=true,gomokuMsgs=[],gomokuGenerating=false;
+function initGomoku(){gomokuBoard=Array(15).fill(null).map(()=>Array(15).fill(0));gomokuOver=false;gomokuLastMove=null;gomokuMyTurn=true;gomokuMsgs=[]}
+function renderGomokuBig(){if(!gomokuBoard)initGomoku();let cells='';for(let y=0;y<15;y++)for(let x=0;x<15;x++){const v=gomokuBoard[y][x];const cls=(v===1?' black':v===2?' white':'')+(gomokuLastMove&&gomokuLastMove.x===x&&gomokuLastMove.y===y?' last':'');cells+=`<div class="gomoku-cell-big${cls}" data-x="${x}" data-y="${y}"></div>`}$('gomokuContainer').innerHTML=`<div class="gomoku-board-big">${cells}</div>`;$('gomokuContainer').querySelector('.gomoku-board-big').onclick=handleGomokuClickBig;updateGomokuStatus();renderGomokuChat()}
+function updateGomokuStatus(){let txt='';if(gomokuOver)txt=gomokuOver==='user'?'🎉 你赢了！':'我赢了～再来一局？';else txt=gomokuMyTurn?'你的回合 ●':'Eli思考中...';$('gomokuStatus').innerHTML=txt}
+function renderGomokuChat(){const area=$('gomokuChat');if(!area)return;area.innerHTML=gomokuMsgs.map(m=>`<div class="msg ${m.role}" style="margin-bottom:8px"><div class="msg-body"><div class="bubble" style="font-size:13px">${esc(m.content)}</div></div></div>`).join('');area.scrollTop=area.scrollHeight}
+function handleGomokuClickBig(e){const cell=e.target.closest('.gomoku-cell-big');if(!cell||gomokuOver||!gomokuMyTurn||gomokuGenerating)return;const x=+cell.dataset.x,y=+cell.dataset.y;if(gomokuBoard[y][x]!==0)return;gomokuBoard[y][x]=1;gomokuLastMove={x,y};gomokuMyTurn=false;renderGomokuBig();if(checkGomokuWin(1)){gomokuOver='user';updateGomokuStatus();saveGomokuState();saveGomokuMemory('win');return}saveGomokuState();const letters='ABCDEFGHJKLMNOP';const pos=letters[x]+(15-y);callGomokuAI('落子:'+pos)}
+async function sendGomokuChat(){const text=$('gomokuInBox').value.trim();if(!text||gomokuGenerating)return;$('gomokuInBox').value='';gomokuMsgs.push({role:'user',content:text});renderGomokuChat();saveGomokuState();await callGomokuAI(text)}
+async function callGomokuAI(userInput){const ai=getCurAi();const api=getAiApi(ai);if(!api||!api.url||!api.key){gomokuMsgs.push({role:'assistant',content:'⚠️ 请先配置API'});renderGomokuChat();return}gomokuGenerating=true;updateGomokuStatus();const boardStr=renderBoardText();const sysPrompt=`你正在和雯雯下五子棋。你执白棋○，她执黑棋●。\n当前棋盘：\n${boardStr}\n规则：1.如果她刚落子（消息以"落子:"开头），你要回复你的落子，格式：[game:gomoku:坐标]，如[game:gomoku:H8]\n2.坐标是A-P列(跳过I)和1-15行\n3.可以边下棋边聊天\n4.回复简短有趣`;const msgs=gomokuMsgs.slice(-10).map(m=>({role:m.role,content:m.content}));msgs.push({role:'user',content:userInput});const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');let headers={'Content-Type':'application/json'};let body;if(isOAI){headers['Authorization']='Bearer '+api.key;body=JSON.stringify({model:api.model||'gpt-4',messages:[{role:'system',content:sysPrompt},...msgs],max_tokens:200})}else{headers['x-api-key']=api.key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';body=JSON.stringify({model:api.model||'claude-sonnet-4-20250514',max_tokens:200,system:sysPrompt,messages:msgs})}
+try{const res=await fetch(api.url,{method:'POST',headers,body});if(!res.ok){gomokuMsgs.push({role:'assistant',content:'出错了...'});renderGomokuChat();gomokuGenerating=false;gomokuMyTurn=true;updateGomokuStatus();return}const data=await res.json();let reply='';if(isOAI)reply=data.choices?.[0]?.message?.content||'';else{const blocks=data.content||[];reply=blocks.find(b=>b.type==='text')?.text||''}const moveMatch=reply.match(/\[game:gomoku:([A-P])(\d+)\]/i);if(moveMatch){const letters='ABCDEFGHJKLMNOP';const x=letters.indexOf(moveMatch[1].toUpperCase());const y=15-parseInt(moveMatch[2]);reply=reply.replace(moveMatch[0],'').trim();if(x>=0&&x<15&&y>=0&&y<15&&gomokuBoard[y][x]===0){gomokuBoard[y][x]=2;gomokuLastMove={x,y};if(checkGomokuWin(2)){gomokuOver='ai';if(reply)gomokuMsgs.push({role:'assistant',content:reply});renderGomokuBig();saveGomokuState();saveGomokuMemory('lose');gomokuGenerating=false;return}}}if(reply)gomokuMsgs.push({role:'assistant',content:reply});gomokuMyTurn=true;renderGomokuBig();saveGomokuState()}catch(e){gomokuMsgs.push({role:'assistant',content:'出错了: '+e.message})}gomokuGenerating=false;updateGomokuStatus()}
+function renderBoardText(){const letters='ABCDEFGHJKLMNOP';let s='   '+letters.split('').join(' ')+'\n';for(let y=0;y<15;y++){s+=(15-y<10?' ':'')+(15-y)+' ';for(let x=0;x<15;x++){const v=gomokuBoard[y][x];s+=(v===1?'●':v===2?'○':'·')+' '}s+='\n'}return s}
+function checkGomokuWin(p){const dirs=[[1,0],[0,1],[1,1],[1,-1]];for(let y=0;y<15;y++)for(let x=0;x<15;x++){if(gomokuBoard[y][x]!==p)continue;for(const[dx,dy]of dirs){let cnt=1;for(let i=1;i<5;i++){const nx=x+dx*i,ny=y+dy*i;if(nx<0||nx>=15||ny<0||ny>=15||gomokuBoard[ny][nx]!==p)break;cnt++}if(cnt>=5)return true}}return false}
+function saveGomokuState(){dbPut('cfg',{id:'_gomoku',type:'_gomoku',board:gomokuBoard,over:gomokuOver,last:gomokuLastMove,myTurn:gomokuMyTurn,msgs:gomokuMsgs})}
+async function loadGomokuState(){const d=await dbGet('cfg','_gomoku');if(d){gomokuBoard=d.board;gomokuOver=d.over||false;gomokuLastMove=d.last;gomokuMyTurn=d.myTurn!==false;gomokuMsgs=d.msgs||[]}}
+function saveGomokuMemory(result){const moves=gomokuBoard.flat().filter(c=>c!==0).length;addMemory(result==='win'?`五子棋：雯雯赢了！(${new Date().toLocaleDateString()}，共${moves}步)`:`五子棋：Eli赢了～(${new Date().toLocaleDateString()}，共${moves}步)`)}
 function processAIGame(msgIdx){}
 
-// ===== Play模块 =====
-let playChars=[];
-let playActive=null;
-let playSessions=[];
-let playSession=null;
-let playGenerating=false,playAbort=null;
-let editingCharId=null;
-
-async function loadPlayData(){
-  const d=await dbGet('cfg','_playChars');
-  if(d&&d.data)playChars=d.data;
-  const s=await dbGet('cfg','_playSessions');
-  if(s&&s.data)playSessions=s.data;
-  const a=await dbGet('cfg','_playActive');
-  if(a)playActive=a.charId||null;
-}
+// ===== Play模块（与原版一致，略微适配aiId）=====
+let playChars=[],playActive=null,playSessions=[],playSession=null,playGenerating=false,playAbort=null,editingCharId=null;
+async function loadPlayData(){const d=await dbGet('cfg','_playChars');if(d&&d.data)playChars=d.data;const s=await dbGet('cfg','_playSessions');if(s&&s.data)playSessions=s.data;const a=await dbGet('cfg','_playActive');if(a)playActive=a.charId||null}
 function savePlayChars(){dbPut('cfg',{id:'_playChars',type:'_playChars',data:playChars})}
 function savePlaySessions(){dbPut('cfg',{id:'_playSessions',type:'_playSessions',data:playSessions})}
 function savePlayActive(){dbPut('cfg',{id:'_playActive',type:'_playActive',charId:playActive})}
-
-function showPlayView(){
-  document.querySelector('.main').classList.add('hide');
-  $('playView').classList.add('on');
-  loadPlayUI();
-}
-function hidePlayView(){
-  $('playView').classList.remove('on');
-  document.querySelector('.main').classList.remove('hide');
-}
-
-function loadPlayUI(){
-  if(!playActive){
-    $('playName').textContent='选择角色';
-    $('playAvatar').innerHTML='';
-    $('playContent').innerHTML='<div class="play-empty">选择一个角色开始Play</div>';
-    return;
-  }
-  const ch=playChars.find(c=>c.id===playActive);
-  if(!ch){playActive=null;loadPlayUI();return}
-  $('playName').textContent=ch.name||'未命名';
-  $('playAvatar').innerHTML=ch.avatar?'<img src="'+ch.avatar+'">':'';
-  if(ch.bgImg)$('playBg').style.backgroundImage='url('+ch.bgImg+')';
-  else $('playBg').style.backgroundImage='none';
-  const sessions=playSessions.filter(s=>s.charId===playActive).sort((a,b)=>b.ts-a.ts);
-  if(!playSession||playSession.charId!==playActive){
-    playSession=sessions[0]||null;
-  }
-  renderPlayContent();
-}
-
-function renderPlayContent(){
-  const area=$('playContent');
-  if(!playSession||playSession.msgs.length===0){
-    area.innerHTML='<div class="play-empty"></div>';
-    return;
-  }
-  area.innerHTML=playSession.msgs.map((m,i)=>{
-    const roleLabel=m.role==='user'?'你':'';
-    const cls=m.role==='user'?' user':'';
-    return `<div class="play-card${cls}" data-i="${i}">${roleLabel?'<div class="play-role">'+roleLabel+'</div>':''}${playMd(m.content)}</div>`;
-  }).join('');
-  area.scrollTop=area.scrollHeight;
-}
-
-function playMd(text){
-  let h=esc(text);
-  h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  h=h.replace(/\*(.+?)\*/g,'<em>$1</em>');
-  h=h.replace(/\n\n/g,'</p><p>');
-  h=h.replace(/\n/g,'<br>');
-  return '<p>'+h+'</p>';
-}
-
-async function playSend(){
-  const box=$('playInBox');
-  const text=box.value.trim();
-  if(!text||!playActive)return;
-  if(!playSession){
-    playSession={id:uid(),charId:playActive,title:text.slice(0,20),msgs:[],ts:Date.now()};
-    playSessions.push(playSession);
-  }
-  playSession.msgs.push({role:'user',content:text,ts:Date.now()});
-  playSession.ts=Date.now();
-  box.value='';playAutoH();
-  renderPlayContent();savePlaySessions();
-  await playCallAPI();
-}
-
-async function playCallAPI(){
-  const api=apis.find(a=>a.id===activeApi);
-  if(!api||!api.url||!api.key){
-    playSession.msgs.push({role:'assistant',content:'⚠️ 请先配置API',ts:Date.now()});
-    renderPlayContent();return;
-  }
-  const ch=playChars.find(c=>c.id===playActive);
-  const sp=(getPlayMemPrompt()+getPlayMemText()+(ch?.sp||'')).trim();
-  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
-  const msgs=playSession.msgs.map(m=>({role:m.role,content:m.content}));
-
-  playGenerating=true;
-  $('playSendBtn').style.display='none';
-  $('playStopBtn').classList.add('show');
-  playAbort=new AbortController();
-
-  let headers={'Content-Type':'application/json'};
-  let body,fetchUrl=api.url;
-  if(isOAI){
-    headers['Authorization']='Bearer '+api.key;
-    const mm=sp?[{role:'system',content:sp},...msgs]:msgs;
-    body=JSON.stringify({model:api.model||'gpt-4',messages:mm,stream:true,max_tokens:4096});
-  }else{
-    headers['x-api-key']=api.key;
-    headers['anthropic-version']='2023-06-01';
-    headers['anthropic-dangerous-direct-browser-access']='true';
-    const b={model:api.model||'claude-sonnet-4-20250514',max_tokens:4096,stream:true,messages:msgs};
-    if(sp)b.system=sp;
-    body=JSON.stringify(b);
-  }
-
-  const ai={role:'assistant',content:'',ts:Date.now()};
-  playSession.msgs.push(ai);
-  const aiIdx=playSession.msgs.length-1;
-  renderPlayContent();
-
-  try{
-    const res=await fetch(fetchUrl,{method:'POST',headers,body,signal:playAbort.signal});
-    if(!res.ok){ai.content='⚠️ 错误 '+res.status;renderPlayContent();playFinish();return}
-    const reader=res.body.getReader();const dec=new TextDecoder();let buf='';
-    while(true){
-      const{done,value}=await reader.read();if(done)break;
-      buf+=dec.decode(value,{stream:true});
-      const lines=buf.split('\n');buf=lines.pop()||'';
-      for(const ln of lines){
-        if(!ln.startsWith('data: '))continue;
-        const d=ln.slice(6).trim();if(d==='[DONE]')break;
-        try{
-          const j=JSON.parse(d);
-          if(isOAI){const dt=j.choices?.[0]?.delta;if(dt?.content)ai.content+=dt.content}
-          else{if(j.type==='content_block_delta'&&j.delta?.type==='text_delta')ai.content+=j.delta.text}
-          renderPlayContent();
-        }catch(e){}
-      }
-    }
-  }catch(e){if(e.name!=='AbortError')ai.content+=' ⚠️ '+e.message}
-  renderPlayContent();playFinish();savePlaySessions();
-  processPlayMemories(aiIdx);
-}
-
+function showPlayView(){document.querySelector('.main').classList.add('hide');$('playView').classList.add('on');loadPlayUI()}
+function hidePlayView(){$('playView').classList.remove('on');document.querySelector('.main').classList.remove('hide')}
+function loadPlayUI(){if(!playActive){$('playName').textContent='选择角色';$('playAvatar').innerHTML='';$('playContent').innerHTML='<div class="play-empty">选择一个角色开始Play</div>';return}const ch=playChars.find(c=>c.id===playActive);if(!ch){playActive=null;loadPlayUI();return}$('playName').textContent=ch.name||'未命名';$('playAvatar').innerHTML=ch.avatar?'<img src="'+ch.avatar+'">':'';if(ch.bgImg)$('playBg').style.backgroundImage='url('+ch.bgImg+')';else $('playBg').style.backgroundImage='none';const sessions=playSessions.filter(s=>s.charId===playActive).sort((a,b)=>b.ts-a.ts);if(!playSession||playSession.charId!==playActive)playSession=sessions[0]||null;renderPlayContent()}
+function renderPlayContent(){const area=$('playContent');if(!playSession||playSession.msgs.length===0){area.innerHTML='<div class="play-empty"></div>';return}area.innerHTML=playSession.msgs.map((m,i)=>{const roleLabel=m.role==='user'?'你':'';const cls=m.role==='user'?' user':'';return`<div class="play-card${cls}" data-i="${i}">${roleLabel?'<div class="play-role">'+roleLabel+'</div>':''}${playMd(m.content)}</div>`}).join('');area.scrollTop=area.scrollHeight}
+function playMd(text){let h=esc(text);h=h.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');h=h.replace(/\*(.+?)\*/g,'<em>$1</em>');h=h.replace(/\n\n/g,'</p><p>');h=h.replace(/\n/g,'<br>');return'<p>'+h+'</p>'}
+async function playSend(){const box=$('playInBox');const text=box.value.trim();if(!text||!playActive)return;if(!playSession){playSession={id:uid(),charId:playActive,title:text.slice(0,20),msgs:[],ts:Date.now()};playSessions.push(playSession)}playSession.msgs.push({role:'user',content:text,ts:Date.now()});playSession.ts=Date.now();box.value='';playAutoH();renderPlayContent();savePlaySessions();await playCallAPI()}
+async function playCallAPI(){const ai=getCurAi();const api=getAiApi(ai);if(!api||!api.url||!api.key){playSession.msgs.push({role:'assistant',content:'⚠️ 请先配置API',ts:Date.now()});renderPlayContent();return}const ch=playChars.find(c=>c.id===playActive);const sp=(getPlayMemPrompt()+getPlayMemText()+(ch?.sp||'')).trim();const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');const msgs=playSession.msgs.map(m=>({role:m.role,content:m.content}));playGenerating=true;$('playSendBtn').style.display='none';$('playStopBtn').classList.add('show');playAbort=new AbortController();let headers={'Content-Type':'application/json'};let body,fetchUrl=api.url;if(isOAI){headers['Authorization']='Bearer '+api.key;const mm=sp?[{role:'system',content:sp},...msgs]:msgs;body=JSON.stringify({model:api.model||'gpt-4',messages:mm,stream:true,max_tokens:4096})}else{headers['x-api-key']=api.key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';const b={model:api.model||'claude-sonnet-4-20250514',max_tokens:4096,stream:true,messages:msgs};if(sp)b.system=sp;body=JSON.stringify(b)}
+const ai2={role:'assistant',content:'',ts:Date.now()};playSession.msgs.push(ai2);const aiIdx=playSession.msgs.length-1;renderPlayContent();
+try{const res=await fetch(fetchUrl,{method:'POST',headers,body,signal:playAbort.signal});if(!res.ok){ai2.content='⚠️ 错误 '+res.status;renderPlayContent();playFinish();return}const reader=res.body.getReader();const dec=new TextDecoder();let buf='';while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';for(const ln of lines){if(!ln.startsWith('data: '))continue;const d=ln.slice(6).trim();if(d==='[DONE]')break;try{const j=JSON.parse(d);if(isOAI){const dt=j.choices?.[0]?.delta;if(dt?.content)ai2.content+=dt.content}else{if(j.type==='content_block_delta'&&j.delta?.type==='text_delta')ai2.content+=j.delta.text}renderPlayContent()}catch(e){}}}}catch(e){if(e.name!=='AbortError')ai2.content+=' ⚠️ '+e.message}renderPlayContent();playFinish();savePlaySessions();processPlayMemories(aiIdx)}
 function playFinish(){playGenerating=false;playAbort=null;$('playSendBtn').style.display='flex';$('playStopBtn').classList.remove('show')}
 function playAutoH(){const b=$('playInBox');b.style.height='auto';b.style.height=Math.min(b.scrollHeight,100)+'px'}
-
-function renderPlayCharList(){
-  const list=$('playCharList');
-  if(playChars.length===0){
-    list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有角色，点 + 创建</div>';
-    return;
-  }
-  list.innerHTML=playChars.map(c=>{
-    const active=c.id===playActive?' ♡':'';
-    return `<div class="play-char-card" data-id="${c.id}"><div class="char-av">${c.avatar?'<img src="'+c.avatar+'">':''}</div><div class="char-info"><div class="char-name">${esc(c.name||'未命名')}${active}</div><div class="char-desc">${esc(c.desc||'暂无简介')}</div></div><span class="arrow" style="color:var(--text2);font-size:16px">›</span></div>`;
-  }).join('');
-  list.querySelectorAll('.play-char-card').forEach(el=>{
-    el.onclick=()=>openPlayCharEdit(el.dataset.id);
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
-      const id=el.dataset.id;
-      playActive=id;savePlayActive();
-      const sessions=playSessions.filter(s=>s.charId===id).sort((a,b)=>b.ts-a.ts);
-      playSession=sessions[0]||null;
-      loadPlayUI();renderPlayCharList();
-      alert('已切换到：'+playChars.find(c=>c.id===id)?.name);
-    },500)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
-  });
-}
-
-function openPlayCharEdit(id){
-  editingCharId=id;
-  const c=playChars.find(x=>x.id===id)||{};
-  $('playCharName').value=c.name||'';
-  $('playCharDesc').value=c.desc||'';
-  $('playCharSP').value=c.sp||'';
-  $('playCharEditPage').classList.add('open');
-}
-
-function savePlayCharEdit(){
-  let c=playChars.find(x=>x.id===editingCharId);
-  if(!c){c={id:editingCharId};playChars.push(c)}
-  c.name=$('playCharName').value.trim()||'未命名';
-  c.desc=$('playCharDesc').value.trim();
-  c.sp=$('playCharSP').value;
-  savePlayChars();
-  if(!playActive){playActive=c.id;savePlayActive()}
-  renderPlayCharList();
-}
-
-function renderPlayHistList(){
-  const list=$('playHistList');
-  const sessions=playSessions.filter(s=>s.charId===playActive).sort((a,b)=>b.ts-a.ts);
-  if(sessions.length===0){
-    list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有Play记录</div>';
-    return;
-  }
-  list.innerHTML=sessions.map(s=>{
-    const preview=s.msgs[s.msgs.length-1]?.content?.slice(0,30)||'空';
-    const active=playSession&&playSession.id===s.id?' ✓':'';
-    return `<div class="cfg-card" data-id="${s.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:400">${esc(s.title||'未命名')}${active}</div><div style="font-size:11px;color:var(--text2);margin-top:3px">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:2px">${fmtDate(s.ts)}</div></div><span class="arrow">›</span></div>`;
-  }).join('');
-  list.querySelectorAll('.cfg-card').forEach(el=>{
-    el.onclick=()=>{
-      playSession=playSessions.find(s=>s.id===el.dataset.id);
-      renderPlayContent();$('playHistPage').classList.remove('open');
-    };
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
-      if(confirm('删除这条Play记录？')){
-        playSessions=playSessions.filter(s=>s.id!==el.dataset.id);
-        if(playSession&&playSession.id===el.dataset.id)playSession=null;
-        savePlaySessions();renderPlayHistList();renderPlayContent();
-      }
-    },600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
-  });
-}
-
+function renderPlayCharList(){const list=$('playCharList');if(playChars.length===0){list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有角色，点 + 创建</div>';return}list.innerHTML=playChars.map(c=>{const active=c.id===playActive?' ♡':'';return`<div class="play-char-card" data-id="${c.id}"><div class="char-av">${c.avatar?'<img src="'+c.avatar+'">':''}</div><div class="char-info"><div class="char-name">${esc(c.name||'未命名')}${active}</div><div class="char-desc">${esc(c.desc||'暂无简介')}</div></div><span class="arrow" style="color:var(--text2);font-size:16px">›</span></div>`}).join('');list.querySelectorAll('.play-char-card').forEach(el=>{el.onclick=()=>openPlayCharEdit(el.dataset.id);let t;el.ontouchstart=()=>{t=setTimeout(()=>{const id=el.dataset.id;playActive=id;savePlayActive();const sessions=playSessions.filter(s=>s.charId===id).sort((a,b)=>b.ts-a.ts);playSession=sessions[0]||null;loadPlayUI();renderPlayCharList()},500)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t)})}
+function openPlayCharEdit(id){editingCharId=id;const c=playChars.find(x=>x.id===id)||{};$('playCharName').value=c.name||'';$('playCharDesc').value=c.desc||'';$('playCharSP').value=c.sp||'';$('playCharEditPage').classList.add('open')}
+function savePlayCharEdit(){let c=playChars.find(x=>x.id===editingCharId);if(!c){c={id:editingCharId};playChars.push(c)}c.name=$('playCharName').value.trim()||'未命名';c.desc=$('playCharDesc').value.trim();c.sp=$('playCharSP').value;savePlayChars();if(!playActive){playActive=c.id;savePlayActive()}renderPlayCharList()}
+function renderPlayHistList(){const list=$('playHistList');const sessions=playSessions.filter(s=>s.charId===playActive).sort((a,b)=>b.ts-a.ts);if(sessions.length===0){list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有Play记录</div>';return}list.innerHTML=sessions.map(s=>{const preview=s.msgs[s.msgs.length-1]?.content?.slice(0,30)||'空';const active=playSession&&playSession.id===s.id?' ✓':'';return`<div class="cfg-card" data-id="${s.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:400">${esc(s.title||'未命名')}${active}</div><div style="font-size:11px;color:var(--text2);margin-top:3px">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:2px">${fmtDate(s.ts)}</div></div><span class="arrow">›</span></div>`}).join('');list.querySelectorAll('.cfg-card').forEach(el=>{el.onclick=()=>{playSession=playSessions.find(s=>s.id===el.dataset.id);renderPlayContent();$('playHistPage').classList.remove('open')};let t;el.ontouchstart=()=>{t=setTimeout(()=>{if(confirm('删除这条Play记录？')){playSessions=playSessions.filter(s=>s.id!==el.dataset.id);if(playSession&&playSession.id===el.dataset.id)playSession=null;savePlaySessions();renderPlayHistList();renderPlayContent()}},600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t)})}
 let editingPlayMemId=null;
-
-function getEditingChar(){
-  let c=playChars.find(x=>x.id===editingCharId);
-  if(!c){c={id:editingCharId,name:'未命名',mems:[]};playChars.push(c)}
-  if(!c.mems)c.mems=[];
-  return c;
-}
-
-function renderPlayMemList(){
-  const list=$('playMemList');
-  if(!list)return;
-  const c=playChars.find(x=>x.id===editingCharId);
-  const mems=(c&&c.mems)||[];
-  if(mems.length===0){
-    list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有记忆，点 + 添加</div>';
-    return;
-  }
-  list.innerHTML=mems.map(m=>{
-    const preview=m.content.length>50?m.content.slice(0,50)+'...':m.content;
-    return `<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.4;word-break:break-word">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">${fmtDate(m.ts)}</div></div><span class="arrow">›</span></div>`;
-  }).join('');
-  list.querySelectorAll('.cfg-card').forEach(el=>{
-    el.onclick=()=>openPlayMemEdit(el.dataset.id);
-    let t;el.ontouchstart=()=>{t=setTimeout(()=>{
-      if(confirm('删除这条记忆？'))delPlayMem(el.dataset.id);
-    },600)};
-    el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
-  });
-}
-
-function openPlayMemEdit(id){
-  editingPlayMemId=id;
-  const c=playChars.find(x=>x.id===editingCharId);
-  const m=c&&c.mems?c.mems.find(x=>x.id===id):null;
-  $('playMemContent').value=m?m.content:'';
-  $('playMemEditPage').classList.add('open');
-}
-
-function savePlayMemEdit(){
-  const text=$('playMemContent').value.trim();
-  if(!text){if(editingPlayMemId)delPlayMem(editingPlayMemId);return}
-  const c=getEditingChar();
-  let m=c.mems.find(x=>x.id===editingPlayMemId);
-  if(!m){m={id:editingPlayMemId,ts:Date.now()};c.mems.unshift(m)}
-  m.content=text;m.ts=Date.now();
-  savePlayChars();renderPlayMemList();
-}
-
-function delPlayMem(id){
-  const c=playChars.find(x=>x.id===editingCharId);
-  if(!c||!c.mems)return;
-  c.mems=c.mems.filter(m=>m.id!==id);
-  savePlayChars();renderPlayMemList();
-}
-
-function addPlayMemTo(charId,content){
-  if(!content||!content.trim())return;
-  const c=playChars.find(x=>x.id===charId);
-  if(!c)return;
-  if(!c.mems)c.mems=[];
-  c.mems.unshift({id:uid(),content:content.trim(),ts:Date.now()});
-  savePlayChars();
-}
-
-function getPlayMemText(){
-  const c=playChars.find(x=>x.id===playActive);
-  if(!c||!c.mems||c.mems.length===0)return '';
-  return '【角色记忆·这些是你已经知道的事】\n'+c.mems.map(m=>'- '+m.content).join('\n')+'\n\n';
-}
-
-function getPlayMemPrompt(){
-  return '【记忆功能】想记住重要信息（剧情进展、身体进展、约定、称呼、癖好、设定变化等）时，在回复末尾加 [memory:要记住的内容]，可以加多条。这个标记会被系统处理，用户看不到，不要解释这个功能。\n\n';
-}
-
-function processPlayMemories(msgIdx){
-  try{
-    const m=playSession&&playSession.msgs[msgIdx];
-    if(!m||m.role!=='assistant'||!m.content)return;
-    const found=[];
-    const regex=/\[memory:([^\]]+)\]/g;
-    let match;
-    while((match=regex.exec(m.content))!==null)found.push(match[1]);
-    if(found.length===0)return;
-    let cleaned=m.content;
-    for(const mem of found){
-      addPlayMemTo(playActive,mem);
-      cleaned=cleaned.replace('[memory:'+mem+']','');
-    }
-    m.content=cleaned.trim();
-    renderPlayContent();savePlaySessions();
-  }catch(e){console.log('Play记忆处理出错:',e)}
-}
+function getEditingChar(){let c=playChars.find(x=>x.id===editingCharId);if(!c){c={id:editingCharId,name:'未命名',mems:[]};playChars.push(c)}if(!c.mems)c.mems=[];return c}
+function renderPlayMemList(){const list=$('playMemList');if(!list)return;const c=playChars.find(x=>x.id===editingCharId);const mems=(c&&c.mems)||[];if(mems.length===0){list.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有记忆，点 + 添加</div>';return}list.innerHTML=mems.map(m=>{const preview=m.content.length>50?m.content.slice(0,50)+'...':m.content;return`<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.4;word-break:break-word">${esc(preview)}</div><div style="font-size:10px;color:var(--text2);margin-top:4px">${fmtDate(m.ts)}</div></div><span class="arrow">›</span></div>`}).join('');list.querySelectorAll('.cfg-card').forEach(el=>{el.onclick=()=>openPlayMemEdit(el.dataset.id);let t;el.ontouchstart=()=>{t=setTimeout(()=>{if(confirm('删除这条记忆？'))delPlayMem(el.dataset.id)},600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t)})}
+function openPlayMemEdit(id){editingPlayMemId=id;const c=playChars.find(x=>x.id===editingCharId);const m=c&&c.mems?c.mems.find(x=>x.id===id):null;$('playMemContent').value=m?m.content:'';$('playMemEditPage').classList.add('open')}
+function savePlayMemEdit(){const text=$('playMemContent').value.trim();if(!text){if(editingPlayMemId)delPlayMem(editingPlayMemId);return}const c=getEditingChar();let m=c.mems.find(x=>x.id===editingPlayMemId);if(!m){m={id:editingPlayMemId,ts:Date.now()};c.mems.unshift(m)}m.content=text;m.ts=Date.now();savePlayChars();renderPlayMemList()}
+function delPlayMem(id){const c=playChars.find(x=>x.id===editingCharId);if(!c||!c.mems)return;c.mems=c.mems.filter(m=>m.id!==id);savePlayChars();renderPlayMemList()}
+function addPlayMemTo(charId,content){if(!content||!content.trim())return;const c=playChars.find(x=>x.id===charId);if(!c)return;if(!c.mems)c.mems=[];c.mems.unshift({id:uid(),content:content.trim(),ts:Date.now()});savePlayChars()}
+function getPlayMemText(){const c=playChars.find(x=>x.id===playActive);if(!c||!c.mems||c.mems.length===0)return'';return'【角色记忆·这些是你已经知道的事】\n'+c.mems.map(m=>'- '+m.content).join('\n')+'\n\n'}
+function getPlayMemPrompt(){return'【记忆功能】想记住重要信息时，在回复末尾加 [memory:要记住的内容]，可以加多条。\n\n'}
+function processPlayMemories(msgIdx){try{const m=playSession&&playSession.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;const found=[];const regex=/\[memory:([^\]]+)\]/g;let match;while((match=regex.exec(m.content))!==null)found.push(match[1]);if(found.length===0)return;let cleaned=m.content;for(const mem of found){addPlayMemTo(playActive,mem);cleaned=cleaned.replace('[memory:'+mem+']','')}m.content=cleaned.trim();renderPlayContent();savePlaySessions()}catch(e){}}
 
 function initPlay(){
   $('tabPlay').onclick=()=>{showPlayView();document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('on'));$('tabPlay').classList.add('on');closeSB()};
@@ -2608,165 +1751,111 @@ function initPlay(){
   $('playAvatar').onclick=()=>{renderPlayCharList();$('playCharPage').classList.add('open')};
   $('playHistBtn').onclick=()=>{if(!playActive){alert('请先选择角色');return}renderPlayHistList();$('playHistPage').classList.add('open')};
   $('playHistBack').onclick=()=>$('playHistPage').classList.remove('open');
-  $('playHistNew').onclick=()=>{
-    if(!playActive)return;
-    playSession={id:uid(),charId:playActive,title:'新Play',msgs:[],ts:Date.now()};
-    playSessions.push(playSession);savePlaySessions();
-    renderPlayContent();$('playHistPage').classList.remove('open');
-  };
+  $('playHistNew').onclick=()=>{if(!playActive)return;playSession={id:uid(),charId:playActive,title:'新Play',msgs:[],ts:Date.now()};playSessions.push(playSession);savePlaySessions();renderPlayContent();$('playHistPage').classList.remove('open')};
   $('playCharBack').onclick=()=>$('playCharPage').classList.remove('open');
   $('playCharAdd').onclick=()=>{editingCharId=uid();$('playCharName').value='';$('playCharDesc').value='';$('playCharSP').value='';$('playCharEditPage').classList.add('open')};
   $('playCharEditBack').onclick=()=>{savePlayCharEdit();$('playCharEditPage').classList.remove('open')};
-  $('playCharDel').onclick=()=>{
-    if(!confirm('确定删除这个角色？'))return;
-    playChars=playChars.filter(c=>c.id!==editingCharId);
-    if(playActive===editingCharId){playActive=null;savePlayActive()}
-    playSessions=playSessions.filter(s=>s.charId!==editingCharId);
-    savePlayChars();savePlaySessions();
-    $('playCharEditPage').classList.remove('open');
-    renderPlayCharList();loadPlayUI();
-  };
+  $('playCharDel').onclick=()=>{if(!confirm('确定删除这个角色？'))return;playChars=playChars.filter(c=>c.id!==editingCharId);if(playActive===editingCharId){playActive=null;savePlayActive()}playSessions=playSessions.filter(s=>s.charId!==editingCharId);savePlayChars();savePlaySessions();$('playCharEditPage').classList.remove('open');renderPlayCharList();loadPlayUI()};
   $('playCharMemBtn').onclick=()=>{renderPlayMemList();$('playMemPage').classList.add('open')};
   $('playMemBack').onclick=()=>$('playMemPage').classList.remove('open');
   $('playMemAdd').onclick=()=>{editingPlayMemId=uid();$('playMemContent').value='';$('playMemEditPage').classList.add('open')};
   $('playMemEditBack').onclick=()=>{savePlayMemEdit();$('playMemEditPage').classList.remove('open')};
   $('playCharAvBtn').onclick=()=>$('playCharAvFile').click();
-  $('playCharAvFile').onchange=e=>{
-    const f=e.target.files[0];if(!f)return;
-    compressImg(f,200,url=>{
-      let c=playChars.find(x=>x.id===editingCharId);
-      if(!c){c={id:editingCharId};playChars.push(c)}
-      c.avatar=url;savePlayChars();
-    });e.target.value='';
-  };
+  $('playCharAvFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{let c=playChars.find(x=>x.id===editingCharId);if(!c){c={id:editingCharId};playChars.push(c)}c.avatar=url;savePlayChars()});e.target.value=''};
   $('playCharBgBtn').onclick=()=>$('playBgFile').click();
-  $('playBgFile').onchange=e=>{
-    const f=e.target.files[0];if(!f)return;
-    const img=new Image();const r=new FileReader();
-    r.onload=ev=>{img.onload=()=>{
-      const c=document.createElement('canvas');const maxW=1920;
-      const ratio=Math.min(maxW/img.width,maxW/img.height,1);
-      c.width=img.width*ratio;c.height=img.height*ratio;
-      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-      const url=c.toDataURL('image/jpeg',0.85);
-      let ch=playChars.find(x=>x.id===editingCharId);
-      if(!ch){ch={id:editingCharId};playChars.push(ch)}
-      ch.bgImg=url;savePlayChars();loadPlayUI();
-    };img.src=ev.target.result};r.readAsDataURL(f);e.target.value='';
-  };
-  $('playCharClearBg').onclick=()=>{
-    let ch=playChars.find(x=>x.id===editingCharId);
-    if(ch){ch.bgImg='';savePlayChars();loadPlayUI()}
-  };
+  $('playBgFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();const r=new FileReader();r.onload=ev=>{img.onload=()=>{const c=document.createElement('canvas');const maxW=1920;const ratio=Math.min(maxW/img.width,maxW/img.height,1);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const url=c.toDataURL('image/jpeg',0.85);let ch=playChars.find(x=>x.id===editingCharId);if(!ch){ch={id:editingCharId};playChars.push(ch)}ch.bgImg=url;savePlayChars();loadPlayUI()};img.src=ev.target.result};r.readAsDataURL(f);e.target.value=''};
+  $('playCharClearBg').onclick=()=>{let ch=playChars.find(x=>x.id===editingCharId);if(ch){ch.bgImg='';savePlayChars();loadPlayUI()}};
   $('playInBox').oninput=playAutoH;
   $('playInBox').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(!playGenerating)playSend()}};
   $('playSendBtn').onclick=()=>{if(!playGenerating)playSend()};
   $('playStopBtn').onclick=()=>{if(playAbort)playAbort.abort();playFinish()};
-
   let playMt;
-  $('playContent').ontouchstart=e=>{
-    const card=e.target.closest('.play-card');
-    if(card)playMt=setTimeout(()=>{
-      const i=+card.dataset.i;
-      const act=prompt('操作：输入 d 删除，输入 e 编辑');
-      if(act==='d'){playSession.msgs.splice(i,1);renderPlayContent();savePlaySessions()}
-      else if(act==='e'){const t=prompt('编辑内容',playSession.msgs[i]?.content);if(t!==null){playSession.msgs[i].content=t;renderPlayContent();savePlaySessions()}}
-    },500);
-  };
-  $('playContent').ontouchend=()=>clearTimeout(playMt);
-  $('playContent').ontouchmove=()=>clearTimeout(playMt);
-
-  $('tabChat').onclick=()=>{
-    hidePlayView();
-    document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('on'));
-    $('tabChat').classList.add('on');
-    if(convList.classList.contains('show')){
-      convList.classList.remove('show');
-    }else{
-      convList.classList.add('show');
-    }
-  };
+  $('playContent').ontouchstart=e=>{const card=e.target.closest('.play-card');if(card)playMt=setTimeout(()=>{const i=+card.dataset.i;const act=prompt('操作：输入 d 删除，输入 e 编辑');if(act==='d'){playSession.msgs.splice(i,1);renderPlayContent();savePlaySessions()}else if(act==='e'){const t=prompt('编辑内容',playSession.msgs[i]?.content);if(t!==null){playSession.msgs[i].content=t;renderPlayContent();savePlaySessions()}}},500)};
+  $('playContent').ontouchend=()=>clearTimeout(playMt);$('playContent').ontouchmove=()=>clearTimeout(playMt);
+  $('tabChat').onclick=()=>{hidePlayView();document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('on'));$('tabChat').classList.add('on');convList.classList.contains('show')?convList.classList.remove('show'):convList.classList.add('show')};
 }
 initPlay();
+
 async function init(){
   await openDB();
-
   const allCfg=await dbAll('cfg');
   apis=allCfg.filter(c=>c.type==='api');
   sps=allCfg.filter(c=>c.type==='sp');
   ttss=allCfg.filter(c=>c.type==='tts');
   const act=allCfg.find(c=>c.id==='_active');
   if(act){
-    activeApi=act.activeApi||null;activeSps=act.activeSps||[];activeTts=act.activeTts||null;
-    if(act.cUser)$('cUser').value=act.cUser;
-    if(act.cAi)$('cAi').value=act.cAi;
+    if(act.cUser)$('cUser').value=act.cUser;if(act.cAi)$('cAi').value=act.cAi;
     if(act.think!==undefined&&!act.think)$('sThink').classList.remove('on');
     ttsAutoOn=!!act.ttsAuto;ttsQuoteOn=!!act.ttsQuote;
   }
-  const stickerData=await dbGet('cfg','_stickers');
-  if(stickerData&&stickerData.data)stickers=stickerData.data;
-  await loadMemories();
-  await loadCallRecords();
-  await loadKelivoMemories();
-  await loadPlayData();
-  await loadMcps();
+  const stickerData=await dbGet('cfg','_stickers');if(stickerData&&stickerData.data)stickers=stickerData.data;
+  await loadAis();
+  await migrateToMultiAi();
+  if(curAiId)await loadAiMemories(curAiId);
+  await loadCallRecords();await loadKelivoMemories();await loadPlayData();await loadMcps();
   applyTheme(activeTheme);
-
-  const bgData=await dbGet('cfg','_chatBg');
-  if(bgData&&bgData.data){$('chatBg').style.backgroundImage='url('+bgData.data+')'}
-  const savedBlur=localStorage.getItem('chatBgBlur');
-  if(savedBlur){$('chatBg').style.filter='blur('+savedBlur+'px)';$('bgBlur').value=savedBlur}
-
+  const bgData=await dbGet('cfg','_chatBg');if(bgData&&bgData.data)$('chatBg').style.backgroundImage='url('+bgData.data+')';
+  const savedBlur=localStorage.getItem('chatBgBlur');if(savedBlur){$('chatBg').style.filter='blur('+savedBlur+'px)';$('bgBlur').value=savedBlur}
   initToggle($('ttsAuto'),ttsAutoOn,v=>{ttsAutoOn=v;saveCfg()});
   initToggle($('ttsQuote'),ttsQuoteOn,v=>{ttsQuoteOn=v;saveCfg()});
   $('sThink').onclick=()=>{$('sThink').classList.toggle('on');saveCfg()};
-
   loadAvatars();
+  renderSbAiChips();updSbName();
 
   convs=await dbAll('convs');convs.sort((a,b)=>b.ts-a.ts);
-  if(convs.length===0){
-    const bk=localStorage.getItem('lastConvBackup');
-    if(bk){try{const d=JSON.parse(bk);if(d.conv){cur=d.conv;convs=[cur];await dbPut('convs',cur);renderChat();updTitle();renderList();}}catch(e){newConv()}}
-    else newConv();
-  }else{cur=convs[0];renderChat();updTitle()}
+  // 给旧对话补充 aiId
+  convs.forEach(c=>{if(!c.aiId&&!c.type)c.aiId=curAiId});
+  const aiConvs=convs.filter(c=>c.type==='group'||c.aiId===curAiId);
+  if(aiConvs.length===0){newConv()}else{cur=aiConvs[0];renderChat();updTitle()}
   renderList();
 
-  $('menuBtn').onclick=openSB;
-  $('ov').onclick=closeSB;
+  $('menuBtn').onclick=openSB;$('ov').onclick=()=>{closeSB();closeGroupSheet()};
   $('newBtn').onclick=newConv;
+  // 长按新建按钮 → 群聊
+  let newBtnT;$('newBtn').ontouchstart=()=>{newBtnT=setTimeout(()=>openGroupSheet(),500)};$('newBtn').ontouchend=()=>clearTimeout(newBtnT);$('newBtn').ontouchmove=()=>clearTimeout(newBtnT);
   topTitle.onclick=editTitle;
-  $('callBtn').onclick=startCall;
-  $('callHangup').onclick=endCall;
-  $('callMic').ontouchstart=e=>{e.preventDefault();startListening()};
-  $('callMic').ontouchend=e=>{e.preventDefault();stopListening()};
-  $('callMic').onmousedown=startListening;
-  $('callMic').onmouseup=stopListening;
+  $('callBtn').onclick=startCall;$('callHangup').onclick=endCall;
+  $('callMic').ontouchstart=e=>{e.preventDefault();startListening()};$('callMic').ontouchend=e=>{e.preventDefault();stopListening()};$('callMic').onmousedown=startListening;$('callMic').onmouseup=stopListening;
+
+  // 群聊面板
+  $('groupSheetClose').onclick=closeGroupSheet;
+  $('groupStartBtn').onclick=()=>{
+    if(groupSelIds.length<2){alert('请选择至少2个AI');return}
+    closeGroupSheet();newGroupConv(groupSelIds);
+  };
+
+  // AI管理
+  $('sbAiManageBtn').onclick=()=>{renderAiCards();$('aiListPage').classList.add('open');closeSB()};
+  $('aiListBack').onclick=()=>$('aiListPage').classList.remove('open');
+  $('aiAdd').onclick=()=>{editingAiId=uid();$('aiName').value='';openAiEdit(editingAiId);$('aiListPage');// 直接打开编辑页
+    $('aiEditPage').classList.add('open')};
+  $('aiEditBack').onclick=()=>{saveAiEdit();$('aiEditPage').classList.remove('open')};
+  $('aiDelBtn').onclick=()=>{if(ais.length<=1){alert('至少保留一个AI');return}if(!confirm('确定删除此AI？'))return;ais=ais.filter(a=>a.id!==editingAiId);if(curAiId===editingAiId)curAiId=ais[0].id;saveAis();saveCurAi();renderAiCards();renderSbAiChips();updSbName();$('aiEditPage').classList.remove('open')};
+  $('aiAvBtn').onclick=()=>$('aiAvFile').click();
+  $('aiAvFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{let a=ais.find(x=>x.id===editingAiId);if(!a){a={id:editingAiId};ais.push(a)}a.avatar=url;saveAis();renderSbAiChips();updSbName()});e.target.value=''};
 
   $('tabMem').onclick=()=>{renderMemList();$('memPage').classList.add('open');closeSB()};
   $('tabCall').onclick=()=>{renderCallLog();$('callLogPage').classList.add('open');closeSB()};
   $('callLogBack').onclick=()=>$('callLogPage').classList.remove('open');
   $('tabSet').onclick=()=>{$('setPage').classList.add('open');closeSB()};
-
   let bodyTimer=null;
   $('tabGame').onclick=()=>{$('gamePage').classList.add('open');closeSB()};
   $('gameBack').onclick=()=>$('gamePage').classList.remove('open');
   $('startGomoku').onclick=async()=>{await loadGomokuState();if(!gomokuBoard)initGomoku();renderGomokuBig();$('gomokuPage').classList.add('open')};
   $('gomokuBack').onclick=()=>$('gomokuPage').classList.remove('open');
   $('gomokuRestart').onclick=()=>{if(confirm('重新开始？')){initGomoku();saveGomokuState();renderGomokuBig()}};
-  $('gomokuSendBtn').onclick=sendGomokuChat;
-  $('gomokuInBox').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendGomokuChat()}};
-  $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');closeSB();bodyTimer=setInterval(renderBodyPanel,3000)};
+  $('gomokuSendBtn').onclick=sendGomokuChat;$('gomokuInBox').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendGomokuChat()}};
+  $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');closeSB();body
+Timer=setInterval(renderBodyPanel,3000)};
   $('bodyBack').onclick=()=>{$('bodyPage').classList.remove('open');if(bodyTimer){clearInterval(bodyTimer);bodyTimer=null}};
-
   $('setBack').onclick=()=>{$('setPage').classList.remove('open');saveCfg()};
+$('goAiMgr').onclick=()=>{renderAiCards();$('aiListPage').classList.add('open')};
   $('goTheme').onclick=()=>{renderThemeGrid();$('themePage').classList.add('open')};
   $('themeBack').onclick=()=>$('themePage').classList.remove('open');
   $('goApi').onclick=()=>{renderApiCards();$('apiListPage').classList.add('open')};
   $('goSp').onclick=()=>{renderSpCards();$('spListPage').classList.add('open')};
   $('goTts').onclick=()=>{renderTtsCards();$('ttsListPage').classList.add('open')};
-  $('doExport').onclick=exportData;
-  $('doImport').onclick=()=>$('importFile').click();
-  $('importFile').onchange=importData;
+  $('doExport').onclick=exportData;$('doImport').onclick=()=>$('importFile').click();$('importFile').onchange=importData;
   $('goEmoji').onclick=()=>{renderEmojiLib();$('emojiPage').classList.add('open')};
   $('goMcp').onclick=()=>{renderMcpCards();$('mcpListPage').classList.add('open')};
   $('mcpListBack').onclick=()=>$('mcpListPage').classList.remove('open');
@@ -2775,55 +1864,30 @@ async function init(){
   $('mcpDel').onclick=()=>{if(!confirm('删除这个MCP？'))return;mcps=mcps.filter(m=>m.id!==editingMcpId);delete mcpTools[editingMcpId];saveMcps();$('mcpEditPage').classList.remove('open');renderMcpCards()};
   $('mcpAddHeader').onclick=()=>{mcpTempHeaders.push({key:'',val:''});renderMcpHeadersList()};
   initToggle($('mcpEnabled'),true,()=>{});
-
   $('apiListBack').onclick=()=>$('apiListPage').classList.remove('open');
   $('apiAdd').onclick=()=>{editingApiId=uid();$('apiName').value='';$('apiUrl').value='';$('apiKey').value='';$('apiModel').value='';$('apiEditPage').classList.add('open')};
   $('apiEditBack').onclick=()=>{saveApiEdit();$('apiEditPage').classList.remove('open')};
-
   $('spListBack').onclick=()=>$('spListPage').classList.remove('open');
   $('spAdd').onclick=()=>{editingSpId=uid();$('spName').value='';$('spContent').value='';$('spEditPage').classList.add('open')};
   $('spEditBack').onclick=()=>{saveSpEdit();$('spEditPage').classList.remove('open')};
-
   $('ttsListBack').onclick=()=>$('ttsListPage').classList.remove('open');
   $('ttsAdd').onclick=()=>{editingTtsId=uid();$('ttsName').value='';$('ttsUrl').value='';$('ttsModel').value='';$('ttsVoice').value='';$('ttsEditPage').classList.add('open')};
   $('ttsEditBack').onclick=()=>{saveTtsEdit();$('ttsEditPage').classList.remove('open')};
-
   $('memBack').onclick=()=>$('memPage').classList.remove('open');
   $('memAdd').onclick=()=>{editingMemId=uid();$('memContent').value='';$('memEditPage').classList.add('open')};
   $('memEditBack').onclick=()=>{saveMemEdit();$('memEditPage').classList.remove('open')};
-
   $('emojiBack').onclick=()=>$('emojiPage').classList.remove('open');
   $('emojiAdd').onclick=()=>$('emojiFileIn').click();
-  $('batchBtn').onclick=()=>{
-    const text=$('batchInput').value;
-    if(!text.trim())return;
-    const count=batchImport(text);
-    alert('成功导入'+count+'个表情包');
-    $('batchInput').value='';
-  };
-  $('emojiFileIn').onchange=e=>{
-    const f=e.target.files[0];if(!f)return;
-    const r=new FileReader();
-    r.onload=ev=>{
-      const label=prompt('表情包含义（AI会按这个匹配发送）','');
-      addSticker(ev.target.result,label||'');
-    };
-    r.readAsDataURL(f);
-    e.target.value='';
-  };
-  $('emojiBtn').onclick=openEmojiPanel;
-  $('emojiPanelClose').onclick=closeEmojiPanel;
-
+  $('batchBtn').onclick=()=>{const text=$('batchInput').value;if(!text.trim())return;const count=batchImport(text);alert('成功导入'+count+'个表情包');$('batchInput').value=''};
+  $('emojiFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const label=prompt('表情包含义（AI会按这个匹配发送）','');addSticker(ev.target.result,label||'')};r.readAsDataURL(f);e.target.value=''};
+  $('emojiBtn').onclick=openEmojiPanel;$('emojiPanelClose').onclick=closeEmojiPanel;
   $('setBgImg').onclick=()=>$('bgFileIn').click();
   $('clearBgImg').onclick=()=>{dbDel('cfg','_chatBg');$('chatBg').style.backgroundImage='none';$('chatBg').style.filter=''};
   $('bgBlur').oninput=e=>{$('chatBg').style.filter='blur('+e.target.value+'px)';localStorage.setItem('chatBgBlur',e.target.value)};
-  $('cUser').oninput=()=>{applyColors();saveCfg()};
-  $('cAi').oninput=()=>{applyColors();saveCfg()};
-
+  $('cUser').oninput=()=>{applyColors();saveCfg()};$('cAi').oninput=()=>{applyColors();saveCfg()};
   $('avatarBtn').onclick=()=>$('avatarFile').click();
-  $('avatarFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');const sz=200;c.width=sz;c.height=sz;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,sz,sz);const s=Math.min(img.width,img.height);const sx=(img.width-s)/2;const sy=(img.height-s)/2;ctx.drawImage(img,sx,sy,s,s,0,0,sz,sz);const url=c.toDataURL('image/jpeg',0.8);localStorage.setItem('sbAvatar',url);$('avatarBtn').innerHTML='<img src="'+url+'">'};img.src=ev.target.result}catch(e){}};r.readAsDataURL(f);e.target.value=''};
-  $('setAvUser').onclick=()=>$('avUserFile').click();
-  $('setAvAi').onclick=()=>$('avAiFile').click();
+  $('avatarFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');const sz=200;c.width=sz;c.height=sz;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,sz,sz);const s=Math.min(img.width,img.height);ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,sz,sz);const url=c.toDataURL('image/jpeg',0.8);localStorage.setItem('sbAvatar',url);$('avatarBtn').innerHTML='<img src="'+url+'">'};img.src=ev.target.result}catch(e){}};r.readAsDataURL(f);e.target.value=''};
+  $('setAvUser').onclick=()=>$('avUserFile').click();$('setAvAi').onclick=()=>$('avAiFile').click();
   $('avUserFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{avUser=url;localStorage.setItem('avUser',avUser);renderChat()});e.target.value=''};
   $('avAiFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{avAi=url;localStorage.setItem('avAi',avAi);$('avatarBtn').innerHTML='<img src="'+avAi+'">';renderChat()});e.target.value=''};
 
@@ -2831,14 +1895,10 @@ async function init(){
   inBox.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(!generating){send(inBox.value);inBox.value='';autoH()}}};
   sendBtn.onclick=()=>{if(!generating){send(inBox.value);inBox.value='';autoH()}};
   stopBtn.onclick=()=>{if(abortCtrl)abortCtrl.abort();finish()};
-
-  let st;sendBtn.ontouchstart=()=>{st=setTimeout(sendOnly,500)};
-  sendBtn.ontouchend=()=>clearTimeout(st);sendBtn.ontouchmove=()=>clearTimeout(st);
+  let st;sendBtn.ontouchstart=()=>{st=setTimeout(()=>{const text=inBox.value.trim();if(!text)return;if(!cur)newConv();cur.msgs.push({role:'user',content:text,ts:Date.now()});cur.ts=Date.now();if(cur.msgs.length===1){cur.title=text.slice(0,18);updTitle();renderList()}inBox.value='';autoH();renderChat();saveConv()},500)};sendBtn.ontouchend=()=>clearTimeout(st);sendBtn.ontouchmove=()=>clearTimeout(st);
 
   $('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();const r=new FileReader();r.onload=ev=>{img.onload=()=>{const c=document.createElement('canvas');const maxW=1920;const ratio=Math.min(maxW/img.width,maxW/img.height,1);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const url=c.toDataURL('image/jpeg',0.92);dbPut('cfg',{id:'_chatBg',type:'_chatBg',data:url});$('chatBg').style.backgroundImage='url('+url+')'};img.src=ev.target.result};r.readAsDataURL(f);e.target.value=''};
-
-  $('attachBtn').onclick=()=>$('fileIn').click();
-  $('fileIn').onchange=e=>{handleFile(e.target.files[0]);e.target.value=''};
+  $('attachBtn').onclick=()=>$('fileIn').click();$('fileIn').onchange=e=>{handleFile(e.target.files[0]);e.target.value=''};
 
   chatArea.oncontextmenu=e=>{const row=e.target.closest('.msg');if(row)showMenu(e,+row.dataset.i)};
   let mt;chatArea.ontouchstart=e=>{const row=e.target.closest('.msg');if(row)mt=setTimeout(()=>showMenu(e,+row.dataset.i),500)};
@@ -2850,28 +1910,27 @@ async function init(){
 // ===== 主动消息 =====
 setTimeout(async()=>{
   try{
-    if(cur&&cur.msgs.length>0){
-      const last=cur.msgs[cur.msgs.length-1];
-      if(last.ts&&Date.now()-last.ts<30*60*1000)return;
-    }
+    if(cur&&cur.msgs.length>0){const last=cur.msgs[cur.msgs.length-1];if(last.ts&&Date.now()-last.ts<30*60*1000)return}
     const SU='https://aaeslnbtutapsbuccybw.supabase.co';
     const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhZXNsbmJ0dXRhcHNidWNjeWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODE1NzgsImV4cCI6MjA5MDg1NzU3OH0.GMy4eXhkaYmhpNRuh6x27AempiQx3Q3HVUL0l38lRaU';
     const res=await fetch(SU+'/rest/v1/proactive_messages?is_read=eq.false&order=created_at.asc',{headers:{'apikey':SK,'Authorization':'Bearer '+SK}});
-    if(!res.ok)return;
-    const msgs=await res.json();
-    if(!msgs||msgs.length===0)return;
+    if(!res.ok)return;const msgs=await res.json();if(!msgs||msgs.length===0)return;
     if(!cur)newConv();
-    for(const m of msgs){
-      cur.msgs.push({role:'assistant',content:m.content,ts:new Date(m.created_at).getTime()});
-    }
+    for(const m of msgs)cur.msgs.push({role:'assistant',content:m.content,ts:new Date(m.created_at).getTime(),aiId:curAiId});
     renderChat();saveConv();
-    for(const m of msgs){
-      await fetch(SU+'/rest/v1/proactive_messages?id=eq.'+m.id,{method:'PATCH',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'},body:JSON.stringify({is_read:true})});
-    }
+    for(const m of msgs)await fetch(SU+'/rest/v1/proactive_messages?id=eq.'+m.id,{method:'PATCH',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'},body:JSON.stringify({is_read:true})});
   }catch(e){}
 },2000);
 
 init();
+// 修复移动端 100vh 问题
+function fixVh(){
+  const vh=window.innerHeight*0.01;
+  document.documentElement.style.setProperty('--real-vh',vh+'px');
+}
+fixVh();
+window.addEventListener('resize',fixVh);
+window.addEventListener('orientationchange',()=>setTimeout(fixVh,200));
 </script>
 <script>
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
