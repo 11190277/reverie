@@ -355,6 +355,17 @@ html,body{
 .group-ai-item.sel .gcheck::after{content:'';width:6px;height:6px;border-radius:50%;background:#fff}
 .group-start-btn{display:block;width:100%;padding:13px;border-radius:14px;border:none;background:var(--text);color:var(--bg);font-size:14px;font-family:inherit;font-weight:400;cursor:pointer;margin-top:8px;letter-spacing:1px}
 .group-start-btn:active{opacity:0.8}
+/* ===== 主屏幕 App 模式视觉优化 ===== */
+
+/* 平时没有键盘时，把输入栏往上提 */
+.pwa-no-keyboard .main{
+  padding-bottom:40px;
+}
+
+/* 键盘弹出时取消留白 */
+.main{
+  transition:padding-bottom 0.2s ease;
+}
 </style>
 <script src="eventide.js"></script>
 </head>
@@ -1944,27 +1955,45 @@ init();
 
 function updateAppHeight() {
   const viewport = window.visualViewport;
+  const appHeight = viewport
+    ? viewport.height
+    : window.innerHeight;
 
-  if (viewport) {
-    document.documentElement.style.setProperty(
-      '--app-height',
-      `${viewport.height}px`
-    );
+  document.documentElement.style.setProperty(
+    '--app-height',
+    `${appHeight}px`
+  );
+
+  // 判断是不是从主屏幕打开
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  // 判断键盘是否弹出
+  const fullHeight = window.screen.height;
+  const keyboardOpen =
+    viewport &&
+    fullHeight - viewport.height > 150;
+
+  // 主屏幕模式 + 没有键盘 → 给底部留出视觉空间
+  if (isStandalone && !keyboardOpen) {
+    document.documentElement.classList.add('pwa-no-keyboard');
   } else {
-    document.documentElement.style.setProperty(
-      '--app-height',
-      `${window.innerHeight}px`
-    );
+    document.documentElement.classList.remove('pwa-no-keyboard');
   }
 }
 
 updateAppHeight();
 
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', updateAppHeight);
+  window.visualViewport.addEventListener(
+    'resize',
+    updateAppHeight
+  );
 }
 
 window.addEventListener('resize', updateAppHeight);
+
 window.addEventListener('orientationchange', () => {
   setTimeout(updateAppHeight, 300);
 });
