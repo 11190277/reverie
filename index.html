@@ -1927,12 +1927,19 @@ setTimeout(async()=>{
 init();
 // 修复移动端 100vh 问题
 function fixVh(){
-  document.documentElement.style.setProperty('--real-vh',window.innerHeight*0.01+'px');
+  const h=window.visualViewport?window.visualViewport.height:window.innerHeight;
+  document.documentElement.style.setProperty('--real-vh',h*0.01+'px');
 }
-window.addEventListener('load',()=>{fixVh();setTimeout(fixVh,300)});
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',fixVh);
+  window.visualViewport.addEventListener('scroll',fixVh);
+}
 window.addEventListener('resize',fixVh);
 window.addEventListener('orientationchange',()=>setTimeout(fixVh,500));
 fixVh();
+setTimeout(fixVh,100);
+setTimeout(fixVh,500);
+setTimeout(fixVh,1000);
 </script>
 <script>
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
