@@ -3,6 +3,7 @@
 <head>
 <link rel="apple-touch-icon" href="icon.png">
   <link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#f7f7f7">
 
 <meta charset="UTF-8">
@@ -1972,23 +1973,10 @@ $('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new 
   document.onclick=e=>{if(!e.target.closest('.msg-menu'))hideMenu()};
   $('msgMenu').onclick=e=>{const it=e.target.closest('.msg-menu-item');if(it)menuAct(it.dataset.a)};
 $('doPush').onclick=async()=>{
-  const key=urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-  alert('公钥长度：'+key.length+'，开头字节：'+key[0]);
-  const p=await Notification.requestPermission();
-  if(p!=='granted'){alert('权限被拒绝了');return}
   try{
     const reg=await navigator.serviceWorker.ready;
-    const old=await reg.pushManager.getSubscription();
-    if(old)await old.unsubscribe();
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:VAPID_PUBLIC_KEY});
-    const res=await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/push_subscriptions',{
-      method:'POST',
-      headers:{'apikey':'sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Authorization':'Bearer sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({id:'main',subscription:sub.toJSON(),updated_at:new Date().toISOString()})
-    });
-    if(res.ok)alert('推送已开启 (´,,•ω•,,)');
-    else alert('存储失败 '+res.status);
-  }catch(e){alert('订阅出错：'+e.message)}
+    alert('SW状态：'+(reg.active?reg.active.state:'无')+'\nscope：'+reg.scope+'\n权限：'+Notification.permission);
+  }catch(e){alert('出错：'+e.message)}
 };
 }
 
