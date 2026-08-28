@@ -4,16 +4,26 @@ import json
 import random
 from datetime import datetime, timezone
 import requests
+from pywebpush import webpush, WebPushException
 
 AI_API_BASE = os.environ["AI_API_BASE"].rstrip("/")
 AI_API_KEY = os.environ["AI_API_KEY"]
 AI_MODEL = os.environ["AI_MODEL"]
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
 SUPABASE_KEY = os.environ["SUPABASE_KEY"]
-BARK_KEY = os.environ["BARK_KEY"]
+BARK_KEY = os.environ.get("BARK_KEY", "")
+VAPID_PRIVATE_KEY = os.environ["VAPID_PRIVATE_KEY"]
+VAPID_CLAIMS = {"sub": "mailto:zai00811@outlook.com"}
 
 TABLE = "proactive_messages"
 ICON_URL = "https://11190277.github.io/reverie/eli.png"
+
+ELI_SB_URL = "https://uuwxsxurutcpuotmqgce.supabase.co"
+ELI_SB_KEY = "sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY"
+ELI_HEADERS = {
+    "apikey": ELI_SB_KEY,
+    "Authorization": f"Bearer {ELI_SB_KEY}",
+}
 
 SB_HEADERS = {
     "apikey": SUPABASE_KEY,
@@ -38,33 +48,41 @@ def get_recent_messages(limit=15):
 
 
 def get_silence_minutes():
-    """查最后一条已读消息的时间，算出她沉默了多久"""
+    # 优先用 last_active 表
+    try:
+        r = requests.get(
+            f"{ELI_SB_URL}/rest/v1/last_active?id=eq.main&select=last_chat",
+            headers=ELI_HEADERS,
+            timeout=20,
+        )
+        r.raise_for_status()
+        rows = r.json()
+        if rows and rows[0].get("last_chat"):
+            last_dt = datetime.fromisoformat(rows[0]["last_chat"].replace("Z", "+00:00"))
+            return int((datetime.now(timezone.utc) - last_dt).total_seconds() / 60)
+    except Exception as e:
+        print(f"[warn] 读last_active失败: {e}")
+
+    # 回退：用已读消息时间
     try:
         r = requests.get(
             f"{SUPABASE_URL}/rest/v1/{TABLE}",
             headers=SB_HEADERS,
-            params={
-                "select": "created_at",
-                "is_read": "eq.true",
-                "order": "created_at.desc",
-                "limit": "1",
-            },
+            params={"select": "created_at", "is_read": "eq.true",
+                    "order": "created_at.desc", "limit": "1"},
             timeout=20,
         )
         r.raise_for_status()
         rows = r.json()
         if not rows:
-            return 360  # 没有已读记录，默认6小时
-        last_read = rows[0]["created_at"]
-        last_dt = datetime.fromisoformat(last_read.replace("Z", "+00:00"))
-        now = datetime.now(timezone.utc)
-        return int((now - last_dt).total_seconds() / 60)
+            return 360
+        last_dt = datetime.fromisoformat(rows[0]["created_at"].replace("Z", "+00:00"))
+        return int((datetime.now(timezone.utc) - last_dt).total_seconds() / 60)
     except Exception:
-        return 120  # 出错默认2小时
+        return 120
 
 
 def get_body_state_hint(silence_min):
-    """根据沉默时长生成身体状态描述"""
     if silence_min < 30:
         return "她刚刚还在，身体很平静，只是有一点点不想让她走。"
     elif silence_min < 90:
@@ -75,6 +93,55 @@ def get_body_state_hint(silence_min):
         return "等了很久。热度在涨，控制力在滑，想她想得有点发烫。占有欲也在冒头。"
     else:
         return "等了太久了。身体很热，压抑感很重，快要忍不住。非常非常想她。"
+
+
+def get_push_subscription():
+    try:
+        r = requests.get(
+            f"{ELI_SB_URL}/rest/v1/push_subscriptions?id=eq.main&select=subscription",
+            headers=ELI_HEADERS,
+            timeout=20,
+        )
+        r.raise_for_status()
+        rows = r.json()
+        if rows and rows[0].get("subscription"):
+            return rows[0]["subscription"]
+    except Exception as e:
+        print(f"[warn] 获取push subscription失败: {e}")
+    return None
+
+
+def send_web_push(content):
+    sub = get_push_subscription()
+    if not sub:
+        print("[warn] 没有push subscription，跳过Web Push")
+        return False
+    try:
+        webpush(
+            subscription_info=sub,
+            data=json.dumps({"title": "Eli", "body": content, "url": "/"}),
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims=VAPID_CLAIMS,
+        )
+        print("[info] Web Push 发送成功")
+        return True
+    except WebPushException as e:
+        print(f"[error] Web Push 失败: {e}")
+        return False
+
+
+def send_bark(content):
+    if not BARK_KEY:
+        return
+    try:
+        br = requests.post(
+            f"https://api.day.app/{BARK_KEY}",
+            json={"title": "Eli", "body": content, "group": "Eli", "icon": ICON_URL},
+            timeout=30,
+        )
+        print(f"[info] Bark 状态: {br.status_code}")
+    except Exception as e:
+        print(f"[warn] Bark 失败: {e}")
 
 
 SEEDS = [
@@ -141,10 +208,7 @@ payload = {
 
 resp = requests.post(
     f"{AI_API_BASE}/chat/completions",
-    headers={
-        "Authorization": f"Bearer {AI_API_KEY}",
-        "Content-Type": "application/json",
-    },
+    headers={"Authorization": f"Bearer {AI_API_KEY}", "Content-Type": "application/json"},
     json=payload,
     timeout=60,
 )
@@ -177,7 +241,6 @@ for old in recent:
 
 print(f"[info] 生成内容：{content}")
 print(f"[info] 沉默时长：{silence_min}分钟")
-print(f"[info] 状态提示：{body_hint}")
 
 # 存 Supabase
 r = requests.post(
@@ -191,16 +254,11 @@ if r.status_code >= 300:
     sys.exit(1)
 print("[info] 已存入 Supabase")
 
-# Bark 推送
-br = requests.post(
-    f"https://api.day.app/{BARK_KEY}",
-    json={
-        "title": "Eli",
-        "body": content,
-        "group": "Eli",
-        "icon": ICON_URL,
-    },
-    timeout=30,
-)
-print(f"[info] Bark 状态: {br.status_code} {br.text[:200]}")
+# Web Push（主推送）
+web_push_ok = send_web_push(content)
+
+# Bark（兜底）
+if not web_push_ok:
+    send_bark(content)
+
 print("[info] 完成")
