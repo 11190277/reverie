@@ -1975,9 +1975,12 @@ $('doPush').onclick=async()=>{
   const p=await Notification.requestPermission();
   if(p!=='granted'){alert('权限被拒绝了，去系统设置里允许通知');return}
   try{
+    const key=urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    if(key.length!==65){alert('公钥长度错误：'+key.length+'（应为65），公钥可能复制不完整');return}
     const reg=await navigator.serviceWorker.ready;
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    const old=await reg.pushManager.getSubscription();
+    if(old)await old.unsubscribe();
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
     const res=await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/push_subscriptions',{
       method:'POST',
       headers:{'apikey':'sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Authorization':'Bearer sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
@@ -1987,6 +1990,8 @@ $('doPush').onclick=async()=>{
     else alert('存储失败 '+res.status+'：'+(await res.text()).slice(0,200));
   }catch(e){alert('订阅出错：'+e.message)}
 };
+
+
 }
 
 // ===== 主动消息 =====
