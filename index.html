@@ -1973,8 +1973,19 @@ $('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new 
   $('msgMenu').onclick=e=>{const it=e.target.closest('.msg-menu-item');if(it)menuAct(it.dataset.a)};
 $('doPush').onclick=async()=>{
   const p=await Notification.requestPermission();
-  if(p==='granted'){await subscribePush();alert('推送已开启 (´,,•ω•,,)')}
-  else alert('权限被拒绝了，去系统设置里允许通知')
+  if(p!=='granted'){alert('权限被拒绝了，去系统设置里允许通知');return}
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    const res=await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/push_subscriptions',{
+      method:'POST',
+      headers:{'apikey':'sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Authorization':'Bearer sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:'main',subscription:sub.toJSON(),updated_at:new Date().toISOString()})
+    });
+    if(res.ok)alert('推送已开启 (´,,•ω•,,)');
+    else alert('存储失败 '+res.status+'：'+(await res.text()).slice(0,200));
+  }catch(e){alert('订阅出错：'+e.message)}
 };
 }
 
@@ -1982,8 +1993,8 @@ $('doPush').onclick=async()=>{
 setTimeout(async()=>{
   try{
     if(cur&&cur.msgs.length>0){const last=cur.msgs[cur.msgs.length-1];if(last.ts&&Date.now()-last.ts<30*60*1000)return}
-    const SU='https://aaeslnbtutapsbuccybw.supabase.co';
-    const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhZXNsbmJ0dXRhcHNidWNjeWJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyODE1NzgsImV4cCI6MjA5MDg1NzU3OH0.GMy4eXhkaYmhpNRuh6x27AempiQx3Q3HVUL0l38lRaU';
+    const SU='https://uuwxsxurutcpuotmqgce.supabase.co';
+    const SK='sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY';
     const res=await fetch(SU+'/rest/v1/proactive_messages?is_read=eq.false&order=created_at.asc',{headers:{'apikey':SK,'Authorization':'Bearer '+SK}});
     if(!res.ok)return;const msgs=await res.json();if(!msgs||msgs.length===0)return;
     if(!cur)newConv();
