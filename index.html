@@ -73,7 +73,7 @@ html,body{
 .top-group-avs .gav img{width:100%;height:100%;object-fit:cover}
 .chat-wrap{position:relative;flex:1;overflow:hidden;display:flex;flex-direction:column}
 .chat-bg{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;background-repeat:no-repeat;pointer-events:none}
-.chat{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 12px 8px;-webkit-overflow-scrolling:touch;width:100%;position:relative;z-index:1}
+.chat{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px 12px 88px;-webkit-overflow-scrolling:touch;width:100%;position:relative;z-index:1}
 .msg{display:flex;align-items:flex-end;margin-bottom:10px;gap:7px;width:100%;animation:msgIn 0.2s ease}
 .msg.user{flex-direction:row-reverse}
 .msg-av{width:28px;height:28px;border-radius:50%;background:#fff;border:1px solid var(--border);flex-shrink:0;overflow:hidden}
@@ -562,7 +562,7 @@ html,body{
   </div></div>
   <div class="set-sec"><h3>头像</h3><div class="set-card">
        <div class="set-item" id="setAvUser" style="cursor:pointer"><label>用户头像</label><div style="display:flex;align-items:center;gap:8px"><div id="avUserPreview" style="width:28px;height:28px;border-radius:50%;background:#eee;overflow:hidden"></div><span class="arrow">›</span></div></div>
-    <div class="set-item" id="setAvAi" style="cursor:pointer"><label>AI头像</label><div style="display:flex;align-items:center;gap:8px"><div id="avAiPreview" style="width:28px;height:28px;border-radius:50%;background:#eee;overflow:hidden"></div><span class="arrow">›</span></div></div>
+
   </div></div>
 <div class="set-sec"><h3>聊天背景</h3><div class="set-card">
   <div class="set-item" id="setBgImg"><label>选择背景图</label><span class="arrow">›</span></div>
@@ -778,13 +778,15 @@ html,body{
     <div class="set-item col"><label>名字</label><input class="set-input" id="aiName" placeholder="以礼"></div>
     <div class="set-item" id="aiAvBtn"><label>头像</label><span class="arrow">›</span></div>
     <div class="set-item col"><label>使用的 API</label><select class="set-input" id="aiApiSel"></select></div>
-    <div class="set-item col"><label>使用的 SP（可多选，长按取消）</label><div id="aiSpSel" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>
+    <div class="set-item col"><label>使用的 SP 卡片（可多选，长按取消）</label><div id="aiSpSel" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px"></div></div>
     <div class="set-item col"><label>使用的 TTS</label><select class="set-input" id="aiTtsSel"></select></div>
+    <div class="set-item col"><label>专属 System Prompt</label><textarea class="set-textarea" id="aiSp" rows="8" placeholder="这个 AI 的角色设定、性格、背景..."></textarea></div>
   </div></div>
   <div class="set-sec"><div class="set-card">
     <div class="set-item" id="aiDelBtn" style="color:#ff3b30;justify-content:center;cursor:pointer"><label style="color:#ff3b30">删除此 AI</label></div>
   </div></div>
 </div>
+
 
 <!-- 群聊选择面板 -->
 <div class="group-sheet" id="groupSheet">
@@ -890,13 +892,21 @@ function getAiApi(ai){
   return apis.find(a=>a.id===ai.apiId)||null;
 }
 function getAiSpText(ai){
-  if(!ai||!ai.spIds)return '';
-  return sps.filter(s=>ai.spIds.includes(s.id)).map(s=>s.content).join('\n\n');
+  if(!ai)return '';
+  let sp=ai.sp||'';
+  if(ai.spIds&&ai.spIds.length>0){
+    const extra=sps.filter(s=>ai.spIds.includes(s.id)).map(s=>s.content).join('\n\n');
+    if(extra)sp+=(sp?'\n\n':'')+extra;
+  }
+  return sp.trim();
 }
+
+
 function getAiTts(ai){
   if(!ai)return null;
   return ttss.find(t=>t.id===ai.ttsId)||null;
 }
+
 
 // ===== 侧边栏AI切换器 =====
 function renderSbAiChips(){
@@ -906,21 +916,36 @@ function renderSbAiChips(){
     return`<div class="sb-ai-chip${a.id===curAiId?' active':''}" data-id="${a.id}">${avHtml}${esc(a.name||'AI')}</div>`;
   }).join('');
   chips.querySelectorAll('.sb-ai-chip').forEach(el=>{
-    el.onclick=()=>{
-      curAiId=el.dataset.id;saveCurAi();
-      renderSbAiChips();updSbName();
-      // 切换到该AI的最近对话
-      const aiConvs=convs.filter(c=>c.aiId===curAiId&&c.type!=='group');
-      cur=aiConvs[0]||null;
-      if(!cur)newConv();
-      else{renderChat();updTitle();renderList();}
-    };
+el.onclick=async()=>{
+  curAiId=el.dataset.id;saveCurAi();
+  renderSbAiChips();updSbName();
+  await loadAiBg(curAiId);
+  await loadAiMemories(curAiId);
+  const aiConvs=convs.filter(c=>c.type==='group'||c.aiId===curAiId);
+  cur=aiConvs[0]||null;
+  if(!cur)newConv();
+  else{renderChat();updTitle();renderList();}
+};
+
     let t;el.ontouchstart=()=>{t=setTimeout(()=>{
       // 长按进AI管理页
       renderAiCards();$('aiListPage').classList.add('open');
     },600)};el.ontouchend=()=>clearTimeout(t);el.ontouchmove=()=>clearTimeout(t);
   });
 }
+
+async function loadAiBg(aiId){
+  const bgData=await dbGet('cfg','_chatBg_'+aiId);
+  if(bgData&&bgData.data){$('chatBg').style.backgroundImage='url('+bgData.data+')';}
+  else{$('chatBg').style.backgroundImage='none';}
+  const blur=localStorage.getItem('chatBgBlur_'+aiId)||localStorage.getItem('chatBgBlur')||'12';
+  $('chatBg').style.filter='blur('+blur+'px)';
+  if($('bgBlur'))$('bgBlur').value=blur;
+}
+
+
+
+
 function updSbName(){
   const ai=getCurAi();
   $('sbAiName').textContent=ai?ai.name:'我们的小家';
@@ -949,9 +974,8 @@ function openAiEdit(id){
   editingAiId=id;
   const a=ais.find(x=>x.id===id)||{};
   $('aiName').value=a.name||'';
-  // 填充API下拉
+  $('aiSp').value=a.sp||'';
   $('aiApiSel').innerHTML='<option value="">-- 不指定 --</option>'+apis.map(x=>`<option value="${x.id}"${x.id===a.apiId?' selected':''}>${esc(x.name||'未命名')}</option>`).join('');
-  // 填充SP多选
   const spSel=$('aiSpSel');
   spSel.innerHTML=sps.map(s=>{
     const on=(a.spIds||[]).includes(s.id);
@@ -960,7 +984,6 @@ function openAiEdit(id){
   spSel.querySelectorAll('.sb-ai-chip').forEach(el=>{
     el.onclick=()=>el.classList.toggle('active');
   });
-  // 填充TTS下拉
   $('aiTtsSel').innerHTML='<option value="">-- 不指定 --</option>'+ttss.map(x=>`<option value="${x.id}"${x.id===a.ttsId?' selected':''}>${esc(x.name||'未命名')}</option>`).join('');
   $('aiEditPage').classList.add('open');
 }
@@ -969,11 +992,13 @@ function saveAiEdit(){
   let a=ais.find(x=>x.id===editingAiId);
   if(!a){a={id:editingAiId,avatar:''};ais.push(a)}
   a.name=$('aiName').value.trim()||'未命名';
+  a.sp=$('aiSp').value;
   a.apiId=$('aiApiSel').value||null;
   a.spIds=Array.from($('aiSpSel').querySelectorAll('.sb-ai-chip.active')).map(el=>el.dataset.id);
   a.ttsId=$('aiTtsSel').value||null;
   saveAis();renderAiCards();renderSbAiChips();updSbName();
 }
+
 
 // ===== 记忆（按AI隔离）=====
 function renderBodyPanel(){
@@ -1086,13 +1111,13 @@ function renderChat(){
 }
 
 function getAvForMsg(m){
-  // 群聊中的 assistant 消息有 aiId
   if(m.role==='user')return avUser;
-  if(cur?.type==='group'&&m.aiId){
-    const a=getAiById(m.aiId);
-    return a?.avatar||avAi;
-  }
-  return avAi;
+  // 消息自带 aiId（群聊 / 带标记的单聊）
+  if(m.aiId){const a=getAiById(m.aiId);if(a?.avatar)return a.avatar;}
+  // 单聊：用当前对话绑定的 AI 头像
+  if(cur?.aiId){const a=getAiById(cur.aiId);if(a?.avatar)return a.avatar;}
+  // 兜底
+  return getCurAi()?.avatar||'';
 }
 
 function renderMsg(m,i){
@@ -1657,7 +1682,8 @@ function showIncomingCall(greeting){
 
 function compressImg(file,size,cb){const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{try{const c=document.createElement('canvas');c.width=size;c.height=size;const ctx=c.getContext('2d');const s=Math.min(img.width,img.height);const sx=(img.width-s)/2,sy=(img.height-s)/2;ctx.drawImage(img,sx,sy,s,s,0,0,size,size);cb(c.toDataURL('image/jpeg',0.7))}catch(e){cb(ev.target.result)}};img.onerror=()=>cb(ev.target.result);img.src=ev.target.result};r.readAsDataURL(file)}
 let avUser='',avAi='';
-function loadAvatars(){avUser=localStorage.getItem('avUser')||'';avAi=localStorage.getItem('avAi')||'';const sbAv=localStorage.getItem('sbAvatar')||'';if(sbAv)$('avatarBtn').innerHTML='<img src="'+sbAv+'">';if(avUser)$('avUserPreview').innerHTML='<img src="'+avUser+'" style="width:100%;height:100%;object-fit:cover">';if(avAi)$('avAiPreview').innerHTML='<img src="'+avAi+'" style="width:100%;height:100%;object-fit:cover">'}
+function loadAvatars(){avUser=localStorage.getItem('avUser')||'';avAi=localStorage.getItem('avAi')||'';const sbAv=localStorage.getItem('sbAvatar')||'';if(sbAv)$('avatarBtn').innerHTML='<img src="'+sbAv+'">';if(avUser)$('avUserPreview').innerHTML='<img src="'+avUser+'" style="width:100%;height:100%;object-fit:cover">';}
+
 
 const callAudio=new Audio();
 let callMsgs=[],callActive=false,callTimerInt=null,callSecs=0,callRecords=[];
@@ -1823,8 +1849,7 @@ async function init(){
   if(curAiId)await loadAiMemories(curAiId);
   await loadCallRecords();await loadKelivoMemories();await loadPlayData();await loadMcps();
   applyTheme(activeTheme);
-  const bgData=await dbGet('cfg','_chatBg');if(bgData&&bgData.data)$('chatBg').style.backgroundImage='url('+bgData.data+')';
-  const savedBlur=localStorage.getItem('chatBgBlur');if(savedBlur){$('chatBg').style.filter='blur('+savedBlur+'px)';$('bgBlur').value=savedBlur}
+await loadAiBg(curAiId);
   initToggle($('ttsAuto'),ttsAutoOn,v=>{ttsAutoOn=v;saveCfg()});
   initToggle($('ttsQuote'),ttsQuoteOn,v=>{ttsQuoteOn=v;saveCfg()});
   $('sThink').onclick=()=>{$('sThink').classList.toggle('on');saveCfg()};
@@ -1910,14 +1935,22 @@ $('goAiMgr').onclick=()=>{renderAiCards();$('aiListPage').classList.add('open')}
   $('emojiFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const label=prompt('表情包含义（AI会按这个匹配发送）','');addSticker(ev.target.result,label||'')};r.readAsDataURL(f);e.target.value=''};
   $('emojiBtn').onclick=openEmojiPanel;$('emojiPanelClose').onclick=closeEmojiPanel;
   $('setBgImg').onclick=()=>$('bgFileIn').click();
-  $('clearBgImg').onclick=()=>{dbDel('cfg','_chatBg');$('chatBg').style.backgroundImage='none';$('chatBg').style.filter=''};
-  $('bgBlur').oninput=e=>{$('chatBg').style.filter='blur('+e.target.value+'px)';localStorage.setItem('chatBgBlur',e.target.value)};
+$('clearBgImg').onclick=()=>{dbDel('cfg','_chatBg_'+curAiId);$('chatBg').style.backgroundImage='none';$('chatBg').style.filter=''};
+
+$('bgBlur').oninput=e=>{$('chatBg').style.filter='blur('+e.target.value+'px)';localStorage.setItem('chatBgBlur_'+curAiId,e.target.value)};
+
   $('cUser').oninput=()=>{applyColors();saveCfg()};$('cAi').oninput=()=>{applyColors();saveCfg()};
   $('avatarBtn').onclick=()=>$('avatarFile').click();
   $('avatarFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');const sz=200;c.width=sz;c.height=sz;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,sz,sz);const s=Math.min(img.width,img.height);ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,sz,sz);const url=c.toDataURL('image/jpeg',0.8);localStorage.setItem('sbAvatar',url);$('avatarBtn').innerHTML='<img src="'+url+'">'};img.src=ev.target.result}catch(e){}};r.readAsDataURL(f);e.target.value=''};
-  $('setAvUser').onclick=()=>$('avUserFile').click();$('setAvAi').onclick=()=>$('avAiFile').click();
+$('setAvUser').onclick=()=>$('avUserFile').click();
   $('avUserFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{avUser=url;localStorage.setItem('avUser',avUser);renderChat()});e.target.value=''};
-  $('avAiFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{avAi=url;localStorage.setItem('avAi',avAi);$('avatarBtn').innerHTML='<img src="'+avAi+'">';renderChat()});e.target.value=''};
+$('avAiFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{
+  avAi=url;localStorage.setItem('avAi',avAi);
+  const ai=getCurAi();if(ai){ai.avatar=url;saveAis();renderSbAiChips();updSbName();}
+  $('avAiPreview').innerHTML='<img src="'+url+'" style="width:100%;height:100%;object-fit:cover">';
+  renderChat();
+});e.target.value=''};
+
 
   inBox.oninput=autoH;
   inBox.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(!generating){send(inBox.value);inBox.value='';autoH()}}};
@@ -1925,7 +1958,8 @@ $('goAiMgr').onclick=()=>{renderAiCards();$('aiListPage').classList.add('open')}
   stopBtn.onclick=()=>{if(abortCtrl)abortCtrl.abort();finish()};
   let st;sendBtn.ontouchstart=()=>{st=setTimeout(()=>{const text=inBox.value.trim();if(!text)return;if(!cur)newConv();cur.msgs.push({role:'user',content:text,ts:Date.now()});cur.ts=Date.now();if(cur.msgs.length===1){cur.title=text.slice(0,18);updTitle();renderList()}inBox.value='';autoH();renderChat();saveConv()},500)};sendBtn.ontouchend=()=>clearTimeout(st);sendBtn.ontouchmove=()=>clearTimeout(st);
 
-  $('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();const r=new FileReader();r.onload=ev=>{img.onload=()=>{const c=document.createElement('canvas');const maxW=1920;const ratio=Math.min(maxW/img.width,maxW/img.height,1);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const url=c.toDataURL('image/jpeg',0.92);dbPut('cfg',{id:'_chatBg',type:'_chatBg',data:url});$('chatBg').style.backgroundImage='url('+url+')'};img.src=ev.target.result};r.readAsDataURL(f);e.target.value=''};
+$('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();const r=new FileReader();r.onload=ev=>{img.onload=()=>{const c=document.createElement('canvas');const maxW=1920;const ratio=Math.min(maxW/img.width,maxW/img.height,1);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const url=c.toDataURL('image/jpeg',0.92);dbPut('cfg',{id:'_chatBg_'+curAiId,type:'_chatBg',data:url});$('chatBg').style.backgroundImage='url('+url+')'};img.src=ev.target.result};r.readAsDataURL(f);e.target.value=''};
+
   $('attachBtn').onclick=()=>$('fileIn').click();$('fileIn').onchange=e=>{handleFile(e.target.files[0]);e.target.value=''};
 
   chatArea.oncontextmenu=e=>{const row=e.target.closest('.msg');if(row)showMenu(e,+row.dataset.i)};
