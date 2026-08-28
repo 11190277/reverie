@@ -1,0 +1,9 @@
+name: Gen VAPID Keys
+on:
+  workflow_dispatch:
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm install -g web-push
+      - run: web-push generate-vapid-keys
