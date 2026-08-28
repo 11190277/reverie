@@ -1978,7 +1978,11 @@ $('doPush').onclick=async()=>{
     const old=await reg.pushManager.getSubscription();
     if(old)await old.unsubscribe();
 const key = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+
+const sub = await reg.pushManager.subscribe({
+  userVisibleOnly: true,
+  applicationServerKey: key
+});
     const res=await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/push_subscriptions',{
       method:'POST',
       headers:{'apikey':'sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Authorization':'Bearer sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
@@ -2052,7 +2056,7 @@ window.addEventListener('orientationchange', () => {
 });
 </script>
 <script>
-const VAPID_PUBLIC_KEY='BO2ELEbWCU521F8rsGf8rtR0UOfjwQiBxqj8pUiVGjHn9ubDUUFUSMu9mTRVhdekW1ZU9P-MqSfAmMr0AkcV8Ks';
+const VAPID_PUBLIC_KEY='BFPTS30QMD3OGpTgPh6Nsti4GofQMz2o9UUW-MwvaGq6H-uH2nXgjC437_er8v3m7QFvOGaBuVarliPW8uxicwg';
 function urlBase64ToUint8Array(b){const p='='.repeat((4-b.length%4)%4);const s=(b+p).replace(/-/g,'+').replace(/_/g,'/');const r=window.atob(s);const o=new Uint8Array(r.length);for(let i=0;i<r.length;++i)o[i]=r.charCodeAt(i);return o}
 async function subscribePush(){
   if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
