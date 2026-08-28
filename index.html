@@ -1980,7 +1980,7 @@ $('doPush').onclick=async()=>{
     const reg=await navigator.serviceWorker.ready;
     const old=await reg.pushManager.getSubscription();
     if(old)await old.unsubscribe();
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key.buffer});
     const res=await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/push_subscriptions',{
       method:'POST',
       headers:{'apikey':'sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Authorization':'Bearer sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
