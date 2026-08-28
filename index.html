@@ -576,6 +576,9 @@ html,body{
   <div class="set-sec"><h3>显示</h3><div class="set-card">
     <div class="set-item" style="cursor:default"><label>思维链</label><div class="toggle on" id="sThink"></div></div>
   </div></div>
+<div class="set-sec"><h3>推送</h3><div class="set-card">
+    <div class="set-item" id="doPush"><label>开启锁屏推送</label><span class="arrow">›</span></div>
+  </div></div>
  <div class="set-sec"><h3>数据</h3><div class="set-card">
     <div class="set-item" id="doExport"><label>导出数据</label><span class="arrow">›</span></div>
     <div class="set-item" id="doImport"><label>导入数据</label><span class="arrow">›</span></div>
@@ -1968,6 +1971,11 @@ $('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new 
   chatArea.ontouchend=()=>clearTimeout(mt);chatArea.ontouchmove=()=>clearTimeout(mt);
   document.onclick=e=>{if(!e.target.closest('.msg-menu'))hideMenu()};
   $('msgMenu').onclick=e=>{const it=e.target.closest('.msg-menu-item');if(it)menuAct(it.dataset.a)};
+$('doPush').onclick=async()=>{
+  const p=await Notification.requestPermission();
+  if(p==='granted'){await subscribePush();alert('推送已开启 (´,,•ω•,,)')}
+  else alert('权限被拒绝了，去系统设置里允许通知')
+};
 }
 
 // ===== 主动消息 =====
@@ -2058,7 +2066,7 @@ async function updateLastActive(){
   }catch(e){}
 }
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
-init().then(()=>subscribePush());
+init();
 </script>
 </body>
 </html>
