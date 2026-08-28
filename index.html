@@ -1235,6 +1235,7 @@ function playVoice(el,url){
 async function send(text,img,file){
   if(!cur)newConv();
   if(!text.trim()&&!img&&!file)return;
+updateLastActive();
   let finalText=text.trim();
   const urlMatch=finalText.match(/https?:\/\/[^\s]+/);
   if(urlMatch&&!img&&!file){
@@ -1984,7 +1985,6 @@ setTimeout(async()=>{
   }catch(e){}
 },2000);
 
-init();
 
 function updateAppHeight() {
   const viewport = window.visualViewport;
@@ -2032,7 +2032,33 @@ window.addEventListener('orientationchange', () => {
 });
 </script>
 <script>
+const VAPID_PUBLIC_KEY='BK4uHxMDTSScYIXB7HV01_z9mR4tLrQZj9efRyokSRQ1mLUJ5kuqXsHHP2MWWs1awL50mUicvLrFXymDz_x72Bc';
+function urlBase64ToUint8Array(b){const p='='.repeat((4-b.length%4)%4);const s=(b+p).replace(/-/g,'+').replace(/_/g,'/');const r=window.atob(s);const o=new Uint8Array(r.length);for(let i=0;i<r.length;++i)o[i]=r.charCodeAt(i);return o}
+async function subscribePush(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window))return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+    await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/push_subscriptions',{
+      method:'POST',
+      headers:{'apikey':'sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Authorization':'Bearer sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:'main',subscription:sub,updated_at:new Date().toISOString()})
+    });
+    console.log('[push] 订阅成功');
+  }catch(e){console.log('[push] 订阅失败:',e)}
+}
+async function updateLastActive(){
+  try{
+    await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/last_active',{
+      method:'POST',
+      headers:{'apikey':'sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Authorization':'Bearer sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY','Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({id:'main',last_chat:new Date().toISOString()})
+    });
+  }catch(e){}
+}
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+init().then(()=>subscribePush());
 </script>
 </body>
 </html>
