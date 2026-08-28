@@ -1977,9 +1977,7 @@ $('doPush').onclick=async()=>{
     const reg=await navigator.serviceWorker.ready;
     const old=await reg.pushManager.getSubscription();
     if(old)await old.unsubscribe();
-    const raw=window.atob('BO2ELEbWCU521F8rsGf8rtR0UOfjwQiBxqj8pUiVGjHn9ubDUUFUSMu9mTRVhdekW1ZU9P-MqSfAmMr0AkcV8Ks'.replace(/-/g,'+').replace(/_/g,'/'));
-    const key=new Uint8Array(raw.length);
-    for(let i=0;i<raw.length;i++)key[i]=raw.charCodeAt(i);
+const key = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
     const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
     const res=await fetch('https://uuwxsxurutcpuotmqgce.supabase.co/rest/v1/push_subscriptions',{
       method:'POST',
