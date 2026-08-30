@@ -1648,12 +1648,17 @@ function processAIStickers(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='as
 
 async function processAIMultiBubble(msgIdx,ai){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
-  if(!m.content.includes('|||'))return;
-  const parts=m.content.split('|||').map(p=>p.trim()).filter(p=>p);
+  let parts;
+  if(m.content.includes('|||')){
+    parts=m.content.split('|||').map(p=>p.trim()).filter(p=>p);
+  }else{
+    const matched=m.content.match(/[^。！？…\n]+[。！？…]+|[^。！？…\n]+$/g);
+    parts=matched?matched.map(p=>p.trim()).filter(p=>p):[m.content];
+  }
   if(parts.length<=1)return;
   m.content=parts[0];renderChat();saveConv();
   for(let i=1;i<parts.length;i++){
-    await new Promise(r=>setTimeout(r,800+Math.random()*400));
+    await new Promise(r=>setTimeout(r,600+Math.random()*400));
     const newIdx=cur.msgs.length;
     cur.msgs.push({role:'assistant',content:parts[i],ts:Date.now(),aiId:m.aiId});
     renderChat();saveConv();
@@ -1997,14 +2002,17 @@ const sub = await reg.pushManager.subscribe({
 // ===== 主动消息 =====
 setTimeout(async()=>{
   try{
-    if(cur&&cur.msgs.length>0){const last=cur.msgs[cur.msgs.length-1];if(last.ts&&Date.now()-last.ts<30*60*1000)return}
     const SU='https://uuwxsxurutcpuotmqgce.supabase.co';
     const SK='sb_publishable_uKuxx2yiM9kqDKPki-EVJg_LnENlLLY';
     const res=await fetch(SU+'/rest/v1/proactive_messages?is_read=eq.false&order=created_at.asc',{headers:{'apikey':SK,'Authorization':'Bearer '+SK}});
-    if(!res.ok)return;const msgs=await res.json();if(!msgs||msgs.length===0)return;
-    if(!cur)newConv();
-    for(const m of msgs)cur.msgs.push({role:'assistant',content:m.content,ts:new Date(m.created_at).getTime(),aiId:curAiId});
-    renderChat();saveConv();
+    if(!res.ok)return;
+    const msgs=await res.json();
+    if(!msgs||msgs.length===0)return;
+    const c={id:uid(),title:'Eli的消息',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'};
+    for(const m of msgs)c.msgs.push({role:'assistant',content:m.content,ts:new Date(m.created_at).getTime(),aiId:curAiId});
+    convs.unshift(c);
+    await dbPut('convs',c);
+    renderList();
     for(const m of msgs)await fetch(SU+'/rest/v1/proactive_messages?id=eq.'+m.id,{method:'PATCH',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'},body:JSON.stringify({is_read:true})});
   }catch(e){}
 },2000);
