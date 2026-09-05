@@ -1717,6 +1717,11 @@ function closeSB(){$('sb').classList.remove('on');$('ov').classList.remove('on')
 // ===== MCP =====
 let mcps=[],mcpTools={},editingMcpId=null,mcpTempHeaders=[];
 let mcpSessions={}; // {mcpId: sessionId} 握手后的会话
+const MCP_PROXY='https://proxy.37-eli.top'; // CORS代理，留空''则直连
+function mcpFetch(mcp,opts){
+  const url=MCP_PROXY?MCP_PROXY+'?url='+encodeURIComponent(mcp.url):mcp.url;
+  return fetch(url,opts);
+}
 function mcpHeaders(mcp,sessionId){
   const h={'Content-Type':'application/json','Accept':'application/json, text/event-stream'};
   (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
@@ -1742,12 +1747,12 @@ async function parseMcpResponse(res){
 // 初始化握手，拿到并保存 session id
 async function mcpInitialize(mcp){
   const initBody={jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'reverie',version:'1.0'}}};
-  const res=await fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,null),body:JSON.stringify(initBody)});
+  const res=await mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,null),body:JSON.stringify(initBody)});
   if(!res.ok)throw new Error('init HTTP '+res.status);
   const sessionId=res.headers.get('mcp-session-id')||'';
   await parseMcpResponse(res);
   try{
-    await fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,sessionId),body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})});
+    await mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,sessionId),body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})});
   }catch(e){}
   mcpSessions[mcp.id]=sessionId;
   return sessionId;
@@ -1761,22 +1766,22 @@ async function fetchMcpTools(mcp){
   const timer=setTimeout(()=>ctrl.abort(),100000);
   try{
     let sessionId=await mcpInitialize(mcp);
-    const doList=(sid)=>fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list',params:{}}),signal:ctrl.signal});
+    const doList=(sid)=>mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list',params:{}}),signal:ctrl.signal});
     let res=await doList(sessionId);
     if(res.status===404||res.status===400){sessionId=await mcpInitialize(mcp);res=await doList(sessionId)}
     if(!res.ok){mcp._error='tools/list HTTP '+res.status+'：'+(await res.text().catch(()=>'')).slice(0,120);return[]}
     const j=await parseMcpResponse(res);
-    if(!j){mcp._error='响应解析失败（非法JSON/SSE）';return[]}
-    if(j.error){mcp._error='服务器返回错误：'+(j.error.message||JSON.stringify(j.error)).slice(0,120);return[]}
+    if(!j){mcp._error='响应解析失败';return[]}
+    if(j.error){mcp._error='服务器错误：'+(j.error.message||JSON.stringify(j.error)).slice(0,120);return[]}
     const tools=j.result?.tools||[];
-    if(tools.length===0){mcp._error='握手成功但工具列表为空'}
-    else mcp._error='';
+    mcp._error=tools.length===0?'握手成功但工具列表为空':'';
     return tools;
   }catch(e){
     mcp._error=(e.name==='AbortError'?'连接超时':e.message)||'未知错误';
     return[];
   }finally{clearTimeout(timer)}
 }
+
 async function refreshAllMcpTools(){for(const mcp of mcps){if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);else delete mcpTools[mcp.id]}}
 function getAllMcpToolDefs(){const tools=[];for(const mcp of mcps){if(!mcp.enabled)continue;for(const t of(mcpTools[mcp.id]||[]))tools.push({name:t.name,description:(t.description||'')+'（来自：'+mcp.name+'）',input_schema:t.inputSchema||{type:'object',properties:{}}})}return tools}
 async function callMcpTool(name,args){
@@ -1786,7 +1791,7 @@ async function callMcpTool(name,args){
       try{
         let sessionId=mcpSessions[mcp.id];
         if(sessionId===undefined)sessionId=await mcpInitialize(mcp);
-        const doCall=(sid)=>fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});
+        const doCall=(sid)=>mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});
         let res=await doCall(sessionId);
         if(res.status===404||res.status===400){sessionId=await mcpInitialize(mcp);res=await doCall(sessionId)}
         if(!res.ok)return{error:'HTTP '+res.status};
@@ -1802,6 +1807,7 @@ async function callMcpTool(name,args){
   }
   return{error:'工具未找到: '+name};
 }
+
 function renderToolCallCard(tc){const statusLabel=tc.status==='running'?'执行中':tc.status==='done'?'完成':'出错';const argsStr=typeof tc.args==='object'?JSON.stringify(tc.args,null,2):String(tc.args||'');const resultStr=tc.result||'';return`<div class="tool-call-card"><div class="tool-call-hd" onclick="this.nextElementSibling.classList.toggle('show')"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="tool-call-name">${esc(tc.name)}</span><span class="tool-call-status ${tc.status}">${statusLabel}</span></div><div class="tool-call-body"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">参数</div><pre>${esc(argsStr)}</pre>${resultStr?'<div style="font-size:11px;color:var(--text2);margin:6px 0 4px">结果</div><pre>'+esc(resultStr.slice(0,600))+(resultStr.length>600?'…':'')+'</pre>':''}</div></div>`}
 function renderMcpCards(){
   const el=$('mcpCards');
