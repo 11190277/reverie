@@ -1752,23 +1752,22 @@ function stripThinking(text){
   return text.trim();
 }
 
-function dedupRepeat(text){
-  if(!text)return text;
-  // 去连续重复行
-  let lines=[];
-  for(const ln of text.split('\n')){
-    if(ln.trim()&&lines.length&&lines[lines.length-1].trim()===ln.trim())continue;
-    lines.push(ln);
+// 跨气泡的句子级去重：一整轮回复里，出现过的句子不再重复
+function dedupParts(parts){
+  const seen=new Set();
+  const result=[];
+  for(const p of parts){
+    const segs=p.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[p];
+    let out='';
+    for(const s of segs){
+      const key=s.trim().replace(/\s/g,'');
+      if(key.length>=3){if(seen.has(key))continue;seen.add(key)}
+      out+=s;
+    }
+    out=out.trim();
+    if(out)result.push(out);
   }
-  text=lines.join('\n');
-  // 句子级去重：出现过的整句不再重复
-  const seen=new Set();let out='';
-  for(const s of (text.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[text])){
-    const key=s.trim().replace(/\s/g,'');
-    if(key.length>=6){if(seen.has(key))continue;seen.add(key)}
-    out+=s;
-  }
-  return out.trim()||text.trim();
+  return result;
 }
 
 // 把一大段按自然停顿切成2-3条
@@ -1785,17 +1784,17 @@ function autoSplit(text){
 
 async function processAIMultiBubble(msgIdx,ai){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
-  m.content=dedupRepeat(stripThinking(m.content));
+  let content=stripThinking(m.content);
   let parts;
-  if(m.content.includes('|||')){
-    parts=m.content.split('|||').map(p=>p.trim()).filter(p=>p);
-    const uniq=[];for(const p of parts){if(!uniq.includes(p))uniq.push(p)}
-    parts=uniq;
-  }else if(m.content.length>40){
-    parts=autoSplit(m.content);
+  if(content.includes('|||')){
+    parts=content.split('|||').map(p=>p.trim()).filter(p=>p);
+  }else if(content.length>40){
+    parts=autoSplit(content);
   }else{
-    parts=[m.content];
+    parts=[content];
   }
+  parts=dedupParts(parts);          // 先切开再跨气泡去重
+  if(parts.length===0){m.content='';renderChat();saveConv();return}
   if(parts.length<=1){m.content=parts[0]||'';renderChat();saveConv();return}
   m.content=parts[0];renderChat();saveConv();
   for(let i=1;i<parts.length;i++){
