@@ -1783,20 +1783,10 @@ function autoSplit(text){
 async function processAIMultiBubble(msgIdx,ai){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
   let content=stripThinking(m.content);
-  // 去掉 ||| （统一交给标点切）
   content=content.replace(/\|\|\|/g,'');
-  // 按句子切：一句带自己的结尾标点
+  // 只按标点切句，一句一个气泡，不做任何去重
   let segs=content.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[content];
-  // 去重复句 + 清空行
-  const seen=new Set();
-  let parts=[];
-  for(const s of segs){
-    const t=s.trim();
-    if(!t)continue;
-    const key=t.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g,'');
-    if(key.length>=4){if(seen.has(key))continue;seen.add(key)}
-    parts.push(t);
-  }
+  let parts=segs.map(s=>s.trim()).filter(s=>s);
   if(parts.length===0){m.content='';renderChat();saveConv();return}
   if(parts.length===1){m.content=parts[0];renderChat();saveConv();return}
   m.content=parts[0];renderChat();saveConv();
@@ -1809,6 +1799,7 @@ async function processAIMultiBubble(msgIdx,ai){
   }
   processAIStickers(msgIdx);processAIMemories(msgIdx,ai);processAIBody(msgIdx);processAICall(msgIdx);
 }
+
 
 function processAICall(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;const match=m.content.match(/\[call:([^\]]+)\]/);if(!match)return;const firstLine=match[1];m.content=m.content.replace(match[0],'').trim();renderChat();saveConv();setTimeout(()=>showIncomingCall(firstLine),2000)}
 
