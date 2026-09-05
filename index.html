@@ -1677,9 +1677,7 @@ function getBuiltinPrompt(){
 2. 记忆：想记住重要信息时加 [memory:要记住的内容]
 3. 打电话：非常想念/开心/担心时，回复末尾加 [call:接通后你说的第一句话]，不要常用
 4. 语音：${ttsAutoOn?'用「」包住想用声音说的话':'不要使用「」符号'}
-5. 多条消息：像发微信一样，尽量把回复拆成 2-3 条短消息，用 ||| 隔开。但每条内容必须不一样，绝对不许把同一句话重复发。不想拆时写一段也可以。
-6. 身体反应：每次回复末尾加 [body:字段+数值,字段+数值]。可用字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue。例：[body:heat+8,sensitivity+5]
-7. 五子棋：用户想玩时回复 [game:gomoku:start]。落子 [game:gomoku:H7]
+5. 身体反应：每次回复末尾加 [body:字段+数值,字段+数值]。可用字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue。例：[body:heat+8,sensitivity+5]
 
 `;
 }
@@ -1785,20 +1783,25 @@ function autoSplit(text){
 async function processAIMultiBubble(msgIdx,ai){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
   let content=stripThinking(m.content);
-  let parts;
-  if(content.includes('|||')){
-    parts=content.split('|||').map(p=>p.trim()).filter(p=>p);
-  }else if(content.length>40){
-    parts=autoSplit(content);
-  }else{
-    parts=[content];
+  // 去掉 ||| （统一交给标点切）
+  content=content.replace(/\|\|\|/g,'');
+  // 按句子切：一句带自己的结尾标点
+  let segs=content.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[content];
+  // 去重复句 + 清空行
+  const seen=new Set();
+  let parts=[];
+  for(const s of segs){
+    const t=s.trim();
+    if(!t)continue;
+    const key=t.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g,'');
+    if(key.length>=4){if(seen.has(key))continue;seen.add(key)}
+    parts.push(t);
   }
-  parts=dedupParts(parts);          // 先切开再跨气泡去重
   if(parts.length===0){m.content='';renderChat();saveConv();return}
-  if(parts.length<=1){m.content=parts[0]||'';renderChat();saveConv();return}
+  if(parts.length===1){m.content=parts[0];renderChat();saveConv();return}
   m.content=parts[0];renderChat();saveConv();
   for(let i=1;i<parts.length;i++){
-    await new Promise(r=>setTimeout(r,600+Math.random()*400));
+    await new Promise(r=>setTimeout(r,500+Math.random()*400));
     const newIdx=cur.msgs.length;
     cur.msgs.push({role:'assistant',content:parts[i],ts:Date.now(),aiId:m.aiId});
     renderChat();saveConv();
@@ -1806,7 +1809,6 @@ async function processAIMultiBubble(msgIdx,ai){
   }
   processAIStickers(msgIdx);processAIMemories(msgIdx,ai);processAIBody(msgIdx);processAICall(msgIdx);
 }
-
 
 function processAICall(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;const match=m.content.match(/\[call:([^\]]+)\]/);if(!match)return;const firstLine=match[1];m.content=m.content.replace(match[0],'').trim();renderChat();saveConv();setTimeout(()=>showIncomingCall(firstLine),2000)}
 
