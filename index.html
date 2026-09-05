@@ -586,7 +586,9 @@ html,body{
  <div class="set-sec"><h3>数据</h3><div class="set-card">
     <div class="set-item" id="doExport"><label>导出数据</label><span class="arrow">›</span></div>
     <div class="set-item" id="doImport"><label>导入数据</label><span class="arrow">›</span></div>
+    <div class="set-item" id="doReset" style="cursor:pointer"><label style="color:#ff3b30">重新开始</label><span class="arrow">›</span></div>
   </div></div>
+
 </div>
 <!-- 外观主题页 -->
 <div class="page" id="themePage">
@@ -1109,6 +1111,17 @@ async function mergeToPermanent(){
   await dbPut('convs',perm);
   renderChat();updTitle();renderList();
 }
+
+async function resetChat(){
+  if(!confirm('确定重新开始？会清空和以礼的所有聊天记录，其它设置和记忆都保留。此操作不可撤销。'))return;
+  if(!confirm('真的要清空聊天吗？再确认一次~'))return;
+  cur.msgs=[];cur._summary='';cur._summaryTs=0;cur.ts=Date.now();
+  await dbPut('convs',cur);
+  renderChat();updTitle();
+  alert('已经重新开始了 (´,,•ω•,,)');
+  $('setPage').classList.remove('open');
+}
+
 
 function newConv(){
   if(cur){renderChat();updTitle();closeSB();scrollEnd();return}
@@ -2092,6 +2105,7 @@ $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');
   $('spDirectBack').onclick=()=>{const ai=getCurAi();if(ai){ai.sp=$('spDirectContent').value;saveAis();}$('spDirectPage').classList.remove('open')};
   $('goTts').onclick=()=>{renderTtsCards();$('ttsListPage').classList.add('open')};
   $('doExport').onclick=exportData;$('doImport').onclick=()=>$('importFile').click();$('importFile').onchange=importData;
+  $('doReset').onclick=resetChat;
   $('goEmoji').onclick=()=>{renderEmojiLib();$('emojiPage').classList.add('open')};
   $('goMcp').onclick=()=>{renderMcpCards();$('mcpListPage').classList.add('open')};
   $('mcpListBack').onclick=()=>$('mcpListPage').classList.remove('open');
@@ -2124,7 +2138,8 @@ $('bgBlur').oninput=e=>{$('chatBg').style.filter='blur('+e.target.value+'px)';lo
 
   $('cUser').oninput=()=>{applyColors();saveCfg()};$('cAi').oninput=()=>{applyColors();saveCfg()};
   $('avatarBtn').onclick=()=>$('avatarFile').click();
-  $('avatarFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');const sz=200;c.width=sz;c.height=sz;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,sz,sz);const s=Math.min(img.width,img.height);ctx.drawImage(img,(img.width-s)/2,(img.height-s)/2,s,s,0,0,sz,sz);const url=c.toDataURL('image/jpeg',0.8);localStorage.setItem('sbAvatar',url);$('avatarBtn').innerHTML='<img src="'+url+'">'};img.src=ev.target.result}catch(e){}};r.readAsDataURL(f);e.target.value=''};
+  $('avatarFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{const ai=getCurAi();if(ai){ai.avatar=url;saveAis();}localStorage.setItem('avAi',url);avAi=url;renderSbAiChips();updSbName();renderChat();});e.target.value=''};
+
 $('setAvUser').onclick=()=>$('avUserFile').click();
   $('avUserFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{avUser=url;localStorage.setItem('avUser',avUser);renderChat()});e.target.value=''};
 $('avAiFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,200,url=>{
