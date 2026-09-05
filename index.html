@@ -378,7 +378,7 @@ html,body{
       <div class="sb-name" id="sbAiName">我们的小家</div>
     </div>
     <!-- AI 切换器 -->
-    <div class="sb-ai-row">
+        <div class="sb-ai-row" style="display:none">
       <div class="sb-ai-chips" id="sbAiChips"></div>
       <div class="sb-ai-chip-add" id="sbAiManageBtn">+</div>
     </div>
@@ -549,7 +549,6 @@ html,body{
     <h2>设置</h2>
   </div>
   <div class="set-sec"><div class="set-card">
-<div class="set-item" id="goAiMgr"><label>AI 管理</label><span class="arrow">›</span></div>
     <div class="set-item" id="goTheme"><label>外观主题</label><span class="arrow">›</span></div>
     <div class="set-item" id="goApi"><label>API 配置</label><span class="arrow">›</span></div>
     <div class="set-item" id="goSp"><label>System Prompt</label><span class="arrow">›</span></div>
@@ -576,6 +575,10 @@ html,body{
   </div></div>
   <div class="set-sec"><h3>显示</h3><div class="set-card">
     <div class="set-item" style="cursor:default"><label>思维链</label><div class="toggle on" id="sThink"></div></div>
+  </div></div>
+  <div class="set-sec"><h3>上下文范围</h3><div class="set-card">
+    <div class="set-item"><label>方式</label><select class="set-input" id="ctxMode" style="width:auto"><option value="count">最近 N 条</option><option value="days">最近 N 天</option></select></div>
+    <div class="set-item col"><label>N 值</label><input class="set-input" id="ctxN" type="number" min="1" value="30"></div>
   </div></div>
 <div class="set-sec"><h3>推送</h3><div class="set-card">
     <div class="set-item" id="doPush"><label>开启锁屏推送</label><span class="arrow">›</span></div>
@@ -616,7 +619,16 @@ html,body{
     <div class="set-item col"><label>模型</label><input class="set-input" id="apiModel" placeholder="claude-sonnet-4-20250514"></div>
   </div></div>
 </div>
-
+<!-- 直接编辑以礼人设 -->
+<div class="page" id="spDirectPage">
+  <div class="page-hd">
+    <button class="page-back" id="spDirectBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <h2>以礼的人设</h2>
+  </div>
+  <div class="set-sec"><div class="set-card">
+    <div class="set-item col"><label>System Prompt </label><textarea class="set-textarea" id="spDirectContent" rows="16" placeholder="以礼的性格、背景、说话方式、和雯雯的关系..."></textarea></div>
+  </div></div>
+</div>
 <!-- SP卡片列表页 -->
 <div class="page" id="spListPage">
   <div class="page-hd">
@@ -827,7 +839,47 @@ let apis=[],sps=[],ttss=[];
 let activeApi=null,activeSps=[],activeTts=null;
 let editingApiId=null,editingSpId=null,editingTtsId=null;
 let ttsAutoOn=false,ttsQuoteOn=false;
+let ctxMode='count',ctxN=30; // 上下文范围：count=最近N条，days=最近N天
+function sliceContext(list){
+  let r;
+  if(ctxMode==='days'){const cutoff=Date.now()-ctxN*86400000;r=list.filter(m=>(m.ts||0)>=cutoff)}
+  else r=list.slice(-ctxN);
+  // Claude 要求第一条必须是 user，去掉开头的 assistant
+  while(r.length&&r[0].role!=='user')r=r.slice(1);
+  return r;
+}
 let currentAudio=null,currentVoiceEl=null;
+// ===== 旧消息摘要 =====
+async function updateSummaryIfNeeded(ai){
+  if(!cur||!ai)return;
+  const chatMsgs=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker'&&m.content);
+  // 计算「上下文范围外」的老消息
+  let inCtx=sliceContext(chatMsgs);
+  const firstInCtxTs=inCtx.length?inCtx[0].ts:Date.now();
+  const oldMsgs=chatMsgs.filter(m=>(m.ts||0)<firstInCtxTs);
+  if(oldMsgs.length<6)return; // 太少不值得摘要
+  // 已摘要到哪条了？攒够10条新的才重新摘
+  const lastSummarizedTs=cur._summaryTs||0;
+  const newOld=oldMsgs.filter(m=>(m.ts||0)>lastSummarizedTs);
+  if(cur._summary&&newOld.length<20)return;
+  const api=getAiApi(ai);
+  if(!api||!api.url||!api.key)return;
+  const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
+  const convText=oldMsgs.map(m=>(m.role==='user'?'雯雯: ':'以礼: ')+(m.content||'')).join('\n').slice(0,8000);
+  const prompt='把下面这段雯雯和以礼的聊天压缩成一段简洁的背景摘要，保留重要的事、情绪、约定和称呼，用第三人称，200字以内，不要分点：\n\n'+convText;
+  try{
+    let headers={'Content-Type':'application/json'},body;
+    if(isOAI){headers['Authorization']='Bearer '+api.key;body=JSON.stringify({model:api.model||'gpt-4',messages:[{role:'user',content:prompt}],max_tokens:400})}
+    else{headers['x-api-key']=api.key;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true';body=JSON.stringify({model:api.model||'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:prompt}]})}
+    const res=await fetch(api.url,{method:'POST',headers,body});
+    if(!res.ok)return;
+    const data=await res.json();
+    let sum='';
+    if(isOAI)sum=data.choices?.[0]?.message?.content||'';
+    else sum=(data.content||[]).find(b=>b.type==='text')?.text||'';
+    if(sum){cur._summary=sum.trim();cur._summaryTs=oldMsgs[oldMsgs.length-1].ts||Date.now();saveConv()}
+  }catch(e){}
+}
 
 // ===== 多AI状态 =====
 let ais=[];           // [{id,name,avatar,apiId,spIds:[],ttsId}]
@@ -896,13 +948,7 @@ function getAiApi(ai){
   return apis.find(a=>a.id===ai.apiId)||null;
 }
 function getAiSpText(ai){
-  if(!ai)return '';
-  let sp=ai.sp||'';
-  if(ai.spIds&&ai.spIds.length>0){
-    const extra=sps.filter(s=>ai.spIds.includes(s.id)).map(s=>s.content).join('\n\n');
-    if(extra)sp+=(sp?'\n\n':'')+extra;
-  }
-  return sp.trim();
+  return ai&&ai.sp?ai.sp.trim():'';
 }
 
 
@@ -1052,12 +1098,24 @@ function initToggle(el,val,cb){
 }
 
 // ===== 对话管理 =====
-function newConv(){
-  const ai=getCurAi();
-  const c={id:uid(),title:'新对话',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'};
-  convs.unshift(c);cur=c;
-  dbPut('convs',c);renderList();renderChat();updTitle();closeSB();
+async function mergeToPermanent(){
+  const all=await dbAll('convs');
+  let allMsgs=[];
+  for(const c of all){if(c.type==='group')continue;if(c.msgs&&c.msgs.length)allMsgs=allMsgs.concat(c.msgs)}
+  allMsgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
+  for(const c of all)await dbDel('convs',c.id);
+  const perm={id:'main_conv',title:'和以礼的聊天',msgs:allMsgs,ts:Date.now(),aiId:curAiId,type:'single'};
+  convs=[perm];cur=perm;
+  await dbPut('convs',perm);
+  renderChat();updTitle();renderList();
 }
+
+function newConv(){
+  if(cur){renderChat();updTitle();closeSB();scrollEnd();return}
+  const c={id:'main_conv',title:'和以礼的聊天',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'};
+  convs=[c];cur=c;dbPut('convs',c);renderChat();updTitle();closeSB();
+}
+
 
 function newGroupConv(aiIds){
   const names=aiIds.map(id=>getAiById(id)?.name||'AI').join(' & ');
@@ -1074,15 +1132,9 @@ function delConv(id){
 }
 function updTitle(){
   if(!cur){topTitle.textContent='新对话';return}
-  topTitle.textContent=cur.title;
-  if(cur.type==='group'&&cur.aiIds?.length){
-    const avHtml=cur.aiIds.map(id=>{
-      const a=getAiById(id);
-      return`<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,0.06);border:1px solid rgba(255,255,255,0.4);overflow:hidden;flex-shrink:0;vertical-align:middle">${a?.avatar?'<img src="'+a.avatar+'" style="width:100%;height:100%;object-fit:cover">':''}</span>`;
-    }).join('');
-    topTitle.innerHTML=`<span style="display:inline-flex;align-items:center;justify-content:center;gap:5px">${avHtml}<span>${esc(cur.title)}</span></span>`;
-  }
+  topTitle.innerHTML=`<span style="display:inline-flex;align-items:center;gap:5px;justify-content:center"><span>${esc(cur.title)}</span><span style="width:7px;height:7px;border-radius:50%;background:#34c759;display:inline-block;flex-shrink:0"></span></span>`;
 }
+
 function saveConv(){if(cur)dbPut('convs',cur)}
 function editTitle(){
   const t=prompt('对话标题',cur?.title||'');
@@ -1248,9 +1300,10 @@ updateLastActive();
       const tip=document.createElement('div');tip.className='msg assistant';tip.innerHTML='<div class="msg-body"><div class="bubble" style="font-size:12px;color:var(--text2)">正在读取网页...</div></div>';
       chatArea.appendChild(tip);scrollEnd();
       const res=await fetch('https://r.jina.ai/'+url,{headers:{'Accept':'text/plain'}});
-      if(res.ok){let webText=await res.text();if(webText.length>3000)webText=webText.slice(0,3000)+'...(内容过长已截断)';finalText+='\n\n[网页内容]\n'+webText}
+            if(res.ok){let webText=await res.text();if(webText.length>3000)webText=webText.slice(0,3000)+'...(内容过长已截断)';finalText+='\n\n[网页内容]\n'+webText}
+      else{finalText+='\n\n[网页读取失败：HTTP '+res.status+']'}
       tip.remove();
-    }catch(e){}
+    }catch(e){tip.remove();finalText+='\n\n[网页读取失败：'+e.message+']'}
   }
   const m={role:'user',content:finalText,img:img||null,file:file||null,ts:Date.now()};
   cur.msgs.push(m);cur.ts=Date.now();
@@ -1284,6 +1337,7 @@ async function callGroupAPI(){
 }
 
 // ===== 单AI流式调用（内部）=====
+
 async function callAPIStreamForAi(ai,isGroupMode=false){
   const api=getAiApi(ai);
   if(!api||!api.url||!api.key){
@@ -1298,7 +1352,8 @@ async function callAPIStreamForAi(ai,isGroupMode=false){
 
   const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');
   // 构建消息历史：群聊时把AI名字加进去让AI知道谁说了啥
-  const msgs=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{
+    const msgs=sliceContext(cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker')).map(m=>{
+
     if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}
     if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};
     let txt=m.content||'';
@@ -1313,7 +1368,10 @@ async function callAPIStreamForAi(ai,isGroupMode=false){
 
   let headers={'Content-Type':'application/json'};
   let body,fetchUrl=api.url;
-  const sysText=(getBuiltinPrompt()+memText+(spText||'')+eventideCard).trim();
+  const summaryText=cur._summary?'【更早的聊天摘要】\n'+cur._summary+'\n\n':'';
+  const sysText=(getBuiltinPrompt()+summaryText+memText+(spText||'')+eventideCard).trim();
+
+
 
   if(isOAI){
     headers['Authorization']='Bearer '+api.key;
@@ -1554,7 +1612,8 @@ function saveCfg(){
     activeTts:getCurAi()?.ttsId||null,
     cUser:$('cUser').value,cAi:$('cAi').value,
     think:$('sThink').classList.contains('on'),
-    ttsAuto:ttsAutoOn,ttsQuote:ttsQuoteOn});
+        ttsAuto:ttsAutoOn,ttsQuote:ttsQuoteOn,ctxMode:ctxMode,ctxN:ctxN});
+
 }
 
 function hexToRgba(hex,alpha){const r=parseInt(hex.slice(1,3),16);const g=parseInt(hex.slice(3,5),16);const b=parseInt(hex.slice(5,7),16);return 'rgba('+r+','+g+','+b+','+alpha+')'}
@@ -1843,12 +1902,15 @@ function saveMcpEdit(){let m=mcps.find(x=>x.id===editingMcpId);if(!m){m={id:edit
 async function callAPIWithTools(toolDefs){
   const ai=getCurAi();if(!ai)return callAPIStream();
   const api=getAiApi(ai);if(!api||!api.url||!api.key)return callAPIStream();
+  await updateSummaryIfNeeded(ai);
   const isOAI=api.url.includes('openai')||api.url.includes('/chat/completions');if(isOAI)return callAPIStream();
   generating=true;sendBtn.style.display='none';stopBtn.classList.add('show');abortCtrl=new AbortController();
   Eventide.touchCounterpart();const eventideCard=Eventide.tickAndRender(Date.now())||'';
   const spText=getAiSpText(ai);const memText=getAiMemoryText(ai.id);
-  const sysText=(getBuiltinPrompt()+memText+(spText||'')+eventideCard).trim();
-  let messages=cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker').map(m=>{if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};let txt=m.content||'';if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;return{role:m.role,content:txt}});
+  const summaryText=cur._summary?'【更早的聊天摘要】\n'+cur._summary+'\n\n':'';
+  const sysText=(getBuiltinPrompt()+summaryText+memText+(spText||'')+eventideCard).trim();
+  let messages=sliceContext(cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker')).map(m=>{
+if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};let txt=m.content||'';if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;return{role:m.role,content:txt}});
   const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),aiId:ai.id,_toolCalls:[]};
   cur.msgs.push(aiMsg);const aiIdx=cur.msgs.length-1;renderChat();
   for(let loop=0;loop<6;loop++){
@@ -1919,7 +1981,8 @@ function delPlayMem(id){const c=playChars.find(x=>x.id===editingCharId);if(!c||!
 function addPlayMemTo(charId,content){if(!content||!content.trim())return;const c=playChars.find(x=>x.id===charId);if(!c)return;if(!c.mems)c.mems=[];c.mems.unshift({id:uid(),content:content.trim(),ts:Date.now()});savePlayChars()}
 function getPlayMemText(){const c=playChars.find(x=>x.id===playActive);if(!c||!c.mems||c.mems.length===0)return'';return'【角色记忆·这些是你已经知道的事】\n'+c.mems.map(m=>'- '+m.content).join('\n')+'\n\n'}
 function getPlayMemPrompt(){return'【记忆功能】想记住重要信息时，在回复末尾加 [memory:要记住的内容]，可以加多条。\n\n'}
-function processPlayMemories(msgIdx){try{const m=playSession&&playSession.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;const found=[];const regex=/\[memory:([^\]]+)\]/g;let match;while((match=regex.exec(m.content))!==null)found.push(match[1]);if(found.length===0)return;let cleaned=m.content;for(const mem of found){addPlayMemTo(playActive,mem);cleaned=cleaned.replace('[memory:'+mem+']','')}m.content=cleaned.trim();renderPlayContent();savePlaySessions()}catch(e){}}
+function processPlayMemories(msgIdx){try{const m=playSession&&playSession.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;const found=[];const regex=/\[memory:([^\]]+)\]/g;let match;while((match=regex.exec(m.content))!==null)found.push(match[1]);if(found.length===0)return;let cleaned=m.content;for(const mem of found){addMemoryForAi(curAiId,mem);addPlayMemTo(playActive,mem);cleaned=cleaned.replace('[memory:'+mem+']','')}
+m.content=cleaned.trim();renderPlayContent();savePlaySessions()}catch(e){}}
 
 function initPlay(){
   $('tabPlay').onclick=()=>{showPlayView();document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('on'));$('tabPlay').classList.add('on');closeSB()};
@@ -1948,7 +2011,7 @@ function initPlay(){
   let playMt;
   $('playContent').ontouchstart=e=>{const card=e.target.closest('.play-card');if(card)playMt=setTimeout(()=>{const i=+card.dataset.i;const act=prompt('操作：输入 d 删除，输入 e 编辑');if(act==='d'){playSession.msgs.splice(i,1);renderPlayContent();savePlaySessions()}else if(act==='e'){const t=prompt('编辑内容',playSession.msgs[i]?.content);if(t!==null){playSession.msgs[i].content=t;renderPlayContent();savePlaySessions()}}},500)};
   $('playContent').ontouchend=()=>clearTimeout(playMt);$('playContent').ontouchmove=()=>clearTimeout(playMt);
-  $('tabChat').onclick=()=>{hidePlayView();document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('on'));$('tabChat').classList.add('on');convList.classList.contains('show')?convList.classList.remove('show'):convList.classList.add('show')};
+  $('tabChat').onclick=()=>{hidePlayView();document.querySelectorAll('.sb-tab').forEach(t=>t.classList.remove('on'));$('tabChat').classList.add('on');closeSB()};
 }
 initPlay();
 
@@ -1962,32 +2025,31 @@ async function init(){
   if(act){
     if(act.cUser)$('cUser').value=act.cUser;if(act.cAi)$('cAi').value=act.cAi;
     if(act.think!==undefined&&!act.think)$('sThink').classList.remove('on');
-    ttsAutoOn=!!act.ttsAuto;ttsQuoteOn=!!act.ttsQuote;
+        ttsAutoOn=!!act.ttsAuto;ttsQuoteOn=!!act.ttsQuote;
+    if(act.ctxMode)ctxMode=act.ctxMode;if(act.ctxN)ctxN=act.ctxN;
+
   }
   const stickerData=await dbGet('cfg','_stickers');if(stickerData&&stickerData.data)stickers=stickerData.data;
   await loadAis();
   await migrateToMultiAi();
   if(curAiId)await loadAiMemories(curAiId);
+  if(ais.length>1){const keep=getCurAi()||ais[0];ais=[keep];curAiId=keep.id;saveAis();saveCurAi();}
   await loadCallRecords();await loadKelivoMemories();await loadPlayData();await loadMcps();
   applyTheme(activeTheme);
 await loadAiBg(curAiId);
   initToggle($('ttsAuto'),ttsAutoOn,v=>{ttsAutoOn=v;saveCfg()});
   initToggle($('ttsQuote'),ttsQuoteOn,v=>{ttsQuoteOn=v;saveCfg()});
   $('sThink').onclick=()=>{$('sThink').classList.toggle('on');saveCfg()};
+  $('ctxMode').value=ctxMode;$('ctxN').value=ctxN;
+  $('ctxMode').onchange=()=>{ctxMode=$('ctxMode').value;saveCfg()};
+  $('ctxN').onchange=()=>{ctxN=parseInt($('ctxN').value)||30;saveCfg()};
   loadAvatars();
   renderSbAiChips();updSbName();
 
-  convs=await dbAll('convs');convs.sort((a,b)=>b.ts-a.ts);
-  // 给旧对话补充 aiId
-  convs.forEach(c=>{if(!c.aiId&&!c.type)c.aiId=curAiId});
-  const aiConvs=convs.filter(c=>c.type==='group'||c.aiId===curAiId);
-  if(aiConvs.length===0){newConv()}else{cur=aiConvs[0];renderChat();updTitle()}
-  renderList();
+  await mergeToPermanent();
 
   $('menuBtn').onclick=openSB;$('ov').onclick=()=>{closeSB();closeGroupSheet()};
   $('newBtn').onclick=newConv;
-  // 长按新建按钮 → 群聊
-  let newBtnT;$('newBtn').ontouchstart=()=>{newBtnT=setTimeout(()=>openGroupSheet(),500)};$('newBtn').ontouchend=()=>clearTimeout(newBtnT);$('newBtn').ontouchmove=()=>clearTimeout(newBtnT);
   topTitle.onclick=editTitle;
   $('callBtn').onclick=startCall;$('callHangup').onclick=endCall;
   $('callMic').ontouchstart=e=>{e.preventDefault();startListening()};$('callMic').ontouchend=e=>{e.preventDefault();stopListening()};$('callMic').onmousedown=startListening;$('callMic').onmouseup=stopListening;
@@ -2023,11 +2085,11 @@ await loadAiBg(curAiId);
 $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');closeSB();bodyTimer=setInterval(renderBodyPanel,3000)};
   $('bodyBack').onclick=()=>{$('bodyPage').classList.remove('open');if(bodyTimer){clearInterval(bodyTimer);bodyTimer=null}};
   $('setBack').onclick=()=>{$('setPage').classList.remove('open');saveCfg()};
-$('goAiMgr').onclick=()=>{renderAiCards();$('aiListPage').classList.add('open')};
   $('goTheme').onclick=()=>{renderThemeGrid();$('themePage').classList.add('open')};
   $('themeBack').onclick=()=>$('themePage').classList.remove('open');
   $('goApi').onclick=()=>{renderApiCards();$('apiListPage').classList.add('open')};
-  $('goSp').onclick=()=>{renderSpCards();$('spListPage').classList.add('open')};
+  $('goSp').onclick=()=>{const ai=getCurAi();$('spDirectContent').value=ai?.sp||'';$('spDirectPage').classList.add('open')};
+  $('spDirectBack').onclick=()=>{const ai=getCurAi();if(ai){ai.sp=$('spDirectContent').value;saveAis();}$('spDirectPage').classList.remove('open')};
   $('goTts').onclick=()=>{renderTtsCards();$('ttsListPage').classList.add('open')};
   $('doExport').onclick=exportData;$('doImport').onclick=()=>$('importFile').click();$('importFile').onchange=importData;
   $('goEmoji').onclick=()=>{renderEmojiLib();$('emojiPage').classList.add('open')};
@@ -2119,11 +2181,11 @@ setTimeout(async()=>{
     if(!res.ok)return;
     const msgs=await res.json();
     if(!msgs||msgs.length===0)return;
-    const c={id:uid(),title:'Eli的消息',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'};
-    for(const m of msgs)c.msgs.push({role:'assistant',content:m.content,ts:new Date(m.created_at).getTime(),aiId:curAiId});
-    convs.unshift(c);
-    await dbPut('convs',c);
-    renderList();
+    if(!cur)return;
+    for(const m of msgs)cur.msgs.push({role:'assistant',content:m.content,ts:new Date(m.created_at).getTime(),aiId:curAiId});
+    cur.ts=Date.now();
+    await dbPut('convs',cur);
+    renderChat();
     for(const m of msgs)await fetch(SU+'/rest/v1/proactive_messages?id=eq.'+m.id,{method:'PATCH',headers:{'apikey':SK,'Authorization':'Bearer '+SK,'Content-Type':'application/json'},body:JSON.stringify({is_read:true})});
   }catch(e){}
 },2000);
