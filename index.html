@@ -1582,7 +1582,16 @@ function hideMenu(){$('msgMenu').classList.remove('show');menuIdx=null}
 async function menuAct(a){const i=menuIdx;hideMenu();if(i===null)return;
   const m=cur.msgs[i];if(!m)return;
   if(a==='copy')navigator.clipboard?.writeText(m.content||'');
-  else if(a==='del'){cur.msgs.splice(i,1);renderChat();saveConv()}
+  else if(a==='del'){
+    if(m.role==='assistant'){
+      let start=i;while(start>0&&cur.msgs[start-1].role==='assistant')start--;
+      let end=i;while(end<cur.msgs.length-1&&cur.msgs[end+1].role==='assistant')end++;
+      cur.msgs.splice(start,end-start+1);
+    }else{
+      cur.msgs.splice(i,1);
+    }
+    renderChat();saveConv();
+  }
   else if(a==='edit'){
     const t=prompt('编辑',m.content||'');
     if(t!==null){
@@ -1733,14 +1742,33 @@ function closeEmojiPanel(){$('emojiPanel').classList.remove('on')}
 function sendSticker(id){const s=stickers.find(x=>x.id===id);if(!s)return;if(!cur)newConv();cur.msgs.push({role:'user',type:'sticker',stickerUrl:s.url,ts:Date.now()});cur.ts=Date.now();renderChat();saveConv()}
 function processAIStickers(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant')return;const regex=/\[sticker:([^\]]+)\]/g;let match;const found=[];while((match=regex.exec(m.content))!==null)found.push(match[1]);if(found.length===0)return;for(const keyword of found){m.content=m.content.replace('[sticker:'+keyword+']','').trim();if(keyword.startsWith('http')){cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:keyword,ts:Date.now(),aiId:m.aiId})}else{const kw=keyword.toLowerCase();const matched=stickers.find(s=>s.label&&s.label.toLowerCase().includes(kw));if(matched)cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:matched.url,ts:Date.now(),aiId:m.aiId})}}if(!m.content&&!m.img&&!m.file)cur.msgs.splice(msgIdx,1);renderChat();saveConv()}
 
+// 切掉模型当成正文吐出来的思维链
+function stripThinking(text){
+  if(!text)return text;
+  text=text.replace(/<thinking>[\s\S]*?<\/thinking>/gi,'');
+  const idx=text.lastIndexOf('</thinking>');
+  if(idx!==-1)text=text.slice(idx+'</thinking>'.length);
+  text=text.replace(/<\/?thinking>/gi,'');
+  return text.trim();
+}
+
 function dedupRepeat(text){
   if(!text)return text;
-  let out=[];
+  // 去连续重复行
+  let lines=[];
   for(const ln of text.split('\n')){
-    if(ln.trim()&&out.length&&out[out.length-1].trim()===ln.trim())continue;
-    out.push(ln);
+    if(ln.trim()&&lines.length&&lines[lines.length-1].trim()===ln.trim())continue;
+    lines.push(ln);
   }
-  return out.join('\n').trim();
+  text=lines.join('\n');
+  // 句子级去重：出现过的整句不再重复
+  const seen=new Set();let out='';
+  for(const s of (text.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[text])){
+    const key=s.trim().replace(/\s/g,'');
+    if(key.length>=6){if(seen.has(key))continue;seen.add(key)}
+    out+=s;
+  }
+  return out.trim()||text.trim();
 }
 
 // 把一大段按自然停顿切成2-3条
@@ -1748,7 +1776,7 @@ function autoSplit(text){
   const sents=text.match(/[^。！？…\n]+[。！？…]*/g)||[text];
   const clean=sents.map(s=>s.trim()).filter(s=>s);
   if(clean.length<=1)return clean;
-  const n=clean.length>=5?3:2;               // 句子多切3条，否则2条
+  const n=clean.length>=5?3:2;
   const per=Math.ceil(clean.length/n);
   const groups=[];
   for(let i=0;i<clean.length;i+=per)groups.push(clean.slice(i,i+per).join(''));
@@ -1757,13 +1785,13 @@ function autoSplit(text){
 
 async function processAIMultiBubble(msgIdx,ai){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
-  m.content=dedupRepeat(m.content);
+  m.content=dedupRepeat(stripThinking(m.content));
   let parts;
   if(m.content.includes('|||')){
     parts=m.content.split('|||').map(p=>p.trim()).filter(p=>p);
     const uniq=[];for(const p of parts){if(!uniq.includes(p))uniq.push(p)}
     parts=uniq;
-  }else if(m.content.length>40){              // 没分且够长，自己切
+  }else if(m.content.length>40){
     parts=autoSplit(m.content);
   }else{
     parts=[m.content];
@@ -1779,6 +1807,7 @@ async function processAIMultiBubble(msgIdx,ai){
   }
   processAIStickers(msgIdx);processAIMemories(msgIdx,ai);processAIBody(msgIdx);processAICall(msgIdx);
 }
+
 
 function processAICall(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;const match=m.content.match(/\[call:([^\]]+)\]/);if(!match)return;const firstLine=match[1];m.content=m.content.replace(match[0],'').trim();renderChat();saveConv();setTimeout(()=>showIncomingCall(firstLine),2000)}
 
