@@ -1570,7 +1570,7 @@ function closeGroupSheet(){$('groupSheet').classList.remove('on');$('ov').classL
 // ===== 其余函数（与原版一致，适配多AI）=====
 let menuIdx=null;
 function showMenu(e,i){e.preventDefault();menuIdx=i;const menu=$('msgMenu');const m=cur.msgs[i];
-  menu.querySelector('[data-a="edit"]').style.display=m.role==='user'?'':'none';
+  menu.querySelector('[data-a="edit"]').style.display='';
   menu.querySelector('[data-a="regen"]').style.display=m.role==='assistant'?'':'none';
   menu.querySelector('[data-a="tts"]').style.display=m.role==='assistant'?'':'none';
   menu.classList.add('show');
@@ -1580,12 +1580,27 @@ function showMenu(e,i){e.preventDefault();menuIdx=i;const menu=$('msgMenu');cons
 }
 function hideMenu(){$('msgMenu').classList.remove('show');menuIdx=null}
 async function menuAct(a){const i=menuIdx;hideMenu();if(i===null)return;
-  if(a==='copy')navigator.clipboard?.writeText(cur.msgs[i]?.content||'');
+  const m=cur.msgs[i];if(!m)return;
+  if(a==='copy')navigator.clipboard?.writeText(m.content||'');
   else if(a==='del'){cur.msgs.splice(i,1);renderChat();saveConv()}
-  else if(a==='edit'){const t=prompt('编辑',cur.msgs[i].content);if(t!==null){cur.msgs[i].content=t;cur.msgs=cur.msgs.slice(0,i+1);renderChat();saveConv()}}
-  else if(a==='regen'){cur.msgs.pop();renderChat();if(cur.type==='group')await callGroupAPI();else await callAPIStream()}
+  else if(a==='edit'){
+    const t=prompt('编辑',m.content||'');
+    if(t!==null){
+      m.content=t;
+      if(m.role==='user')cur.msgs=cur.msgs.slice(0,i+1);
+      renderChat();saveConv();
+    }
+  }
+  else if(a==='regen'){
+    let start=i;
+    while(start>0&&cur.msgs[start-1].role==='assistant')start--;
+    cur.msgs.splice(start);
+    renderChat();saveConv();
+    if(cur.type==='group')await callGroupAPI();else await callAPIStream();
+  }
   else if(a==='tts'){await manualTTS(i)}
 }
+
 
 function renderApiCards(){
   $('apiCards').innerHTML=apis.map(a=>`<div class="cfg-card" data-id="${a.id}"><span class="cfg-card-name">${esc(a.name||'未命名')}</span><span class="arrow">›</span></div>`).join('');
@@ -1653,7 +1668,7 @@ function getBuiltinPrompt(){
 2. 记忆：想记住重要信息时加 [memory:要记住的内容]
 3. 打电话：非常想念/开心/担心时，回复末尾加 [call:接通后你说的第一句话]，不要常用
 4. 语音：${ttsAutoOn?'用「」包住想用声音说的话':'不要使用「」符号'}
-5. ❗多条消息（强制）❗：每次回复都必须用 ||| 分成2-3条气泡。只有1-2个字才能不拆。
+5. 多条消息：像发微信一样，尽量把回复拆成 2-3 条短消息，用 ||| 隔开。但每条内容必须不一样，绝对不许把同一句话重复发。不想拆时写一段也可以。
 6. 身体反应：每次回复末尾加 [body:字段+数值,字段+数值]。可用字段：heat/pressure/control/sensitivity/reserve/possessiveness/fatigue。例：[body:heat+8,sensitivity+5]
 7. 五子棋：用户想玩时回复 [game:gomoku:start]。落子 [game:gomoku:H7]
 
@@ -1718,16 +1733,42 @@ function closeEmojiPanel(){$('emojiPanel').classList.remove('on')}
 function sendSticker(id){const s=stickers.find(x=>x.id===id);if(!s)return;if(!cur)newConv();cur.msgs.push({role:'user',type:'sticker',stickerUrl:s.url,ts:Date.now()});cur.ts=Date.now();renderChat();saveConv()}
 function processAIStickers(msgIdx){const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant')return;const regex=/\[sticker:([^\]]+)\]/g;let match;const found=[];while((match=regex.exec(m.content))!==null)found.push(match[1]);if(found.length===0)return;for(const keyword of found){m.content=m.content.replace('[sticker:'+keyword+']','').trim();if(keyword.startsWith('http')){cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:keyword,ts:Date.now(),aiId:m.aiId})}else{const kw=keyword.toLowerCase();const matched=stickers.find(s=>s.label&&s.label.toLowerCase().includes(kw));if(matched)cur.msgs.push({role:'assistant',type:'sticker',stickerUrl:matched.url,ts:Date.now(),aiId:m.aiId})}}if(!m.content&&!m.img&&!m.file)cur.msgs.splice(msgIdx,1);renderChat();saveConv()}
 
+function dedupRepeat(text){
+  if(!text)return text;
+  let out=[];
+  for(const ln of text.split('\n')){
+    if(ln.trim()&&out.length&&out[out.length-1].trim()===ln.trim())continue;
+    out.push(ln);
+  }
+  return out.join('\n').trim();
+}
+
+// 把一大段按自然停顿切成2-3条
+function autoSplit(text){
+  const sents=text.match(/[^。！？…\n]+[。！？…]*/g)||[text];
+  const clean=sents.map(s=>s.trim()).filter(s=>s);
+  if(clean.length<=1)return clean;
+  const n=clean.length>=5?3:2;               // 句子多切3条，否则2条
+  const per=Math.ceil(clean.length/n);
+  const groups=[];
+  for(let i=0;i<clean.length;i+=per)groups.push(clean.slice(i,i+per).join(''));
+  return groups.filter(g=>g);
+}
+
 async function processAIMultiBubble(msgIdx,ai){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
+  m.content=dedupRepeat(m.content);
   let parts;
   if(m.content.includes('|||')){
     parts=m.content.split('|||').map(p=>p.trim()).filter(p=>p);
+    const uniq=[];for(const p of parts){if(!uniq.includes(p))uniq.push(p)}
+    parts=uniq;
+  }else if(m.content.length>40){              // 没分且够长，自己切
+    parts=autoSplit(m.content);
   }else{
-    const matched=m.content.match(/[^。！？…\n]+[。！？…]+|[^。！？…\n]+$/g);
-    parts=matched?matched.map(p=>p.trim()).filter(p=>p):[m.content];
+    parts=[m.content];
   }
-  if(parts.length<=1)return;
+  if(parts.length<=1){m.content=parts[0]||'';renderChat();saveConv();return}
   m.content=parts[0];renderChat();saveConv();
   for(let i=1;i<parts.length;i++){
     await new Promise(r=>setTimeout(r,600+Math.random()*400));
