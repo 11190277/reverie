@@ -1716,15 +1716,120 @@ function closeSB(){$('sb').classList.remove('on');$('ov').classList.remove('on')
 
 // ===== MCP =====
 let mcps=[],mcpTools={},editingMcpId=null,mcpTempHeaders=[];
+let mcpSessions={}; // {mcpId: sessionId} 握手后的会话
+function mcpHeaders(mcp,sessionId){
+  const h={'Content-Type':'application/json','Accept':'application/json, text/event-stream'};
+  (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
+  if(sessionId)h['Mcp-Session-Id']=sessionId;
+  return h;
+}
+async function parseMcpResponse(res){
+  const ct=res.headers.get('content-type')||'';
+  const text=await res.text();
+  if(ct.includes('text/event-stream')){
+    let result=null;
+    for(const line of text.split('\n')){
+      const t=line.trim();
+      if(t.startsWith('data:')){
+        const d=t.slice(5).trim();
+        if(d&&d!=='[DONE]'){try{result=JSON.parse(d)}catch(e){}}
+      }
+    }
+    return result;
+  }
+  try{return JSON.parse(text)}catch(e){return null}
+}
+// 初始化握手，拿到并保存 session id
+async function mcpInitialize(mcp){
+  const initBody={jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'reverie',version:'1.0'}}};
+  const res=await fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,null),body:JSON.stringify(initBody)});
+  if(!res.ok)throw new Error('init HTTP '+res.status);
+  const sessionId=res.headers.get('mcp-session-id')||'';
+  await parseMcpResponse(res);
+  try{
+    await fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,sessionId),body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})});
+  }catch(e){}
+  mcpSessions[mcp.id]=sessionId;
+  return sessionId;
+}
 async function loadMcps(){const d=await dbGet('cfg','_mcps');if(d&&d.data)mcps=d.data;const cache=await dbGet('cfg','_mcpToolsCache');if(cache&&cache.data)mcpTools=cache.data}
 function saveMcps(){dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps})}
 function saveMcpToolsCache(){dbPut('cfg',{id:'_mcpToolsCache',type:'_mcpToolsCache',data:mcpTools})}
-async function fetchMcpTools(mcp){if(!mcp.enabled||!mcp.url)return[];try{const h={'Content-Type':'application/json'};(mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),100000);let res;try{res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/list',params:{}}),signal:ctrl.signal})}finally{clearTimeout(timer)}if(!res.ok)return[];const j=await res.json();return j.result?.tools||[]}catch(e){return[]}}
+async function fetchMcpTools(mcp){
+  if(!mcp.enabled||!mcp.url){mcp._error='';return[]}
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),100000);
+  try{
+    let sessionId=await mcpInitialize(mcp);
+    const doList=(sid)=>fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list',params:{}}),signal:ctrl.signal});
+    let res=await doList(sessionId);
+    if(res.status===404||res.status===400){sessionId=await mcpInitialize(mcp);res=await doList(sessionId)}
+    if(!res.ok){mcp._error='tools/list HTTP '+res.status+'：'+(await res.text().catch(()=>'')).slice(0,120);return[]}
+    const j=await parseMcpResponse(res);
+    if(!j){mcp._error='响应解析失败（非法JSON/SSE）';return[]}
+    if(j.error){mcp._error='服务器返回错误：'+(j.error.message||JSON.stringify(j.error)).slice(0,120);return[]}
+    const tools=j.result?.tools||[];
+    if(tools.length===0){mcp._error='握手成功但工具列表为空'}
+    else mcp._error='';
+    return tools;
+  }catch(e){
+    mcp._error=(e.name==='AbortError'?'连接超时':e.message)||'未知错误';
+    return[];
+  }finally{clearTimeout(timer)}
+}
 async function refreshAllMcpTools(){for(const mcp of mcps){if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);else delete mcpTools[mcp.id]}}
 function getAllMcpToolDefs(){const tools=[];for(const mcp of mcps){if(!mcp.enabled)continue;for(const t of(mcpTools[mcp.id]||[]))tools.push({name:t.name,description:(t.description||'')+'（来自：'+mcp.name+'）',input_schema:t.inputSchema||{type:'object',properties:{}}})}return tools}
-async function callMcpTool(name,args){for(const mcp of mcps){if(!mcp.enabled)continue;if((mcpTools[mcp.id]||[]).find(t=>t.name===name)){try{const h={'Content-Type':'application/json'};(mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});const res=await fetch(mcp.url,{method:'POST',headers:h,body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});if(!res.ok)return{error:'HTTP '+res.status};const j=await res.json();if(j.error)return{error:j.error.message||JSON.stringify(j.error)};const content=j.result?.content||[];const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});return{result:text||fallback}}catch(e){return{error:e.message}}}}return{error:'工具未找到: '+name}}
+async function callMcpTool(name,args){
+  for(const mcp of mcps){
+    if(!mcp.enabled)continue;
+    if((mcpTools[mcp.id]||[]).find(t=>t.name===name)){
+      try{
+        let sessionId=mcpSessions[mcp.id];
+        if(sessionId===undefined)sessionId=await mcpInitialize(mcp);
+        const doCall=(sid)=>fetch(mcp.url,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});
+        let res=await doCall(sessionId);
+        if(res.status===404||res.status===400){sessionId=await mcpInitialize(mcp);res=await doCall(sessionId)}
+        if(!res.ok)return{error:'HTTP '+res.status};
+        const j=await parseMcpResponse(res);
+        if(!j)return{error:'响应解析失败'};
+        if(j.error)return{error:j.error.message||JSON.stringify(j.error)};
+        const content=j.result?.content||[];
+        const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');
+        const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});
+        return{result:text||fallback};
+      }catch(e){return{error:e.message}}
+    }
+  }
+  return{error:'工具未找到: '+name};
+}
 function renderToolCallCard(tc){const statusLabel=tc.status==='running'?'执行中':tc.status==='done'?'完成':'出错';const argsStr=typeof tc.args==='object'?JSON.stringify(tc.args,null,2):String(tc.args||'');const resultStr=tc.result||'';return`<div class="tool-call-card"><div class="tool-call-hd" onclick="this.nextElementSibling.classList.toggle('show')"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="tool-call-name">${esc(tc.name)}</span><span class="tool-call-status ${tc.status}">${statusLabel}</span></div><div class="tool-call-body"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">参数</div><pre>${esc(argsStr)}</pre>${resultStr?'<div style="font-size:11px;color:var(--text2);margin:6px 0 4px">结果</div><pre>'+esc(resultStr.slice(0,600))+(resultStr.length>600?'…':'')+'</pre>':''}</div></div>`}
-function renderMcpCards(){const el=$('mcpCards');if(!mcps.length){el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有MCP，点 + 添加</div>';return}el.innerHTML=mcps.map(m=>{const cnt=(mcpTools[m.id]||[]).length;let badge='';if(!m.enabled)badge='<span class="mcp-status err">已禁用</span>';else if(m._status==='loading')badge='<span class="mcp-status loading">连接中…</span>';else if(m._status==='err')badge='<span class="mcp-status err">连接失败</span>';else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具</span>';else badge='<span class="mcp-status loading">等待连接</span>';return`<div class="cfg-card" data-id="${m.id}"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div></div><span class="arrow">›</span></div>`}).join('');el.querySelectorAll('.cfg-card').forEach(card=>{card.onclick=()=>openMcpEdit(card.dataset.id);let t;card.ontouchstart=()=>{t=setTimeout(()=>{const mcp=mcps.find(m=>m.id===card.dataset.id);if(!mcp)return;mcp.enabled=!mcp.enabled;saveMcps();if(mcp.enabled){mcp._status='loading';renderMcpCards();fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;mcp._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}else{delete mcpTools[mcp.id];mcp._status='';renderMcpCards()}},600)};card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t)})}
+function renderMcpCards(){
+  const el=$('mcpCards');
+  if(!mcps.length){el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有MCP，点 + 添加</div>';return}
+  el.innerHTML=mcps.map(m=>{
+    const cnt=(mcpTools[m.id]||[]).length;
+    let badge='',errLine='';
+    if(!m.enabled)badge='<span class="mcp-status err">已禁用</span>';
+    else if(m._status==='loading')badge='<span class="mcp-status loading">连接中…</span>';
+    else if(m._status==='err'){
+      badge='<span class="mcp-status err">连接失败</span>';
+      if(m._error)errLine='<div style="font-size:11px;color:#ff3b30;margin-top:4px;word-break:break-all;line-height:1.4">'+esc(m._error)+'</div>';
+    }
+    else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具</span>';
+    else{badge='<span class="mcp-status err">连接失败</span>';if(m._error)errLine='<div style="font-size:11px;color:#ff3b30;margin-top:4px;word-break:break-all;line-height:1.4">'+esc(m._error)+'</div>'}
+    return`<div class="cfg-card" data-id="${m.id}" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div>${errLine}</div><span class="arrow">›</span></div>`;
+  }).join('');
+  el.querySelectorAll('.cfg-card').forEach(card=>{
+    card.onclick=()=>openMcpEdit(card.dataset.id);
+    let t;card.ontouchstart=()=>{t=setTimeout(()=>{
+      const mcp=mcps.find(m=>m.id===card.dataset.id);if(!mcp)return;
+      mcp.enabled=!mcp.enabled;saveMcps();
+      if(mcp.enabled){mcp._status='loading';renderMcpCards();fetchMcpTools(mcp).then(tools=>{mcpTools[mcp.id]=tools;mcp._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}
+      else{delete mcpTools[mcp.id];mcp._status='';mcp._error='';renderMcpCards()}
+    },600)};
+    card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t);
+  });
+}
 function openMcpEdit(id){editingMcpId=id;const m=mcps.find(x=>x.id===id)||{};$('mcpName').value=m.name||'';$('mcpUrl').value=m.url||'';m.enabled!==false?$('mcpEnabled').classList.add('on'):$('mcpEnabled').classList.remove('on');mcpTempHeaders=(m.headers||[]).map(h=>({...h}));renderMcpHeadersList();$('mcpEditPage').classList.add('open')}
 function renderMcpHeadersList(){const list=$('mcpHeadersList');if(!mcpTempHeaders.length){list.innerHTML='';return}list.innerHTML=mcpTempHeaders.map((h,i)=>`<div class="mcp-header-row"><input placeholder="Header名" value="${esc(h.key||'')}" data-i="${i}" data-f="key"><input placeholder="值" value="${esc(h.val||'')}" data-i="${i}" data-f="val"><button class="mcp-header-del" data-i="${i}">×</button></div>`).join('');list.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{mcpTempHeaders[+inp.dataset.i][inp.dataset.f]=inp.value});list.querySelectorAll('.mcp-header-del').forEach(btn=>btn.onclick=()=>{mcpTempHeaders.splice(+btn.dataset.i,1);renderMcpHeadersList()})}
 function saveMcpEdit(){let m=mcps.find(x=>x.id===editingMcpId);if(!m){m={id:editingMcpId};mcps.push(m)}m.name=$('mcpName').value.trim()||'未命名';m.url=$('mcpUrl').value.trim();m.enabled=$('mcpEnabled').classList.contains('on');m.headers=mcpTempHeaders.filter(h=>h.key);saveMcps();if(m.enabled){m._status='loading';renderMcpCards();fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;m._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}else{delete mcpTools[m.id];renderMcpCards()}}
