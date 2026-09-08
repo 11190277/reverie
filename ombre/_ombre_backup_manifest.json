@@ -25,7 +25,7 @@
     {
       "bytes": 755,
       "path": "dynamic/未分类/2026-08-30 04-46-03_c36b4c296b00.md",
-      "sha256": "bb464ee4be0389bb4a7f0cb5b294a97096f9f8e956550946c9db3878c9be790a"
+      "sha256": "afa5bf784ecdfa2d0f18a0473c1fc45b94e97514a96c7225fd8201a098b0c913"
     },
     {
       "bytes": 848,
@@ -70,7 +70,7 @@
     {
       "bytes": 756,
       "path": "dynamic/未分类/2026-08-30 10-46-02_c5f076e938c2.md",
-      "sha256": "d2626d6bcded43b8b7076ea5c5d92375f0289c9179d136b443438b3577835ee1"
+      "sha256": "e38b379cdf77c0323ca04b05d0c1910487a7f4d66c1e7e093e0b43b096a5ef28"
     },
     {
       "bytes": 1932,
@@ -195,10 +195,10 @@
     {
       "bytes": 760,
       "path": "permanent/未分类/2026-08-30 08-06-31_0223f63b9f43.md",
-      "sha256": "fe6d123e0eff0bb4622038b674b9e1e643d968c99fcf632e3947edb7d9521e95"
+      "sha256": "def5e077c206983889a525dd6d06947d2818f721ba66720495772fd9d9290c0c"
     }
   ],
-  "generated_at": "2026-09-07T06:42:34+00:00",
+  "generated_at": "2026-09-08T06:42:38+00:00",
   "path_prefix": "ombre",
   "repo": "11190277/reverie",
   "schema_version": 1,
