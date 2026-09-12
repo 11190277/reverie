@@ -1787,6 +1787,7 @@ async function processAIMultiBubble(msgIdx,ai){
   // 只按标点切句，一句一个气泡，不做任何去重
   let segs=content.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[content];
   let parts=segs.map(s=>s.trim()).filter(s=>s);
+parts = dedupParts(parts);
   if(parts.length===0){m.content='';renderChat();saveConv();return}
   if(parts.length===1){m.content=parts[0];renderChat();saveConv();return}
   m.content=parts[0];renderChat();saveConv();
