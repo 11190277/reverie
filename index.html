@@ -1758,8 +1758,8 @@ function dedupParts(parts){
     const segs=p.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[p];
     let out='';
     for(const s of segs){
-      const key=s.trim().replace(/\s/g,'');
-      if(key.length>=3){if(seen.has(key))continue;seen.add(key)}
+      const key=s.replace(/[^\u4e00-\u9fff]/g,'');
+      if(key.length>=4){if(seen.has(key))continue;seen.add(key)}
       out+=s;
     }
     out=out.trim();
