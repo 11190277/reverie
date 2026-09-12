@@ -1799,6 +1799,17 @@ parts = dedupParts(parts);
     processAIStickers(newIdx);processAIMemories(newIdx,ai);processAICall(newIdx);processAIBody(newIdx);
   }
   processAIStickers(msgIdx);processAIMemories(msgIdx,ai);processAIBody(msgIdx);processAICall(msgIdx);
+
+cur.msgs = cur.msgs.filter(m =>
+    m.role !== 'assistant' ||
+    m.content ||
+    m.type === 'sticker' ||
+    m.img ||
+    m.file ||
+    m.voiceUrl
+  );
+  renderChat();
+  saveConv();
 }
 
 
