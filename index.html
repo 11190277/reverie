@@ -2398,9 +2398,21 @@ async function init(){
   await migrateToMultiAi();
   if(curAiId)await loadAiMemories(curAiId);
   if(ais.length>1){const keep=getCurAi()||ais[0];ais=[keep];curAiId=keep.id;saveAis();saveCurAi();}
-  await loadCallRecords();await loadKelivoMemories();await loadPlayData();await loadMcps();
+
+  // 启动关键路径：只加载本地聊天和界面所需数据，不等待任何远程服务。
+  // 远程记忆、MCP、通话记录、桌宠数据和背景图全部放到后台加载，避免打开 App 时被网络卡住。
   applyTheme(activeTheme);
-await loadAiBg(curAiId);
+  await loadConversations();
+
+  // 后台加载非关键数据；失败也不能阻塞主界面。
+  Promise.allSettled([
+    curAiId ? loadAiMemories(curAiId) : Promise.resolve(),
+    loadCallRecords(),
+    loadKelivoMemories(),
+    loadPlayData(),
+    loadMcps(),
+    loadAiBg(curAiId)
+  ]).catch(()=>{});
   initToggle($('ttsAuto'),ttsAutoOn,v=>{ttsAutoOn=v;saveCfg()});
   initToggle($('ttsQuote'),ttsQuoteOn,v=>{ttsQuoteOn=v;saveCfg()});
   $('sThink').onclick=()=>{$('sThink').classList.toggle('on');saveCfg()};
@@ -2409,8 +2421,6 @@ await loadAiBg(curAiId);
   $('ctxN').onchange=()=>{ctxN=parseInt($('ctxN').value)||30;saveCfg()};
   loadAvatars();
   renderSbAiChips();updSbName();
-
-  await loadConversations();
 
   $('menuBtn').onclick=openSB;$('ov').onclick=()=>{closeSB();closeGroupSheet()};
   $('newBtn').onclick=newConv;
@@ -2458,7 +2468,7 @@ $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');
   $('doExport').onclick=exportData;$('doImport').onclick=()=>$('importFile').click();$('importFile').onchange=importData;
   $('doReset').onclick=resetChat;
   $('goEmoji').onclick=()=>{renderEmojiLib();$('emojiPage').classList.add('open')};
-  $('goMcp').onclick=()=>{renderMcpCards();$('mcpListPage').classList.add('open')};
+  $('goMcp').onclick=async()=>{await loadMcps();renderMcpCards();$('mcpListPage').classList.add('open')};
   $('mcpListBack').onclick=()=>$('mcpListPage').classList.remove('open');
   $('mcpAdd').onclick=()=>{editingMcpId=uid();mcps.push({id:editingMcpId,name:'新 MCP',description:'',enabled:true,url:'https://example.com/mcp',headers:[],transport:'streamable',proxyMode:'auto',proxyUrl:'',timeout:30});saveMcps();renderMcpCards();loadMcpJsonEditor();$('mcpEditPage').classList.add('open')};
   $('mcpEditBack').onclick=async()=>{try{await saveMcpEdit();$('mcpEditPage').classList.remove('open');renderMcpCards()}catch(e){}};
