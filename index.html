@@ -726,6 +726,22 @@ html,body{
     <div class="set-item" style="cursor:default"><label>启用</label><div class="toggle on" id="mcpEnabled"></div></div>
     <div class="set-item col"><label>名称</label><input class="set-input" id="mcpName" placeholder="My MCP"></div>
     <div class="set-item col"><label>服务器地址</label><input class="set-input" id="mcpUrl" placeholder="https://example.com/mcp"></div>
+    <div class="set-item col"><label>连接模式</label>
+      <select class="set-input" id="mcpTransport">
+        <option value="auto">自动（推荐）</option>
+        <option value="streamable">Streamable HTTP</option>
+        <option value="sse">旧版 SSE</option>
+      </select>
+    </div>
+    <div class="set-item col"><label>访问方式</label>
+      <select class="set-input" id="mcpProxyMode">
+        <option value="auto">自动（代理失败再直连）</option>
+        <option value="proxy">使用内置代理</option>
+        <option value="direct">直连</option>
+      </select>
+    </div>
+    <div class="set-item col"><label>连接超时（秒）</label><input class="set-input" id="mcpTimeout" type="number" min="5" max="180" value="30"></div>
+    <button class="sbtn" id="mcpTest" style="margin-top:8px;padding:11px;border-radius:10px;border:0.5px solid rgba(0,0,0,.12);background:var(--bg);width:100%;font-size:13px;color:var(--text);font-family:inherit;cursor:pointer">测试连接并读取工具</button>
   </div></div>
   <div class="set-sec">
     <h3>自定义请求头</h3>
@@ -836,7 +852,7 @@ function dbAll(s){return new Promise(r=>{const tx=db.transaction(s,'readonly');c
 function dbDel(s,k){return new Promise(r=>{const tx=db.transaction(s,'readwrite');tx.objectStore(s).delete(k);tx.oncomplete=()=>r()})}
 
 // ===== 状态 =====
-let convs=[],cur=null,generating=false,abortCtrl=null;
+let convs=[],cur=null,generating=false,abortCtrl=null,sending=false;
 let apis=[],sps=[],ttss=[];
 let activeApi=null,activeSps=[],activeTts=null;
 let editingApiId=null,editingSpId=null,editingTtsId=null;
@@ -1100,15 +1116,41 @@ function initToggle(el,val,cb){
 }
 
 // ===== 对话管理 =====
-async function mergeToPermanent(){
+function normalizeConversation(c){
+  c=c||{};
+  if(!c.id)c.id=uid();
+  if(!Array.isArray(c.msgs))c.msgs=[];
+  if(!c.type)c.type='single';
+  if(c.type!=='group'&&!c.aiId)c.aiId=curAiId;
+  if(!c.ts)c.ts=Date.now();
+  // 给旧消息补稳定ID，后续不会因为重新渲染而产生“同一条消息”的混淆
+  c.msgs.forEach(m=>{if(!m.id)m.id=uid()});
+  // 只清理极短时间内完全相同的重复写入，避免旧版本的双击/触摸事件把同一条消息存两次
+  const clean=[];
+  for(const m of c.msgs){
+    const p=clean[clean.length-1];
+    const same=p&&p.role===m.role&&String(p.content||'')===String(m.content||'')&&Math.abs((p.ts||0)-(m.ts||0))<5000;
+    if(same)continue;
+    clean.push(m);
+  }
+  c.msgs=clean;
+  return c;
+}
+
+async function loadConversations(){
   const all=await dbAll('convs');
-  let allMsgs=[];
-  for(const c of all){if(c.type==='group')continue;if(c.msgs&&c.msgs.length)allMsgs=allMsgs.concat(c.msgs)}
-  allMsgs.sort((a,b)=>(a.ts||0)-(b.ts||0));
-  for(const c of all)await dbDel('convs',c.id);
-  const perm={id:'main_conv',title:'和以礼的聊天',msgs:allMsgs,ts:Date.now(),aiId:curAiId,type:'single'};
-  convs=[perm];cur=perm;
-  await dbPut('convs',perm);
+  convs=(all||[]).map(normalizeConversation);
+  convs.sort((a,b)=>(b.ts||0)-(a.ts||0));
+  const currentId=cur?.id;
+  const visible=convs.filter(c=>c.type==='group'||c.aiId===curAiId);
+  cur=visible.find(c=>c.id===currentId)||visible[0]||null;
+  if(!cur){
+    const c=normalizeConversation({id:uid(),title:'新对话',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'});
+    convs.unshift(c);
+    cur=c;
+    await dbPut('convs',c);
+  }
+  for(const c of convs)await dbPut('convs',c);
   renderChat();updTitle();renderList();
 }
 
@@ -1124,9 +1166,11 @@ async function resetChat(){
 
 
 function newConv(){
-  if(cur){renderChat();updTitle();closeSB();scrollEnd();return}
-  const c={id:'main_conv',title:'和以礼的聊天',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'};
-  convs=[c];cur=c;dbPut('convs',c);renderChat();updTitle();closeSB();
+  const c=normalizeConversation({id:uid(),title:'新对话',msgs:[],ts:Date.now(),aiId:curAiId,type:'single'});
+  convs.unshift(c);
+  cur=c;
+  dbPut('convs',c);
+  renderChat();updTitle();renderList();closeSB();scrollEnd();
 }
 
 
@@ -1302,9 +1346,12 @@ function playVoice(el,url){
 
 // ===== 发送消息 =====
 async function send(text,img,file){
-  if(!cur)newConv();
+  if(sending||generating)return;
   if(!text.trim()&&!img&&!file)return;
-updateLastActive();
+  sending=true;
+  try{
+    if(!cur)newConv();
+    updateLastActive();
   let finalText=text.trim();
   const urlMatch=finalText.match(/https?:\/\/[^\s]+/);
   if(urlMatch&&!img&&!file){
@@ -1318,7 +1365,7 @@ updateLastActive();
       tip.remove();
     }catch(e){tip.remove();finalText+='\n\n[网页读取失败：'+e.message+']'}
   }
-  const m={role:'user',content:finalText,img:img||null,file:file||null,ts:Date.now()};
+  const m={id:uid(),role:'user',content:finalText,img:img||null,file:file||null,ts:Date.now()};
   cur.msgs.push(m);cur.ts=Date.now();
   if(cur.msgs.length===1){cur.title=text.trim().slice(0,18)||file?.name||'图片对话';updTitle();renderList()}
   renderChat();saveConv();
@@ -1329,6 +1376,9 @@ updateLastActive();
     const toolDefs=getAllMcpToolDefs();
     if(toolDefs.length>0)await callAPIWithTools(toolDefs);
     else await callAPIStream();
+  }
+  }finally{
+    sending=false;
   }
 }
 
@@ -1398,7 +1448,7 @@ async function callAPIStreamForAi(ai,isGroupMode=false){
   }
 
   if(!abortCtrl)abortCtrl=new AbortController();
-  const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),aiId:ai.id,_toolCalls:[]};
+  const aiMsg={id:uid(),role:'assistant',content:'',thinking:'',ts:Date.now(),aiId:ai.id,_toolCalls:[]};
   cur.msgs.push(aiMsg);
   const aiIdx=cur.msgs.length-1;
   renderChat();
@@ -1862,93 +1912,284 @@ function closeSB(){$('sb').classList.remove('on');$('ov').classList.remove('on')
 
 // ===== MCP =====
 let mcps=[],mcpTools={},editingMcpId=null,mcpTempHeaders=[];
-let mcpSessions={}; // {mcpId: sessionId} 握手后的会话
-const MCP_PROXY='https://proxy.37-eli.top'; // CORS代理，留空''则直连
-function mcpFetch(mcp,opts){
-  const url=MCP_PROXY?MCP_PROXY+'?url='+encodeURIComponent(mcp.url):mcp.url;
-  return fetch(url,opts);
+let mcpSessions={}; // {mcpId:{id,transport,messageUrl}}
+const MCP_PROXY='https://proxy.37-eli.top';
+
+function mcpTimeoutMs(mcp){
+  const n=Number(mcp?.timeout);
+  return Math.min(Math.max(Number.isFinite(n)?n:30,5),180)*1000;
 }
-function mcpHeaders(mcp,sessionId){
-  const h={'Content-Type':'application/json','Accept':'application/json, text/event-stream'};
+function mcpBaseHeaders(mcp){
+  const h={'Accept':'application/json, text/event-stream'};
   (mcp.headers||[]).forEach(x=>{if(x.key&&x.val)h[x.key]=x.val});
+  return h;
+}
+function mcpPostHeaders(mcp,sessionId){
+  const h={...mcpBaseHeaders(mcp),'Content-Type':'application/json'};
   if(sessionId)h['Mcp-Session-Id']=sessionId;
   return h;
 }
-async function parseMcpResponse(res){
-  const ct=res.headers.get('content-type')||'';
-  const text=await res.text();
-  if(ct.includes('text/event-stream')){
-    let result=null;
-    for(const line of text.split('\n')){
-      const t=line.trim();
-      if(t.startsWith('data:')){
-        const d=t.slice(5).trim();
-        if(d&&d!=='[DONE]'){try{result=JSON.parse(d)}catch(e){}}
+function mcpTargetUrl(mcp,url){
+  const target=url||mcp.url;
+  const mode=mcp.proxyMode||'auto';
+  if(mode==='direct')return target;
+  return MCP_PROXY+'?url='+encodeURIComponent(target);
+}
+async function mcpRequest(mcp,opts={},urlOverride){
+  const mode=mcp.proxyMode||'auto';
+  const target=urlOverride||mcp.url;
+  const attempts=mode==='proxy'?['proxy']:mode==='direct'?['direct']:['proxy','direct'];
+  let lastErr=null;
+  for(const way of attempts){
+    const url=way==='proxy'?MCP_PROXY+'?url='+encodeURIComponent(target):target;
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),mcpTimeoutMs(mcp));
+    try{
+      const signal=opts.signal;
+      if(signal){
+        if(signal.aborted)throw new DOMException('Aborted','AbortError');
+        signal.addEventListener('abort',()=>controller.abort(),{once:true});
       }
+      const req={...opts,signal:controller.signal};
+      const res=await fetch(url,req);
+      clearTimeout(timer);
+      // auto 模式只有网络/CORS 类失败才换另一条路；HTTP 响应本身交给上层判断
+      return res;
+    }catch(e){
+      clearTimeout(timer);
+      lastErr=e;
+      if(way===attempts[attempts.length-1])throw e;
+    }
+  }
+  throw lastErr||new Error('MCP连接失败');
+}
+
+async function parseMcpResponse(res){
+  const ct=(res.headers.get('content-type')||'').toLowerCase();
+  const text=await res.text();
+  if(ct.includes('text/event-stream')||text.trim().startsWith('event:')||text.trim().startsWith('data:')){
+    let result=null;
+    let currentData=[];
+    for(const line of text.split(/\r?\n/)){
+      if(line.startsWith('data:'))currentData.push(line.slice(5).trim());
+      if(line.trim()===''&&currentData.length){
+        const d=currentData.join('\n');
+        if(d&&d!=='[DONE]'){try{result=JSON.parse(d)}catch(e){}}
+        currentData=[];
+      }
+    }
+    if(currentData.length){
+      const d=currentData.join('\n');
+      if(d&&d!=='[DONE]'){try{result=JSON.parse(d)}catch(e){}}
     }
     return result;
   }
-  try{return JSON.parse(text)}catch(e){return null}
-}
-// 初始化握手，拿到并保存 session id
-async function mcpInitialize(mcp){
-  const initBody={jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-03-26',capabilities:{},clientInfo:{name:'reverie',version:'1.0'}}};
-  const res=await mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,null),body:JSON.stringify(initBody)});
-  if(!res.ok)throw new Error('init HTTP '+res.status);
-  const sessionId=res.headers.get('mcp-session-id')||'';
-  await parseMcpResponse(res);
-  try{
-    await mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,sessionId),body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})});
-  }catch(e){}
-  mcpSessions[mcp.id]=sessionId;
-  return sessionId;
-}
-async function loadMcps(){const d=await dbGet('cfg','_mcps');if(d&&d.data)mcps=d.data;const cache=await dbGet('cfg','_mcpToolsCache');if(cache&&cache.data)mcpTools=cache.data}
-function saveMcps(){dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps})}
-function saveMcpToolsCache(){dbPut('cfg',{id:'_mcpToolsCache',type:'_mcpToolsCache',data:mcpTools})}
-async function fetchMcpTools(mcp){
-  if(!mcp.enabled||!mcp.url){mcp._error='';return[]}
-  const ctrl=new AbortController();
-  const timer=setTimeout(()=>ctrl.abort(),100000);
-  try{
-    let sessionId=await mcpInitialize(mcp);
-    const doList=(sid)=>mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:2,method:'tools/list',params:{}}),signal:ctrl.signal});
-    let res=await doList(sessionId);
-    if(res.status===404||res.status===400){sessionId=await mcpInitialize(mcp);res=await doList(sessionId)}
-    if(!res.ok){mcp._error='tools/list HTTP '+res.status+'：'+(await res.text().catch(()=>'')).slice(0,120);return[]}
-    const j=await parseMcpResponse(res);
-    if(!j){mcp._error='响应解析失败';return[]}
-    if(j.error){mcp._error='服务器错误：'+(j.error.message||JSON.stringify(j.error)).slice(0,120);return[]}
-    const tools=j.result?.tools||[];
-    mcp._error=tools.length===0?'握手成功但工具列表为空':'';
-    return tools;
-  }catch(e){
-    mcp._error=(e.name==='AbortError'?'连接超时':e.message)||'未知错误';
-    return[];
-  }finally{clearTimeout(timer)}
+  try{return text?JSON.parse(text):null}catch(e){return null}
 }
 
-async function refreshAllMcpTools(){for(const mcp of mcps){if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);else delete mcpTools[mcp.id]}}
-function getAllMcpToolDefs(){const tools=[];for(const mcp of mcps){if(!mcp.enabled)continue;for(const t of(mcpTools[mcp.id]||[]))tools.push({name:t.name,description:(t.description||'')+'（来自：'+mcp.name+'）',input_schema:t.inputSchema||{type:'object',properties:{}}})}return tools}
+function absoluteMcpUrl(base,endpoint){
+  try{return new URL(endpoint,base).href}catch(e){return endpoint}
+}
+
+// Streamable HTTP 初始化
+async function mcpInitializeStreamable(mcp){
+  const versions=['2025-06-18','2025-03-26','2024-11-05'];
+  let lastErr=null;
+  for(const version of versions){
+    try{
+      const body={jsonrpc:'2.0',id:Date.now(),method:'initialize',params:{
+        protocolVersion:version,
+        capabilities:{tools:{}},
+        clientInfo:{name:'reverie',version:'2.0'}
+      }};
+      const res=await mcpRequest(mcp,{method:'POST',headers:mcpPostHeaders(mcp),body:JSON.stringify(body)});
+      if(!res.ok){
+        const msg=(await res.text().catch(()=>'')).slice(0,180);
+        lastErr=new Error('初始化 HTTP '+res.status+(msg?'：'+msg:''));
+        if([400,404,405,406,415].includes(res.status))continue;
+        throw lastErr;
+      }
+      const j=await parseMcpResponse(res);
+      if(j?.error){
+        lastErr=new Error(j.error.message||JSON.stringify(j.error));
+        if(/protocol|version/i.test(lastErr.message))continue;
+        throw lastErr;
+      }
+      const sessionId=res.headers.get('mcp-session-id')||res.headers.get('Mcp-Session-Id')||'';
+      const negotiated=j?.result?.protocolVersion||version;
+      await mcpRequest(mcp,{
+        method:'POST',
+        headers:mcpPostHeaders(mcp,sessionId),
+        body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized',params:{}})
+      });
+      const session={id:sessionId,transport:'streamable',messageUrl:mcp.url,version:negotiated};
+      mcpSessions[mcp.id]=session;
+      return session;
+    }catch(e){
+      lastErr=e;
+      if(e?.name==='AbortError')throw e;
+    }
+  }
+  throw lastErr||new Error('Streamable HTTP 初始化失败');
+}
+
+// 旧版 SSE 初始化：GET SSE，读取 endpoint 事件，再 POST initialize
+async function mcpInitializeSse(mcp){
+  const res=await mcpRequest(mcp,{method:'GET',headers:{...mcpBaseHeaders(mcp),'Accept':'text/event-stream'}});
+  if(!res.ok)throw new Error('SSE GET HTTP '+res.status);
+  if(!res.body?.getReader)throw new Error('浏览器不支持SSE流读取');
+  const reader=res.body.getReader();
+  const dec=new TextDecoder();
+  let buf='',endpoint='';
+  try{
+    const deadline=Date.now()+mcpTimeoutMs(mcp);
+    while(Date.now()<deadline){
+      const {done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const blocks=buf.split(/\r?\n\r?\n/);
+      buf=blocks.pop()||'';
+      for(const block of blocks){
+        const event=(block.match(/^event:\s*(.+)$/m)||[])[1]?.trim();
+        const data=(block.match(/^data:\s*(.+)$/m)||[])[1]?.trim();
+        if(event==='endpoint'&&data){endpoint=data;break}
+      }
+      if(endpoint)break;
+    }
+  }finally{
+    try{await reader.cancel()}catch(e){}
+  }
+  if(!endpoint)throw new Error('SSE 已连接，但没有收到 endpoint');
+  const messageUrl=absoluteMcpUrl(mcp.url,endpoint);
+  const initBody={jsonrpc:'2.0',id:Date.now(),method:'initialize',params:{
+    protocolVersion:'2024-11-05',capabilities:{tools:{}},clientInfo:{name:'reverie',version:'2.0'}
+  }};
+  const initRes=await mcpRequest(mcp,{method:'POST',headers:mcpPostHeaders(mcp),body:JSON.stringify(initBody)},messageUrl);
+  if(!initRes.ok)throw new Error('SSE initialize HTTP '+initRes.status);
+  const j=await parseMcpResponse(initRes);
+  if(j?.error)throw new Error(j.error.message||JSON.stringify(j.error));
+  const sessionId=initRes.headers.get('mcp-session-id')||initRes.headers.get('Mcp-Session-Id')||'';
+  await mcpRequest(mcp,{method:'POST',headers:mcpPostHeaders(mcp,sessionId),body:JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized',params:{}})},messageUrl);
+  const session={id:sessionId,transport:'sse',messageUrl,version:j?.result?.protocolVersion||'2024-11-05'};
+  mcpSessions[mcp.id]=session;
+  return session;
+}
+
+async function mcpInitialize(mcp){
+  const mode=mcp.transport||'auto';
+  let lastErr=null;
+  if(mode!=='sse'){
+    try{return await mcpInitializeStreamable(mcp)}catch(e){lastErr=e}
+  }
+  if(mode!=='streamable'){
+    try{return await mcpInitializeSse(mcp)}catch(e){lastErr=e}
+  }
+  throw lastErr||new Error('MCP初始化失败');
+}
+
+async function loadMcps(){
+  const d=await dbGet('cfg','_mcps');if(d&&d.data)mcps=d.data;
+  const cache=await dbGet('cfg','_mcpToolsCache');if(cache&&cache.data)mcpTools=cache.data;
+  mcps.forEach(m=>{
+    if(!m.transport)m.transport='auto';
+    if(!m.proxyMode)m.proxyMode='auto';
+    if(!m.timeout)m.timeout=30;
+  });
+}
+function saveMcps(){dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps})}
+function saveMcpToolsCache(){dbPut('cfg',{id:'_mcpToolsCache',type:'_mcpToolsCache',data:mcpTools})}
+
+async function mcpRpc(mcp,session,method,params,signal){
+  const body={jsonrpc:'2.0',id:Date.now()+Math.floor(Math.random()*1000),method,params:params||{}};
+  const res=await mcpRequest(mcp,{
+    method:'POST',
+    headers:mcpPostHeaders(mcp,session?.id),
+    body:JSON.stringify(body),
+    signal
+  },session?.messageUrl||mcp.url);
+  if(!res.ok){
+    const text=await res.text().catch(()=>'');
+    const err=new Error('HTTP '+res.status+(text?'：'+text.slice(0,180):''));
+    err.status=res.status;throw err;
+  }
+  const j=await parseMcpResponse(res);
+  if(!j)throw new Error('响应解析失败');
+  if(j.error)throw new Error(j.error.message||JSON.stringify(j.error));
+  return j;
+}
+
+async function fetchMcpTools(mcp){
+  if(!mcp.enabled||!mcp.url){mcp._error='';return[]}
+  mcp._status='loading';
+  try{
+    const session=await mcpInitialize(mcp);
+    const j=await mcpRpc(mcp,session,'tools/list',{});
+    const tools=j.result?.tools||[];
+    mcp._transport=session.transport;
+    mcp._version=session.version;
+    mcp._error=tools.length===0?'握手成功，但服务器没有返回工具':'';
+    mcp._status=tools.length?'ok':'err';
+    return tools;
+  }catch(e){
+    mcp._status='err';
+    mcp._error=(e.name==='AbortError'?'连接超时':e.message)||'未知错误';
+    return[];
+  }
+}
+
+async function refreshAllMcpTools(){
+  for(const mcp of mcps){
+    if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);
+    else delete mcpTools[mcp.id];
+  }
+  saveMcpToolsCache();
+}
+function getAllMcpToolDefs(){
+  const tools=[];
+  const used=new Set();
+  for(const mcp of mcps){
+    if(!mcp.enabled)continue;
+    for(const t of(mcpTools[mcp.id]||[])){
+      // 不同MCP可能出现同名工具；给模型一个稳定、可识别的名字，避免路由到错误服务器
+      const base=t.name||'tool';
+      const name=used.has(base)?(mcp.name+'__'+base):base;
+      used.add(name);
+      tools.push({
+        name,
+        description:(t.description||'')+'（来自：'+mcp.name+'）',
+        input_schema:t.inputSchema||{type:'object',properties:{}} ,
+        _mcpId:mcp.id,
+        _originalName:base
+      });
+    }
+  }
+  return tools;
+}
 async function callMcpTool(name,args){
   for(const mcp of mcps){
     if(!mcp.enabled)continue;
-    if((mcpTools[mcp.id]||[]).find(t=>t.name===name)){
+    const tool=(mcpTools[mcp.id]||[]).find(t=>t.name===name||name===mcp.name+'__'+t.name);
+    if(!tool)continue;
+    try{
+      let session=mcpSessions[mcp.id];
+      if(!session)session=await mcpInitialize(mcp);
+      const j=await mcpRpc(mcp,session,'tools/call',{name:tool.name,arguments:args});
+      const content=j.result?.content||[];
+      const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');
+      const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});
+      return{result:text||fallback};
+    }catch(e){
+      // session 失效时自动重新握手一次再重试
       try{
-        let sessionId=mcpSessions[mcp.id];
-        if(sessionId===undefined)sessionId=await mcpInitialize(mcp);
-        const doCall=(sid)=>mcpFetch(mcp,{method:'POST',headers:mcpHeaders(mcp,sid),body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args}})});
-        let res=await doCall(sessionId);
-        if(res.status===404||res.status===400){sessionId=await mcpInitialize(mcp);res=await doCall(sessionId)}
-        if(!res.ok)return{error:'HTTP '+res.status};
-        const j=await parseMcpResponse(res);
-        if(!j)return{error:'响应解析失败'};
-        if(j.error)return{error:j.error.message||JSON.stringify(j.error)};
+        delete mcpSessions[mcp.id];
+        const session=await mcpInitialize(mcp);
+        const j=await mcpRpc(mcp,session,'tools/call',{name:tool.name,arguments:args});
         const content=j.result?.content||[];
         const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');
-        const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});
-        return{result:text||fallback};
-      }catch(e){return{error:e.message}}
+        return{result:text||JSON.stringify(j.result||{})};
+      }catch(e2){
+        return{error:(e2.name==='AbortError'?'连接超时':e2.message)||e.message};
+      }
     }
   }
   return{error:'工具未找到: '+name};
@@ -1967,7 +2208,7 @@ function renderMcpCards(){
       badge='<span class="mcp-status err">连接失败</span>';
       if(m._error)errLine='<div style="font-size:11px;color:#ff3b30;margin-top:4px;word-break:break-all;line-height:1.4">'+esc(m._error)+'</div>';
     }
-    else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具</span>';
+    else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具 · '+(m._transport==='sse'?'SSE':'HTTP')+'</span>';
     else{badge='<span class="mcp-status err">连接失败</span>';if(m._error)errLine='<div style="font-size:11px;color:#ff3b30;margin-top:4px;word-break:break-all;line-height:1.4">'+esc(m._error)+'</div>'}
     return`<div class="cfg-card" data-id="${m.id}" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div>${errLine}</div><span class="arrow">›</span></div>`;
   }).join('');
@@ -1982,9 +2223,44 @@ function renderMcpCards(){
     card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t);
   });
 }
-function openMcpEdit(id){editingMcpId=id;const m=mcps.find(x=>x.id===id)||{};$('mcpName').value=m.name||'';$('mcpUrl').value=m.url||'';m.enabled!==false?$('mcpEnabled').classList.add('on'):$('mcpEnabled').classList.remove('on');mcpTempHeaders=(m.headers||[]).map(h=>({...h}));renderMcpHeadersList();$('mcpEditPage').classList.add('open')}
+function openMcpEdit(id){
+  editingMcpId=id;
+  const m=mcps.find(x=>x.id===id)||{};
+  $('mcpName').value=m.name||'';
+  $('mcpUrl').value=m.url||'';
+  $('mcpTransport').value=m.transport||'auto';
+  $('mcpProxyMode').value=m.proxyMode||'auto';
+  $('mcpTimeout').value=m.timeout||30;
+  m.enabled!==false?$('mcpEnabled').classList.add('on'):$('mcpEnabled').classList.remove('on');
+  mcpTempHeaders=(m.headers||[]).map(h=>({...h}));
+  renderMcpHeadersList();
+  $('mcpEditPage').classList.add('open');
+}
 function renderMcpHeadersList(){const list=$('mcpHeadersList');if(!mcpTempHeaders.length){list.innerHTML='';return}list.innerHTML=mcpTempHeaders.map((h,i)=>`<div class="mcp-header-row"><input placeholder="Header名" value="${esc(h.key||'')}" data-i="${i}" data-f="key"><input placeholder="值" value="${esc(h.val||'')}" data-i="${i}" data-f="val"><button class="mcp-header-del" data-i="${i}">×</button></div>`).join('');list.querySelectorAll('input').forEach(inp=>inp.oninput=()=>{mcpTempHeaders[+inp.dataset.i][inp.dataset.f]=inp.value});list.querySelectorAll('.mcp-header-del').forEach(btn=>btn.onclick=()=>{mcpTempHeaders.splice(+btn.dataset.i,1);renderMcpHeadersList()})}
-function saveMcpEdit(){let m=mcps.find(x=>x.id===editingMcpId);if(!m){m={id:editingMcpId};mcps.push(m)}m.name=$('mcpName').value.trim()||'未命名';m.url=$('mcpUrl').value.trim();m.enabled=$('mcpEnabled').classList.contains('on');m.headers=mcpTempHeaders.filter(h=>h.key);saveMcps();if(m.enabled){m._status='loading';renderMcpCards();fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;m._status=tools.length>0?'ok':'err';saveMcpToolsCache();renderMcpCards()})}else{delete mcpTools[m.id];renderMcpCards()}}
+async function testMcpConnection(m){
+  if(!m||!m.url){alert('请先填写 MCP 服务器地址');return}
+  m._status='loading';m._error='';renderMcpCards();
+  const tools=await fetchMcpTools(m);
+  mcpTools[m.id]=tools;saveMcpToolsCache();saveMcps();renderMcpCards();
+  if(tools.length)alert('连接成功\n\n连接方式：'+(m._transport==='sse'?'旧版 SSE':'Streamable HTTP')+'\n协议版本：'+(m._version||'未知')+'\n工具数量：'+tools.length);
+  else alert('连接失败\n\n'+(m._error||'服务器没有返回工具'));
+}
+function saveMcpEdit(){
+  let m=mcps.find(x=>x.id===editingMcpId);
+  if(!m){m={id:editingMcpId};mcps.push(m)}
+  m.name=$('mcpName').value.trim()||'未命名';
+  m.url=$('mcpUrl').value.trim();
+  m.enabled=$('mcpEnabled').classList.contains('on');
+  m.transport=$('mcpTransport').value||'auto';
+  m.proxyMode=$('mcpProxyMode').value||'auto';
+  m.timeout=Math.min(Math.max(parseInt($('mcpTimeout').value)||30,5),180);
+  m.headers=mcpTempHeaders.filter(h=>h.key);
+  saveMcps();
+  if(m.enabled){
+    m._status='loading';renderMcpCards();
+    fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;saveMcpToolsCache();saveMcps();renderMcpCards()});
+  }else{delete mcpTools[m.id];delete mcpSessions[m.id];renderMcpCards()}
+}
 
 async function callAPIWithTools(toolDefs){
   const ai=getCurAi();if(!ai)return callAPIStream();
@@ -1998,7 +2274,7 @@ async function callAPIWithTools(toolDefs){
   const sysText=(getBuiltinPrompt()+summaryText+memText+(spText||'')+eventideCard).trim();
   let messages=sliceContext(cur.msgs.filter(m=>(m.role==='user'||m.role==='assistant')&&m.type!=='sticker')).map(m=>{
 if(m.img&&m.role==='user'){const ct=[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:m.img.split(',')[1]}}];if(m.content)ct.push({type:'text',text:m.content});return{role:m.role,content:ct}}if(m._apiBlocks)return{role:m.role,content:m._apiBlocks};let txt=m.content||'';if(m.file&&m.file.text)txt+=(txt?'\n\n':'')+'[文件: '+m.file.name+']\n'+m.file.text;return{role:m.role,content:txt}});
-  const aiMsg={role:'assistant',content:'',thinking:'',ts:Date.now(),aiId:ai.id,_toolCalls:[]};
+  const aiMsg={id:uid(),role:'assistant',content:'',thinking:'',ts:Date.now(),aiId:ai.id,_toolCalls:[]};
   cur.msgs.push(aiMsg);const aiIdx=cur.msgs.length-1;renderChat();
   for(let loop=0;loop<6;loop++){
     const headers={'Content-Type':'application/json','x-api-key':api.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
@@ -2133,7 +2409,7 @@ await loadAiBg(curAiId);
   loadAvatars();
   renderSbAiChips();updSbName();
 
-  await mergeToPermanent();
+  await loadConversations();
 
   $('menuBtn').onclick=openSB;$('ov').onclick=()=>{closeSB();closeGroupSheet()};
   $('newBtn').onclick=newConv;
@@ -2183,10 +2459,11 @@ $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');
   $('goEmoji').onclick=()=>{renderEmojiLib();$('emojiPage').classList.add('open')};
   $('goMcp').onclick=()=>{renderMcpCards();$('mcpListPage').classList.add('open')};
   $('mcpListBack').onclick=()=>$('mcpListPage').classList.remove('open');
-  $('mcpAdd').onclick=()=>{editingMcpId=uid();$('mcpName').value='';$('mcpUrl').value='';$('mcpEnabled').classList.add('on');mcpTempHeaders=[];renderMcpHeadersList();$('mcpEditPage').classList.add('open')};
+  $('mcpAdd').onclick=()=>{editingMcpId=uid();$('mcpName').value='';$('mcpUrl').value='';$('mcpTransport').value='auto';$('mcpProxyMode').value='auto';$('mcpTimeout').value=30;$('mcpEnabled').classList.add('on');mcpTempHeaders=[];renderMcpHeadersList();$('mcpEditPage').classList.add('open')};
   $('mcpEditBack').onclick=()=>{saveMcpEdit();$('mcpEditPage').classList.remove('open')};
   $('mcpDel').onclick=()=>{if(!confirm('删除这个MCP？'))return;mcps=mcps.filter(m=>m.id!==editingMcpId);delete mcpTools[editingMcpId];saveMcps();$('mcpEditPage').classList.remove('open');renderMcpCards()};
   $('mcpAddHeader').onclick=()=>{mcpTempHeaders.push({key:'',val:''});renderMcpHeadersList()};
+  $('mcpTest').onclick=async()=>{let m=mcps.find(x=>x.id===editingMcpId);if(!m){m={id:editingMcpId};mcps.push(m)}m.name=$('mcpName').value.trim()||'未命名';m.url=$('mcpUrl').value.trim();m.enabled=$('mcpEnabled').classList.contains('on');m.transport=$('mcpTransport').value||'auto';m.proxyMode=$('mcpProxyMode').value||'auto';m.timeout=Math.min(Math.max(parseInt($('mcpTimeout').value)||30,5),180);m.headers=mcpTempHeaders.filter(h=>h.key);await testMcpConnection(m)};
   initToggle($('mcpEnabled'),true,()=>{});
   $('apiListBack').onclick=()=>$('apiListPage').classList.remove('open');
   $('apiAdd').onclick=()=>{editingApiId=uid();$('apiName').value='';$('apiUrl').value='';$('apiKey').value='';$('apiModel').value='';$('apiEditPage').classList.add('open')};
@@ -2228,8 +2505,6 @@ $('avAiFile').onchange=e=>{const f=e.target.files[0];if(!f)return;compressImg(f,
   inBox.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();if(!generating){send(inBox.value);inBox.value='';autoH()}}};
   sendBtn.onclick=()=>{if(!generating){send(inBox.value);inBox.value='';autoH()}};
   stopBtn.onclick=()=>{if(abortCtrl)abortCtrl.abort();finish()};
-  let st;sendBtn.ontouchstart=()=>{st=setTimeout(()=>{const text=inBox.value.trim();if(!text)return;if(!cur)newConv();cur.msgs.push({role:'user',content:text,ts:Date.now()});cur.ts=Date.now();if(cur.msgs.length===1){cur.title=text.slice(0,18);updTitle();renderList()}inBox.value='';autoH();renderChat();saveConv()},500)};sendBtn.ontouchend=()=>clearTimeout(st);sendBtn.ontouchmove=()=>clearTimeout(st);
-
 $('bgFileIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image();const r=new FileReader();r.onload=ev=>{img.onload=()=>{const c=document.createElement('canvas');const maxW=1920;const ratio=Math.min(maxW/img.width,maxW/img.height,1);c.width=img.width*ratio;c.height=img.height*ratio;c.getContext('2d').drawImage(img,0,0,c.width,c.height);const url=c.toDataURL('image/jpeg',0.92);dbPut('cfg',{id:'_chatBg_'+curAiId,type:'_chatBg',data:url});$('chatBg').style.backgroundImage='url('+url+')'};img.src=ev.target.result};r.readAsDataURL(f);e.target.value=''};
 
   $('attachBtn').onclick=()=>$('fileIn').click();$('fileIn').onchange=e=>{handleFile(e.target.files[0]);e.target.value=''};
