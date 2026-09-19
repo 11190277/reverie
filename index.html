@@ -333,6 +333,53 @@ html,body{
 .mcp-header-del{width:22px;height:22px;border-radius:50%;border:none;background:rgba(255,59,48,0.1);color:#ff3b30;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;line-height:1}
 .mcp-json-editor{width:100%;min-height:58vh;padding:14px 14px;border-radius:12px;border:0.5px solid rgba(0,0,0,0.16);background:rgba(255,255,255,0.72);font-size:13px;line-height:1.65;font-family:'SF Mono',Menlo,Monaco,Consolas,monospace;font-weight:400;color:var(--text);outline:none;resize:none;white-space:pre;overflow:auto;tab-size:2;box-shadow:inset 0 1px 2px rgba(0,0,0,0.03)}
 .mcp-json-editor:focus{border-color:rgba(0,0,0,0.28);background:var(--input-bg)}
+
+/* ===== MCP 可视化编辑器 ===== */
+.mcp-edit-sheet{position:fixed;left:0;right:0;bottom:0;height:min(88vh,760px);background:rgba(255,255,255,.94);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);z-index:1000 !important;pointer-events:auto !important;touch-action:manipulation;border-radius:24px 24px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.12);transform:translateY(105%);transition:transform .28s ease;overflow:hidden;display:flex;flex-direction:column;isolation:isolate}
+.mcp-edit-sheet.open{transform:translateY(0)}
+.mcp-sheet-handle{width:54px;height:5px;border-radius:99px;background:rgba(0,0,0,.14);margin:10px auto 2px;flex:none}
+.mcp-sheet-hd{height:58px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;flex:none;position:relative;z-index:20;pointer-events:auto}
+.mcp-sheet-title{font-size:20px;font-weight:500;letter-spacing:.2px}
+.mcp-sheet-icon{width:38px;height:38px;border:0;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:28px;font-family:Arial,sans-serif;font-weight:300}
+.mcp-sheet-icon svg{width:23px;height:23px;stroke:var(--text);fill:none;stroke-width:1.8}
+.mcp-tabs{margin:0 16px 12px;padding:4px;background:rgba(0,0,0,.045);border-radius:28px;display:grid;grid-template-columns:1fr 1fr;flex:none;position:relative;z-index:20;pointer-events:auto}
+.mcp-tab{height:42px;border:0;background:transparent;border-radius:23px;font-family:inherit;font-size:15px;color:var(--text2);cursor:pointer}
+.mcp-tab.on{background:rgba(0,0,0,.12);color:var(--text);font-weight:400}
+.mcp-edit-scroll{flex:1;overflow-y:auto;padding:0 16px 110px;-webkit-overflow-scrolling:touch;position:relative;z-index:10;pointer-events:auto;touch-action:pan-y}
+.mcp-basic-card{background:rgba(255,255,255,.76);border:1px solid rgba(0,0,0,.06);border-radius:18px;overflow:hidden;margin-bottom:14px}
+.mcp-switch-row{min-height:72px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,0,0,.05);font-size:16px}
+.mcp-switch{position:relative;width:50px;height:30px;border:0;border-radius:16px;background:#d5d5d5;cursor:pointer;flex:none;transition:.2s}
+.mcp-switch.on{background:#111}
+.mcp-switch::after{content:'';position:absolute;width:24px;height:24px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18);transition:.2s}
+.mcp-switch.on::after{transform:translateX(20px)}
+.mcp-field{padding:0 0 14px}
+.mcp-field-label{display:block;padding:0 2px 7px;font-size:13px;color:var(--text2)}
+.mcp-field-input{width:100%;height:50px;border:1px solid rgba(0,0,0,.2);border-radius:16px;background:rgba(255,255,255,.72);padding:0 15px;font-family:inherit;font-size:16px;color:var(--text);outline:none}
+.mcp-field-input:focus{border-color:rgba(0,0,0,.45)}
+.mcp-section-label{font-size:16px;font-weight:400;margin:18px 2px 8px}
+.mcp-transport{display:grid;grid-template-columns:1fr 1fr;gap:0;padding:4px;background:rgba(0,0,0,.045);border-radius:27px;margin-bottom:10px}
+.mcp-transport button{height:46px;border:0;border-radius:23px;background:transparent;font-family:inherit;font-size:15px;color:var(--text2);cursor:pointer}
+.mcp-transport button.on{background:rgba(0,0,0,.12);color:var(--text);font-weight:400}
+.mcp-hint{font-size:12px;color:var(--text2);line-height:1.6;margin:6px 2px 16px}
+.mcp-headers{background:rgba(255,255,255,.76);border:1px solid rgba(0,0,0,.06);border-radius:18px;overflow:hidden}
+.mcp-header-editor{display:flex;gap:8px;padding:10px;border-bottom:1px solid rgba(0,0,0,.06);align-items:center}
+.mcp-header-editor:last-child{border-bottom:0}
+.mcp-header-editor input{height:42px;min-width:0;border:1px solid rgba(0,0,0,.14);border-radius:12px;background:rgba(255,255,255,.8);padding:0 10px;font-family:inherit;font-size:13px;outline:none}
+.mcp-header-key{width:38%}.mcp-header-val{flex:1}
+.mcp-header-remove{width:32px;height:32px;border:0;background:none;color:var(--text2);font-size:22px;cursor:pointer;flex:none}
+.mcp-add-header{margin-top:9px;height:42px;padding:0 15px;border-radius:13px;border:1px solid rgba(0,0,0,.2);background:rgba(255,255,255,.72);font-family:inherit;font-size:14px;cursor:pointer}
+.mcp-sheet-footer{position:absolute;left:16px;right:16px;bottom:max(12px,env(safe-area-inset-bottom));display:flex;gap:10px;z-index:50;pointer-events:auto}
+.mcp-save-btn{height:54px;flex:1;border:1px solid rgba(0,0,0,.2);border-radius:17px;background:#d9d9d9;color:#111;font-family:inherit;font-size:16px;cursor:pointer}
+.mcp-save-btn:active{opacity:.75}
+.mcp-delete-btn{width:54px;height:54px;border:1px solid rgba(255,59,48,.2);border-radius:17px;background:rgba(255,59,48,.08);color:#ff3b30;font-family:inherit;font-size:20px;cursor:pointer}
+.mcp-tool-list{display:flex;flex-direction:column;gap:9px}
+.mcp-tool-item{padding:13px 14px;border:1px solid rgba(0,0,0,.07);border-radius:15px;background:rgba(255,255,255,.76)}
+.mcp-tool-name{font-size:14px;font-weight:400;word-break:break-word}
+.mcp-tool-desc{font-size:11px;color:var(--text2);line-height:1.5;margin-top:4px;word-break:break-word}
+.mcp-tool-empty{text-align:center;padding:50px 20px;color:var(--text2);font-size:13px;line-height:1.7}
+.mcp-tool-refresh{width:100%;height:44px;border:1px solid rgba(0,0,0,.14);border-radius:13px;background:rgba(255,255,255,.72);font-family:inherit;font-size:14px;cursor:pointer;margin-bottom:12px}
+@media (max-width:480px){.mcp-edit-sheet{height:calc(100vh - 72px)}.mcp-sheet-title{font-size:19px}.mcp-field-input{height:48px}.mcp-header-key{width:36%}}
+
 /* AI 卡片 */
 .ai-card{background:rgba(255,255,255,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,0.04),inset 0 1px 0 rgba(255,255,255,0.5)}
 .ai-card:active{background:rgba(255,255,255,0.6)}
@@ -718,22 +765,48 @@ html,body{
   <div class="card-list" id="mcpCards"></div>
 </div>
 
-<!-- MCP JSON 编辑页：兼容截图中的 mcpServers 格式 -->
-<div class="page" id="mcpEditPage">
-  <div class="page-hd">
-    <button class="page-back" id="mcpEditBack"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <h2>编辑 JSON</h2>
-    <button class="add-btn" id="mcpFormatBtn" title="格式化">✓</button>
+<!-- MCP 可视化编辑页：内部自动生成 mcpServers JSON，用户不需要看代码 -->
+<div class="mcp-edit-sheet" id="mcpEditPage">
+  <div class="mcp-sheet-handle"></div>
+  <div class="mcp-sheet-hd">
+    <button class="mcp-sheet-icon" id="mcpEditBack" aria-label="关闭">×</button>
+    <div class="mcp-sheet-title">编辑 MCP</div>
+    <button class="mcp-sheet-icon" id="mcpRefresh" aria-label="刷新工具"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.7-4L3 10"/><path d="M3 4v6h6"/><path d="M4 13a8 8 0 0 0 14.7 4L21 14"/><path d="M21 20v-6h-6"/></svg></button>
   </div>
-  <div class="set-sec">
-    <div style="font-size:11px;color:var(--text2);line-height:1.6;margin:0 4px 8px">支持 mcpServers 配置。每个服务器可使用 name、type、description、isActive、baseUrl、headers；也兼容旧版 url、enabled、transport、proxyMode、timeout。</div>
-    <textarea id="mcpJson" class="mcp-json-editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea>
-    <div id="mcpJsonStatus" style="font-size:11px;color:var(--text2);line-height:1.5;margin:8px 4px;min-height:18px"></div>
-    <button class="sbtn" id="mcpTest" style="padding:11px;border-radius:10px;border:0.5px solid rgba(0,0,0,.12);background:var(--bg);width:100%;font-size:13px;color:var(--text);font-family:inherit;cursor:pointer">保存并测试全部 MCP</button>
+  <div class="mcp-tabs">
+    <button class="mcp-tab on" data-tab="basic">基础设置</button>
+    <button class="mcp-tab" data-tab="tools">工具</button>
   </div>
-  <div class="set-sec"><div class="set-card">
-    <div class="set-item" id="mcpDel" style="color:#ff3b30;justify-content:center;cursor:pointer"><label style="color:#ff3b30">删除当前编辑的 MCP</label></div>
-  </div></div>
+  <div class="mcp-edit-scroll">
+    <section id="mcpBasicTab">
+      <div class="mcp-basic-card">
+        <div class="mcp-switch-row"><span>是否启用</span><button class="mcp-switch on" id="mcpEnabled" aria-label="启用 MCP"></button></div>
+      </div>
+      <div class="mcp-section-label">名称</div>
+      <div class="mcp-field"><input class="mcp-field-input" id="mcpName" placeholder="例如：花园" autocomplete="off"></div>
+      <div class="mcp-section-label">传输类型</div>
+      <div class="mcp-transport">
+        <button id="mcpTransportStream" class="on">Streamable HTTP</button>
+        <button id="mcpTransportSse">SSE</button>
+      </div>
+      <div class="mcp-hint" id="mcpTransportHint">优先使用 Streamable HTTP。连接失败时系统会自动尝试兼容的连接方式。</div>
+      <div class="mcp-section-label">服务器地址</div>
+      <div class="mcp-field"><input class="mcp-field-input" id="mcpUrl" type="url" placeholder="https://example.com/mcp" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      <div class="mcp-section-label">自定义请求头</div>
+      <div id="mcpHeaders" class="mcp-headers"></div>
+      <button class="mcp-add-header" id="mcpAddHeader">＋ 添加请求头</button>
+      <div id="mcpEditStatus" style="font-size:12px;color:var(--text2);line-height:1.6;margin:12px 2px 0;min-height:20px"></div>
+    </section>
+    <section id="mcpToolsTab" style="display:none">
+      <button class="mcp-tool-refresh" id="mcpTest">刷新并测试工具</button>
+      <div id="mcpToolList" class="mcp-tool-list"></div>
+    </section>
+  </div>
+  <div class="mcp-sheet-footer">
+    <button class="mcp-save-btn" id="mcpSave">✓ 保存</button>
+    <button class="mcp-delete-btn" id="mcpDel" aria-label="删除 MCP">⌫</button>
+  </div>
+  <textarea id="mcpJson" hidden></textarea>
 </div>
 
 <!-- 表情包库页 -->
@@ -1906,6 +1979,85 @@ let mcps=[],mcpTools={},editingMcpId=null;
 let mcpSessions={}; // {mcpId:{id,transport,messageUrl,version}}
 const MCP_PROXY='https://proxy.37-eli.top';
 
+// ===== MCP 数据层：必须在 init() 前定义，避免初始化中断导致整个设置页失去点击事件 =====
+async function loadMcps(){
+  const d=await dbGet('cfg','_mcps');
+  if(d?.data){
+    const raw=d.data;
+    mcps=Array.isArray(raw)?raw.flatMap(x=>normalizeMcpConfig(x)):(raw?.mcpServers?normalizeMcpConfig(raw):[]);
+  }else{
+    mcps=[];
+  }
+  const cache=await dbGet('cfg','_mcpTools');
+  if(cache?.data&&typeof cache.data==='object')mcpTools=cache.data;
+  else mcpTools={};
+}
+async function saveMcps(){
+  await dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps});
+}
+async function saveMcpToolsCache(){
+  await dbPut('cfg',{id:'_mcpTools',type:'_mcpTools',data:mcpTools});
+}
+function renderMcpCards(){
+  const box=$('mcpCards');
+  if(!box)return;
+  if(!mcps.length){
+    box.innerHTML='<div style="padding:50px 20px;text-align:center;color:var(--text2);font-size:13px">还没有 MCP 服务器<br><span style="font-size:11px">点击右上角 ＋ 添加</span></div>';
+    return;
+  }
+  box.innerHTML=mcps.map(m=>{
+    const count=(mcpTools[m.id]||[]).length;
+    const status=m.enabled===false?'已关闭':(count?('已连接 · '+count+' 个工具'):'未测试');
+    return `<div class="cfg-card mcp-card" data-id="${esc(m.id)}" style="cursor:pointer">
+      <div style="width:34px;height:34px;border-radius:10px;background:rgba(0,0,0,.06);display:flex;align-items:center;justify-content:center;flex:none">⌁</div>
+      <div style="flex:1;min-width:0"><div style="font-size:15px;line-height:1.35">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(status)}</div></div>
+      <span class="arrow">›</span>
+    </div>`;
+  }).join('');
+  box.querySelectorAll('.mcp-card').forEach(card=>{
+    card.onclick=()=>{
+      editingMcpId=card.dataset.id;
+      loadMcpJsonEditor();
+      $('mcpEditPage').classList.add('open');
+    };
+  });
+}
+async function fetchMcpTools(mcp){
+  const session=await mcpInitialize(mcp);
+  const url=session.messageUrl||mcp.url;
+  const res=await mcpRequest(mcp,{
+    method:'POST',
+    headers:mcpPostHeaders(mcp,session.id),
+    body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/list',params:{}})
+  },url);
+  if(!res.ok)throw new Error('tools/list HTTP '+res.status);
+  const j=await parseMcpResponse(res);
+  if(j?.error)throw new Error(j.error.message||JSON.stringify(j.error));
+  return Array.isArray(j?.result?.tools)?j.result.tools:[];
+}
+async function callMcpTool(name,args){
+  const candidates=mcps.filter(m=>m.enabled!==false&&(mcpTools[m.id]||[]).some(t=>t.name===name));
+  const list=candidates.length?candidates:mcps.filter(m=>m.enabled!==false);
+  let lastErr=null;
+  for(const m of list){
+    try{
+      let session=mcpSessions[m.id]||await mcpInitialize(m);
+      const res=await mcpRequest(m,{
+        method:'POST',
+        headers:mcpPostHeaders(m,session.id),
+        body:JSON.stringify({jsonrpc:'2.0',id:Date.now(),method:'tools/call',params:{name,arguments:args||{}}})
+      },session.messageUrl||m.url);
+      if(!res.ok)throw new Error('工具调用 HTTP '+res.status);
+      const j=await parseMcpResponse(res);
+      if(j?.error)throw new Error(j.error.message||JSON.stringify(j.error));
+      const content=j?.result?.content;
+      if(Array.isArray(content))return {result:content.map(x=>x?.text??(typeof x==='string'?x:JSON.stringify(x))).join('\n')};
+      return {result:typeof j?.result==='string'?j.result:JSON.stringify(j?.result??'')};
+    }catch(e){lastErr=e;delete mcpSessions[m.id]}
+  }
+  return {error:lastErr?.message||('找不到 MCP 工具：'+name)};
+}
+
 function mcpTimeoutMs(mcp){
   const n=Number(mcp?.timeout);
   return Math.min(Math.max(Number.isFinite(n)?n:30,5),180)*1000;
@@ -2063,68 +2215,54 @@ function mcpExportConfig(){
   }
   return {mcpServers:servers};
 }
-function setMcpJsonStatus(text,error=false){const el=$('mcpJsonStatus');if(!el)return;el.textContent=text||'';el.style.color=error?'#ff3b30':'var(--text2)'}
-function loadMcpJsonEditor(){if($('mcpJson'))$('mcpJson').value=JSON.stringify(mcpExportConfig(),null,2);setMcpJsonStatus('')}
-function parseMcpEditor(){
-  try{const raw=JSON.parse($('mcpJson').value);const list=normalizeMcpConfig(raw);if(!list.length)throw new Error('没有找到有效的 mcpServers 配置或 baseUrl/url');return list}
-  catch(e){throw new Error('JSON 格式错误：'+e.message)}
+function setMcpJsonStatus(text,error=false){const el=$('mcpEditStatus');if(!el)return;el.textContent=text||'';el.style.color=error?'#ff3b30':'var(--text2)'}
+function mcpVisualHeaders(){return Array.from(document.querySelectorAll('#mcpHeaders .mcp-header-editor')).map(row=>({key:row.querySelector('.mcp-header-key')?.value.trim()||'',val:row.querySelector('.mcp-header-val')?.value||''})).filter(x=>x.key)}
+function renderMcpHeaderEditor(headers){const box=$('mcpHeaders');if(!box)return;const arr=Array.isArray(headers)?headers:[];box.innerHTML=arr.map((h,i)=>`<div class="mcp-header-editor" data-i="${i}"><input class="mcp-header-key" placeholder="请求头名称" value="${esc(h.key||'')}"><input class="mcp-header-val" placeholder="请求头值" value="${esc(h.val||'')}"><button class="mcp-header-remove" type="button" data-remove="${i}">×</button></div>`).join('');box.querySelectorAll('[data-remove]').forEach(btn=>btn.onclick=()=>{const row=btn.closest('.mcp-header-editor');row?.remove()})}
+function currentMcpEdit(){return mcps.find(m=>m.id===editingMcpId)||null}
+function loadMcpJsonEditor(){
+  const m=currentMcpEdit();if(!m)return;
+  $('mcpName').value=m.name||'';$('mcpUrl').value=m.url||'';
+  $('mcpEnabled').classList.toggle('on',m.enabled!==false);
+  const transport=m.transport==='sse'?'sse':'streamable';
+  $('mcpTransportStream').classList.toggle('on',transport==='streamable');$('mcpTransportSse').classList.toggle('on',transport==='sse');
+  renderMcpHeaderEditor(m.headers||[]);
+  const cfg=mcpExportConfig();if($('mcpJson'))$('mcpJson').value=JSON.stringify(cfg,null,2);
+  renderMcpEditTools();setMcpJsonStatus('');
+}
+function readMcpVisual(){
+  const m=currentMcpEdit();if(!m)throw new Error('没有正在编辑的 MCP');
+  const name=$('mcpName').value.trim();const url=$('mcpUrl').value.trim();
+  if(!name)throw new Error('请填写 MCP 名称');if(!url)throw new Error('请填写服务器地址');
+  try{new URL(url)}catch(e){throw new Error('服务器地址不是有效的网址')}
+  m.name=name;m.url=url;m.enabled=$('mcpEnabled').classList.contains('on');m.transport=$('mcpTransportSse').classList.contains('on')?'sse':'streamable';m.headers=mcpVisualHeaders();
+  if(!m.proxyMode)m.proxyMode='auto';if(!m.timeout)m.timeout=30;
+  return m;
 }
 async function saveMcpJson(){
-  const list=parseMcpEditor();
-  const oldTools=mcpTools;mcps=list;mcpTools={};mcpSessions={};
-  for(const m of mcps){if(oldTools[m.id])mcpTools[m.id]=oldTools[m.id]}
-  await saveMcps();await saveMcpToolsCache();renderMcpCards();return mcps;
+  const m=readMcpVisual();
+  await saveMcps();await saveMcpToolsCache();
+  if($('mcpJson'))$('mcpJson').value=JSON.stringify(mcpExportConfig(),null,2);
+  return mcps;
 }
-async function loadMcps(){
-  const d=await dbGet('cfg','_mcps');if(d&&d.data)mcps=normalizeMcpConfig(d.data);
-  const cache=await dbGet('cfg','_mcpToolsCache');if(cache&&cache.data)mcpTools=cache.data;
-  mcps.forEach(m=>{if(!m.transport)m.transport='auto';if(!m.proxyMode)m.proxyMode='auto';if(!m.timeout)m.timeout=30});
-}
-function saveMcps(){return dbPut('cfg',{id:'_mcps',type:'_mcps',data:mcps})}
-function saveMcpToolsCache(){return dbPut('cfg',{id:'_mcpToolsCache',type:'_mcpToolsCache',data:mcpTools})}
-
-async function mcpRpc(mcp,session,method,params,signal){
-  const body={jsonrpc:'2.0',id:Date.now()+Math.floor(Math.random()*1000),method,params:params||{}};
-  const res=await mcpRequest(mcp,{method:'POST',headers:mcpPostHeaders(mcp,session?.id),body:JSON.stringify(body),signal},session?.messageUrl||mcp.url);
-  if(!res.ok){const text=await res.text().catch(()=> '');const err=new Error('HTTP '+res.status+(text?'：'+text.slice(0,220):''));err.status=res.status;throw err}
-  const j=await parseMcpResponse(res);if(!j)throw new Error('响应解析失败');if(j.error)throw new Error(j.error.message||JSON.stringify(j.error));return j;
-}
-async function fetchMcpTools(mcp){
-  if(!mcp.enabled||!mcp.url){mcp._error='';return[]}
-  mcp._status='loading';mcp._error='';
-  try{const session=await mcpInitialize(mcp);const j=await mcpRpc(mcp,session,'tools/list',{});const tools=j.result?.tools||[];mcp._transport=session.transport;mcp._version=session.version;mcp._error=tools.length===0?'握手成功，但服务器没有返回工具':'';mcp._status=tools.length?'ok':'err';return tools}
-  catch(e){mcp._status='err';mcp._error=(e.name==='AbortError'?'连接超时':e.message)||'未知错误';return[]}
-}
-async function refreshAllMcpTools(){for(const mcp of mcps){if(mcp.enabled)mcpTools[mcp.id]=await fetchMcpTools(mcp);else delete mcpTools[mcp.id]}await saveMcpToolsCache()}
-function getAllMcpToolDefs(){
-  const tools=[],used=new Set();
-  for(const mcp of mcps){if(!mcp.enabled)continue;for(const t of(mcpTools[mcp.id]||[])){const base=t.name||'tool';const name=used.has(base)?(mcp.name+'__'+base):base;used.add(name);tools.push({name,description:(t.description||'')+'（来自：'+mcp.name+'）',input_schema:t.inputSchema||{type:'object',properties:{}},_mcpId:mcp.id,_originalName:base})}}
-  return tools;
-}
-async function callMcpTool(name,args){
-  for(const mcp of mcps){if(!mcp.enabled)continue;const tool=(mcpTools[mcp.id]||[]).find(t=>t.name===name||name===mcp.name+'__'+t.name);if(!tool)continue;try{let session=mcpSessions[mcp.id];if(!session)session=await mcpInitialize(mcp);const j=await mcpRpc(mcp,session,'tools/call',{name:tool.name,arguments:args});const content=j.result?.content||[];const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');const fallback=typeof j.result==='string'?j.result:JSON.stringify(j.result||{});return{result:text||fallback}}catch(e){try{delete mcpSessions[mcp.id];const session=await mcpInitialize(mcp);const j=await mcpRpc(mcp,session,'tools/call',{name:tool.name,arguments:args});const content=j.result?.content||[];const text=content.map(c=>c.type==='text'?c.text:JSON.stringify(c)).join('\n');return{result:text||JSON.stringify(j.result||{})}}catch(e2){return{error:(e2.name==='AbortError'?'连接超时':e2.message)||e.message}}}}
-  return{error:'工具未找到: '+name};
-}
-function renderToolCallCard(tc){const statusLabel=tc.status==='running'?'执行中':tc.status==='done'?'完成':'出错';const argsStr=typeof tc.args==='object'?JSON.stringify(tc.args,null,2):String(tc.args||'');const resultStr=tc.result||'';return`<div class="tool-call-card"><div class="tool-call-hd" onclick="this.nextElementSibling.classList.toggle('show')"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg><span class="tool-call-name">${esc(tc.name)}</span><span class="tool-call-status ${tc.status}">${statusLabel}</span></div><div class="tool-call-body"><div style="font-size:11px;color:var(--text2);margin-bottom:4px">参数</div><pre>${esc(argsStr)}</pre>${resultStr?'<div style="font-size:11px;color:var(--text2);margin:6px 0 4px">结果</div><pre>'+esc(resultStr.slice(0,600))+(resultStr.length>600?'…':'')+'</pre>':''}</div></div>`}
-function renderMcpCards(){
-  const el=$('mcpCards');if(!el)return;
-  if(!mcps.length){el.innerHTML='<div style="padding:40px 20px;text-align:center;color:var(--text2);font-size:13px">还没有 MCP，点 + 添加</div>';return}
-  el.innerHTML=mcps.map(m=>{const cnt=(mcpTools[m.id]||[]).length;let badge='',errLine='';if(!m.enabled)badge='<span class="mcp-status err">已禁用</span>';else if(m._status==='loading')badge='<span class="mcp-status loading">连接中…</span>';else if(m._status==='err'){badge='<span class="mcp-status err">连接失败</span>';if(m._error)errLine='<div style="font-size:11px;color:#ff3b30;margin-top:4px;word-break:break-all;line-height:1.4">'+esc(m._error)+'</div>'}else if(cnt>0)badge='<span class="mcp-status">已连接 · '+cnt+' 个工具 · '+(m._transport==='sse'?'SSE':'Streamable HTTP')+'</span>';else badge='<span class="mcp-status loading">未测试</span>';return`<div class="cfg-card" data-id="${m.id}" style="align-items:flex-start"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:400">${esc(m.name||'未命名')}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.url||'')}</div><div style="margin-top:5px">${badge}</div>${errLine}</div><span class="arrow">›</span></div>`}).join('');
-  el.querySelectorAll('.cfg-card').forEach(card=>{card.onclick=()=>openMcpEdit(card.dataset.id);let t;card.ontouchstart=()=>{t=setTimeout(()=>{const m=mcps.find(x=>x.id===card.dataset.id);if(!m)return;m.enabled=!m.enabled;saveMcps();if(m.enabled){m._status='loading';renderMcpCards();fetchMcpTools(m).then(tools=>{mcpTools[m.id]=tools;m._status=tools.length?'ok':'err';saveMcpToolsCache();renderMcpCards()})}else{delete mcpTools[m.id];delete mcpSessions[m.id];m._status='';m._error='';renderMcpCards()}},600)};card.ontouchend=()=>clearTimeout(t);card.ontouchmove=()=>clearTimeout(t)})
-}
-function openMcpEdit(id){editingMcpId=id||null;loadMcpJsonEditor();$('mcpEditPage').classList.add('open')}
-async function testMcpConnection(){
+async function testCurrentMcp(){
   try{
-    await saveMcpJson();
-    if(!mcps.length){setMcpJsonStatus('没有可测试的 MCP',true);return}
-    setMcpJsonStatus('正在测试 '+mcps.filter(m=>m.enabled).length+' 个已启用 MCP…');renderMcpCards();
-    let ok=0,total=0;
-    for(const m of mcps){if(!m.enabled)continue;total++;const tools=await fetchMcpTools(m);mcpTools[m.id]=tools;if(tools.length)ok++}
-    await saveMcpToolsCache();await saveMcps();renderMcpCards();
-    setMcpJsonStatus('测试完成：'+ok+'/'+total+' 个 MCP 返回了工具。');
-  }catch(e){setMcpJsonStatus(e.message,true)}
+    const m=readMcpVisual();await saveMcps();
+    setMcpJsonStatus('正在连接并读取工具…');renderMcpCards();
+    if(!m.enabled){setMcpJsonStatus('MCP 当前已关闭，请先打开“是否启用”。');renderMcpEditTools();return}
+    const tools=await fetchMcpTools(m);mcpTools[m.id]=tools;await saveMcpToolsCache();await saveMcps();renderMcpCards();renderMcpEditTools();
+    if(tools.length)setMcpJsonStatus('连接成功，已发现 '+tools.length+' 个工具。');else setMcpJsonStatus('握手完成，但服务器没有返回工具。',true);
+  }catch(e){setMcpJsonStatus(e.message||'连接失败',true);renderMcpEditTools()}
 }
+function renderMcpEditTools(){
+  const box=$('mcpToolList');if(!box)return;const m=currentMcpEdit();if(!m){box.innerHTML='<div class="mcp-tool-empty">没有选择 MCP</div>';return}
+  const tools=mcpTools[m.id]||[];
+  if(m._status==='loading'){box.innerHTML='<div class="mcp-tool-empty">正在读取工具…</div>';return}
+  if(!tools.length){box.innerHTML='<div class="mcp-tool-empty">暂时没有读取到工具<br><span style="font-size:11px">保存后点击“刷新并测试工具”即可重新连接。</span></div>';return}
+  box.innerHTML=tools.map(t=>`<div class="mcp-tool-item"><div class="mcp-tool-name">${esc(t.name||'未命名工具')}</div><div class="mcp-tool-desc">${esc(t.description||'暂无描述')}</div></div>`).join('');
+}
+async function testMcpConnection(){return testCurrentMcp()}
 async function saveMcpEdit(){try{return await saveMcpJson()}catch(e){setMcpJsonStatus(e.message,true);throw e}}
+
 async function callAPIWithTools(toolDefs){
   const ai=getCurAi();if(!ai)return callAPIStream();
   const api=getAiApi(ai);if(!api||!api.url||!api.key)return callAPIStream();
@@ -2322,12 +2460,17 @@ $('tabBody').onclick=()=>{renderBodyPanel();$('bodyPage').classList.add('open');
   $('goEmoji').onclick=()=>{renderEmojiLib();$('emojiPage').classList.add('open')};
   $('goMcp').onclick=()=>{renderMcpCards();$('mcpListPage').classList.add('open')};
   $('mcpListBack').onclick=()=>$('mcpListPage').classList.remove('open');
-  $('mcpAdd').onclick=()=>{editingMcpId=uid();mcps.push({id:editingMcpId,name:'新 MCP',description:'',enabled:true,url:'https://example.com/mcp',headers:[],transport:'streamable',proxyMode:'auto',proxyUrl:'',timeout:30});saveMcps();renderMcpCards();loadMcpJsonEditor();$('mcpEditPage').classList.add('open');$('mcpJson').focus()};
+  $('mcpAdd').onclick=()=>{editingMcpId=uid();mcps.push({id:editingMcpId,name:'新 MCP',description:'',enabled:true,url:'https://example.com/mcp',headers:[],transport:'streamable',proxyMode:'auto',proxyUrl:'',timeout:30});saveMcps();renderMcpCards();loadMcpJsonEditor();$('mcpEditPage').classList.add('open')};
   $('mcpEditBack').onclick=async()=>{try{await saveMcpEdit();$('mcpEditPage').classList.remove('open');renderMcpCards()}catch(e){}};
-  $('mcpFormatBtn').onclick=()=>{try{const raw=JSON.parse($('mcpJson').value);$('mcpJson').value=JSON.stringify(raw,null,2);setMcpJsonStatus('JSON 已格式化')}catch(e){setMcpJsonStatus('JSON 格式错误：'+e.message,true)}};
-  $('mcpJson').oninput=()=>setMcpJsonStatus('未保存的 JSON 修改');
-  $('mcpTest').onclick=testMcpConnection;
-  $('mcpDel').onclick=async()=>{if(!editingMcpId)return;if(!confirm('删除当前 MCP？'))return;mcps=mcps.filter(m=>m.id!==editingMcpId);delete mcpTools[editingMcpId];delete mcpSessions[editingMcpId];await saveMcps();await saveMcpToolsCache();renderMcpCards();loadMcpJsonEditor();setMcpJsonStatus('已删除当前 MCP')};
+  $('mcpSave').onclick=async()=>{try{await saveMcpEdit();$('mcpEditPage').classList.remove('open');renderMcpCards()}catch(e){}};
+  $('mcpRefresh').onclick=testCurrentMcp;
+  $('mcpTest').onclick=testCurrentMcp;
+  $('mcpEnabled').onclick=()=>{$('mcpEnabled').classList.toggle('on');setMcpJsonStatus('');};
+  $('mcpTransportStream').onclick=()=>{$('mcpTransportStream').classList.add('on');$('mcpTransportSse').classList.remove('on');setMcpJsonStatus('')};
+  $('mcpTransportSse').onclick=()=>{$('mcpTransportSse').classList.add('on');$('mcpTransportStream').classList.remove('on');setMcpJsonStatus('')};
+  $('mcpAddHeader').onclick=()=>{const box=$('mcpHeaders');const row=document.createElement('div');row.className='mcp-header-editor';row.innerHTML='<input class="mcp-header-key" placeholder="请求头名称"><input class="mcp-header-val" placeholder="请求头值"><button class="mcp-header-remove" type="button">×</button>';row.querySelector('button').onclick=()=>row.remove();box.appendChild(row);row.querySelector('input').focus()};
+  document.querySelectorAll('.mcp-tab').forEach(tab=>tab.onclick=()=>{document.querySelectorAll('.mcp-tab').forEach(x=>x.classList.remove('on'));tab.classList.add('on');const basic=tab.dataset.tab==='basic';$('mcpBasicTab').style.display=basic?'block':'none';$('mcpToolsTab').style.display=basic?'none':'block';if(!basic)renderMcpEditTools()});
+  $('mcpDel').onclick=async()=>{if(!editingMcpId)return;if(!confirm('删除当前 MCP？'))return;mcps=mcps.filter(m=>m.id!==editingMcpId);delete mcpTools[editingMcpId];delete mcpSessions[editingMcpId];await saveMcps();await saveMcpToolsCache();renderMcpCards();$('mcpEditPage').classList.remove('open')};
   $('apiListBack').onclick=()=>$('apiListPage').classList.remove('open');
   $('apiAdd').onclick=()=>{editingApiId=uid();$('apiName').value='';$('apiUrl').value='';$('apiKey').value='';$('apiModel').value='';$('apiEditPage').classList.add('open')};
   $('apiEditBack').onclick=()=>{saveApiEdit();$('apiEditPage').classList.remove('open')};
@@ -2501,6 +2644,20 @@ async function updateLastActive(){
   }catch(e){}
 }
 if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+
+// MCP 界面独立绑定：不依赖主初始化流程，避免某个其它功能报错后 MCP 按钮全部失效。
+(function bindMcpUIFallback(){
+  const bind=(id,fn)=>{const el=document.getElementById(id);if(el)el.addEventListener('click',fn);};
+  bind('mcpEditBack',async()=>{try{await saveMcpEdit();document.getElementById('mcpEditPage')?.classList.remove('open');renderMcpCards()}catch(e){}});
+  bind('mcpSave',async()=>{try{await saveMcpEdit();document.getElementById('mcpEditPage')?.classList.remove('open');renderMcpCards()}catch(e){}});
+  bind('mcpRefresh',()=>testCurrentMcp());
+  bind('mcpTest',()=>testCurrentMcp());
+  bind('mcpEnabled',()=>{document.getElementById('mcpEnabled')?.classList.toggle('on');setMcpJsonStatus('');});
+  bind('mcpTransportStream',()=>{document.getElementById('mcpTransportStream')?.classList.add('on');document.getElementById('mcpTransportSse')?.classList.remove('on');setMcpJsonStatus('')});
+  bind('mcpTransportSse',()=>{document.getElementById('mcpTransportSse')?.classList.add('on');document.getElementById('mcpTransportStream')?.classList.remove('on');setMcpJsonStatus('')});
+  bind('mcpAddHeader',()=>{const box=document.getElementById('mcpHeaders');if(!box)return;const row=document.createElement('div');row.className='mcp-header-editor';row.innerHTML='<input class="mcp-header-key" placeholder="请求头名称"><input class="mcp-header-val" placeholder="请求头值"><button class="mcp-header-remove" type="button">×</button>';row.querySelector('button').onclick=()=>row.remove();box.appendChild(row);row.querySelector('input')?.focus()});
+  document.querySelectorAll('#mcpEditPage .mcp-tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('#mcpEditPage .mcp-tab').forEach(x=>x.classList.remove('on'));tab.classList.add('on');const basic=tab.dataset.tab==='basic';document.getElementById('mcpBasicTab').style.display=basic?'block':'none';document.getElementById('mcpToolsTab').style.display=basic?'none':'block';if(!basic)renderMcpEditTools()}));
+})();
 init();
 </script>
 </body>
