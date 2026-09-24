@@ -1160,8 +1160,19 @@ async function callAPIStream(){
   const wasSplit=cur.msgs[aiIdx]?.content?.includes('|||');
   await processAIMultiBubble(aiIdx);
   if(!wasSplit){processAIStickers(aiIdx);processAIBody(aiIdx);processAIMemories(aiIdx)}
-  if(ttsAutoOn)await autoTTS(aiIdx);
+if(ttsAutoOn)await autoTTS(aiIdx);
   processAICall(aiIdx);processAIGame(aiIdx);
+  // 清理因为只发标记 / 空回复产生的空消息
+  for(let i=cur.msgs.length-1;i>=aiIdx;i--){
+    const mm=cur.msgs[i];
+    if(mm&&mm.role==='assistant'
+       &&!mm.content&&!mm.img&&!mm.file&&!mm.voiceUrl
+       &&mm.type!=='sticker'
+       &&(!mm._toolCalls||mm._toolCalls.length===0)){
+      cur.msgs.splice(i,1);
+    }
+  }
+  renderChat();saveConv();
   finish();
 }
 
