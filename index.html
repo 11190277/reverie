@@ -796,9 +796,29 @@ async function ensureSingleAi(){
 }
 
 function getCurAi(){return ais[0]||null}
-function getAiApi(){return apis.find(a=>a.id===getCurAi()?.apiId)||null}
+function getAiApi(){
+  const ai = getCurAi();
+  if (!ai) return null;
+  let api = apis.find(a => a.id === ai.apiId);
+  if (!api && apis.length > 0) {
+    api = apis[0];
+    ai.apiId = api.id;
+    saveAis();
+  }
+  return api;
+}
 function getAiSpText(){const ai=getCurAi();return ai&&ai.sp?ai.sp.trim():''}
-function getAiTts(){return ttss.find(t=>t.id===getCurAi()?.ttsId)||null}
+function getAiTts(){
+  const ai = getCurAi();
+  if (!ai) return null;
+  let tts = ttss.find(t => t.id === ai.ttsId);
+  if (!tts && ttss.length > 0) {
+    tts = ttss[0];
+    ai.ttsId = tts.id;
+    saveAis();
+  }
+  return tts;
+}
 
 async function loadAiMemories(){
   if(!curAiId)return;
