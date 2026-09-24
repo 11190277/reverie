@@ -1833,7 +1833,8 @@ async function importData(){
       if(!data.convs||!data.cfg){alert('文件格式不正确');return}
       if(!confirm('导入会覆盖当前所有数据，确定继续？'))return;
       const allConvs=await dbAll('convs');for(const c of allConvs)await dbDel('convs',c.id);
-      const allCfg=await dbAll('cfg');for(const c of allCfg)await dbDel('cfg',c.id);
+      let allCfg=[];
+  try{ allCfg=await dbAll('cfg'); }catch(e){ console.error('[init] cfg read failed',e); }for(const c of allCfg)await dbDel('cfg',c.id);
       for(const c of data.convs)await dbPut('convs',c);
       for(const c of data.cfg)await dbPut('cfg',c);
       alert('导入成功！页面将刷新');location.reload();
@@ -2380,8 +2381,10 @@ function initPlay(){
 initPlay();
 
 async function init(){
-  await openDB();
-  const allCfg=await dbAll('cfg');
+  // 初始化阶段任何单项失败都不能阻止后面的按钮绑定
+  try{ await openDB(); }catch(e){ console.error('[init] openDB failed',e); }
+  let allCfg=[];
+  try{ allCfg=await dbAll('cfg'); }catch(e){ console.error('[init] cfg read failed',e); }
   apis=allCfg.filter(c=>c.type==='api');
   sps=allCfg.filter(c=>c.type==='sp');
   ttss=allCfg.filter(c=>c.type==='tts');
@@ -2393,16 +2396,16 @@ async function init(){
     if(act.ctxMode)ctxMode=act.ctxMode;if(act.ctxN)ctxN=act.ctxN;
 
   }
-  const stickerData=await dbGet('cfg','_stickers');if(stickerData&&stickerData.data)stickers=stickerData.data;
-  await loadAis();
-  await migrateToMultiAi();
-  if(curAiId)await loadAiMemories(curAiId);
+  try{ const stickerData=await dbGet('cfg','_stickers');if(stickerData&&stickerData.data)stickers=stickerData.data; }catch(e){ console.error('[init] stickers failed',e); }
+  try{ await loadAis(); }catch(e){ console.error('[init] loadAis failed',e); }
+  try{ await migrateToMultiAi(); }catch(e){ console.error('[init] migrate failed',e); }
+  if(curAiId)try{ await loadAiMemories(curAiId); }catch(e){ console.error('[init] memories failed',e); }
   if(ais.length>1){const keep=getCurAi()||ais[0];ais=[keep];curAiId=keep.id;saveAis();saveCurAi();}
 
   // 启动关键路径：只加载本地聊天和界面所需数据，不等待任何远程服务。
   // 远程记忆、MCP、通话记录、桌宠数据和背景图全部放到后台加载，避免打开 App 时被网络卡住。
   applyTheme(activeTheme);
-  await loadConversations();
+  try{ await loadConversations(); }catch(e){ console.error('[init] conversations failed',e); if(!cur){ cur=normalizeConversation({id:uid(),title:'新对话',msgs:[],ts:Date.now(),aiId:curAiId||'ai_default',type:'single'}); renderChat(); updTitle(); renderList(); } }
 
   // 后台加载非关键数据；失败也不能阻塞主界面。
   Promise.allSettled([
