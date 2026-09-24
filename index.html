@@ -1784,12 +1784,11 @@ async function processAIMultiBubble(msgIdx,ai){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
   let content=stripThinking(m.content);
   content=content.replace(/\|\|\|/g,'');
-  // 只按标点切句，一句一个气泡，不做任何去重
   let segs=content.match(/[^。！？…\n]+[。！？…]*|\n+/g)||[content];
   let parts=segs.map(s=>s.trim()).filter(s=>s);
+  parts=dedupParts(parts);
   if(parts.length===0){m.content='';renderChat();saveConv();return}
-  if(parts.length===1){m.content=parts[0];renderChat();saveConv();return}
-  m.content=parts[0];renderChat();saveConv();
+  m.content=parts[0];delete m._apiBlocks;renderChat();saveConv();
   for(let i=1;i<parts.length;i++){
     await new Promise(r=>setTimeout(r,500+Math.random()*400));
     const newIdx=cur.msgs.length;
