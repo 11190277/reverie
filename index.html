@@ -969,10 +969,11 @@ function renderChat(){
   let html='';
   cur.msgs.forEach((m,i)=>{
     // 跳过空的 AI 消息（没文字、没图、没文件、没语音、没表情、没工具卡、没思考）
-    if(m.role==='assistant' && m.type!=='sticker' && !m.img && !m.file && !m.voiceUrl
-       && !(m._toolCalls&&m._toolCalls.length>0)
-       && !m.thinking
-       && !(m.memorySaved&&m.memorySaved.length>0)){
+if(m.role==='assistant' && m.type!=='sticker' && !m.img && !m.file && !m.voiceUrl
+   && !m.linkCard
+   && !(m._toolCalls&&m._toolCalls.length>0)
+   && !m.thinking
+   && !(m.memorySaved&&m.memorySaved.length>0)){
       const c=(m.content||'')
         .replace(/\[body:[^\]]*\]/g,'')
         .replace(/\[memory:[^\]]*\]/g,'')
