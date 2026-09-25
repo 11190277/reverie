@@ -1753,7 +1753,7 @@ function closeSB(){$('sb').classList.remove('on');$('ov').classList.remove('on')
 // ===== MCP =====
 let mcps=[],mcpTools={},editingMcpId=null,mcpTempHeaders=[];
 let mcpSessions={};
-const MCP_PROXY='https://proxy.37-eli.top';
+const MCP_PROXY='';
 function mcpFetch(mcp,opts){const url=MCP_PROXY?MCP_PROXY+'?url='+encodeURIComponent(mcp.url):mcp.url;return fetch(url,opts)}
 function mcpHeaders(mcp,sessionId){
   const h={'Content-Type':'application/json','Accept':'application/json, text/event-stream'};
