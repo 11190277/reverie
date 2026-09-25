@@ -1150,7 +1150,9 @@ if(urlMatch&&!img&&!file){
     if(card){
       m.linkCard=card;
       m.content=m.content.replace(urlMatch[0],'').trim();
-      if(card.pageText)m.content=(m.content?m.content+'\n\n':'')+'[链接内容]\n'+card.pageText;
+      const linkText=card.pageText||(card.title?card.title+(card.desc?' — '+card.desc:''):'');
+if(linkText)m.content=(m.content?m.content+'\n\n':'')+'[链接: '+card.url+']\n'+linkText;
+else m.content=(m.content?m.content+'\n\n':'')+'[链接: '+card.url+']';
       renderChat();saveConv();
     }
   });
