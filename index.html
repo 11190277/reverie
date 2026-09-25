@@ -1480,19 +1480,13 @@ async function fetchLinkCard(url){
   try{
     const ctrl=new AbortController();
     setTimeout(()=>ctrl.abort(),8000);
-    const res=await fetch('https://reverie.reverie-eli.workers.dev/jina/'+encodeURIComponent(url),{signal:ctrl.signal});
+    const res=await fetch('https://reverie.reverie-eli.workers.dev/preview/'+encodeURIComponent(url),{signal:ctrl.signal});
     if(!res.ok)return null;
-    const text=await res.text();
-    const titleMatch=text.match(/Title:\s*(.+)/);
-    const descMatch=text.match(/Description:\s*(.+)/);
-    const imgMatch=text.match(/Image:\s*(https?:\/\/[^\s]+)/);
-    const title=titleMatch?titleMatch[1].trim():'';
-    const desc=descMatch?descMatch[1].trim():'';
-    const image=imgMatch?imgMatch[1].trim():'';
+    const d=await res.json();
+    if(!d.title&&!d.image)return null;
     let domain='';
     try{domain=new URL(url).hostname.replace('www.','')}catch(e){}
-    const pageText=text.slice(0,2000);
-    return{title,desc,image,url,domain,pageText};
+    return{title:d.title||'',desc:d.desc||'',image:d.image||'',url,domain,pageText:d.title+(d.desc?'\n'+d.desc:'')};
   }catch(e){return null}
 }
 
