@@ -86,6 +86,9 @@ export default {
             else if (image.startsWith('/')) {
               const u = new URL(target);
               image = u.origin + image;
+            } else if (!image.startsWith('http')) {
+              const u = new URL(target);
+              image = u.origin + '/' + image;
             }
           }
         }
