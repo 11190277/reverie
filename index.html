@@ -2084,17 +2084,22 @@ async function loadGomokuState(){const d=await dbGet('cfg','_gomoku');if(d){gomo
 function saveGomokuMemory(result){const moves=gomokuBoard.flat().filter(c=>c!==0).length;addMemory(result==='win'?`五子棋：雯雯赢了！(${new Date().toLocaleDateString()}，共${moves}步)`:`五子棋：Eli赢了～(${new Date().toLocaleDateString()}，共${moves}步)`)}
 function processAICards(msgIdx){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
-  const regex=/\[card:(https?:\/\/[^\]]+)\]/g;let match;const urls=[];
-  while((match=regex.exec(m.content))!==null)urls.push(match[1]);
-  for(const u of urls)m.content=m.content.replace('[card:'+u+']','').trim();
-  if(urls.length===0){
-    const urlReg=/https?:\/\/[^\s\]）)]+/g;let um;
-    while((um=urlReg.exec(m.content))!==null)urls.push(um[0]);
-    if(urls.length===0)return;
-    for(const u of urls)m.content=m.content.replace(u,'').trim();
-  }
+  const regex=/\[card:(https?:\/\/[^\]]+)\]/g;let match;const tagUrls=[];
+  while((match=regex.exec(m.content))!==null)tagUrls.push(match[1]);
+  for(const u of tagUrls)m.content=m.content.replace('[card:'+u+']','').trim();
+  const allUrls=[...tagUrls];
+  const urlReg=/https?:\/\/[^\s\]）)]+/g;let um;
+  while((um=urlReg.exec(m.content))!==null)allUrls.push(um[0]);
+  if(allUrls.length===0)return;
   renderChat();
-  for(const u of urls){fetchLinkCard(u).then(card=>{if(card){cur.msgs.push({role:'assistant',linkCard:card,content:'',ts:Date.now()});renderChat();saveConv()}})}
+  for(const u of allUrls){
+    fetchLinkCard(u).then(card=>{
+      if(!card)return;
+      m.content=m.content.replace(u,'').trim();
+      cur.msgs.push({role:'assistant',linkCard:card,content:'',ts:Date.now()});
+      renderChat();saveConv();
+    });
+  }
 }
 function processAIGame(msgIdx){}
 
