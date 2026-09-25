@@ -55,19 +55,35 @@ export default {
       out.headers.set('Access-Control-Expose-Headers', '*');
       return out;
     }
-    // jina.ai 链接预览中转
-    if (url.pathname.startsWith('/jina/')) {
-      const target = 'https://r.jina.ai/' + decodeURIComponent(url.pathname.slice(6)) + url.search;
-      const resp = await fetch(target, {
-        headers: { 'Accept': 'text/plain', 'X-Return-Format': 'text' }
-      });
-      return new Response(resp.body, {
-        status: resp.status,
-        headers: {
-          'Content-Type': 'text/plain',
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+    // 网页预览卡片抓取
+    if (url.pathname.startsWith('/preview/')) {
+      const target = decodeURIComponent(url.pathname.slice(9)) + url.search;
+      try {
+        const resp = await fetch(target, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)',
+            'Accept': 'text/html'
+          },
+          redirect: 'follow'
+        });
+        const html = await resp.text();
+        const get = (pattern) => { const m = html.match(pattern); return m ? m[1].trim() : ''; };
+        const title = get(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
+          || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i)
+          || get(/<title[^>]*>([^<]+)<\/title>/i);
+        const desc = get(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
+          || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i)
+          || get(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
+        const image = get(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+          || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+        return new Response(JSON.stringify({ title, desc, image }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      } catch (e) {
+        return new Response(JSON.stringify({ title: '', desc: '', image: '' }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
     }
     // 花园MCP中转
     if (url.pathname.startsWith('/garden/')) {
