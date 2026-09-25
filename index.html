@@ -960,7 +960,25 @@ function renderList(){
 let _stickToBottom=true;
 function renderChat(){
   if(!cur){chatArea.innerHTML='<div class="empty">选择或新建一个对话</div>';return}
-  chatArea.innerHTML=cur.msgs.map((m,i)=>renderMsg(m,i)).join('');
+  let html='';
+  cur.msgs.forEach((m,i)=>{
+    // 跳过空的 AI 消息（没文字、没图、没文件、没语音、没表情、没工具卡、没思考）
+    if(m.role==='assistant' && m.type!=='sticker' && !m.img && !m.file && !m.voiceUrl
+       && !(m._toolCalls&&m._toolCalls.length>0)
+       && !m.thinking
+       && !(m.memorySaved&&m.memorySaved.length>0)){
+      const c=(m.content||'')
+        .replace(/\[body:[^\]]*\]/g,'')
+        .replace(/\[memory:[^\]]*\]/g,'')
+        .replace(/\[sticker:[^\]]*\]/g,'')
+        .replace(/\[call:[^\]]*\]/g,'')
+        .replace(/\|\|\|/g,'')
+        .trim();
+      if(!c) return; // 这一条是空气泡，跳过不显示
+    }
+    html+=renderMsg(m,i);
+  });
+  chatArea.innerHTML=html;
   scrollEnd(true);
 }
 function getAvForMsg(m){
