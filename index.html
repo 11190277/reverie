@@ -1478,6 +1478,10 @@ async function loadKelivoMemories(){
   }catch(e){}
 }
 async function fetchLinkCard(url){
+if(/\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(url)){
+  let domain='';try{domain=new URL(url).hostname.replace('www.','')}catch(e){}
+  return{title:'',desc:'',image:url,url,domain,pageText:''};
+}
   try{
     const ctrl=new AbortController();
     setTimeout(()=>ctrl.abort(),8000);
