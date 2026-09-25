@@ -2086,8 +2086,13 @@ function processAICards(msgIdx){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
   const regex=/\[card:(https?:\/\/[^\]]+)\]/g;let match;const urls=[];
   while((match=regex.exec(m.content))!==null)urls.push(match[1]);
-  if(urls.length===0)return;
   for(const u of urls)m.content=m.content.replace('[card:'+u+']','').trim();
+  if(urls.length===0){
+    const urlReg=/https?:\/\/[^\s\]）)]+/g;let um;
+    while((um=urlReg.exec(m.content))!==null)urls.push(um[0]);
+    if(urls.length===0)return;
+    for(const u of urls)m.content=m.content.replace(u,'').trim();
+  }
   renderChat();
   for(const u of urls){fetchLinkCard(u).then(card=>{if(card){cur.msgs.push({role:'assistant',linkCard:card,content:'',ts:Date.now()});renderChat();saveConv()}})}
 }
