@@ -1146,9 +1146,15 @@ async function send(text,img,file){
   renderChat();saveConv();
 if(urlMatch&&!img&&!file){
   fetchLinkCard(urlMatch[0]).then(card=>{
-    if(card){m.linkCard=card;m.content=m.content.replace(urlMatch[0],'').trim();renderChat();saveConv()}
+    if(card){
+      m.linkCard=card;
+      m.content=m.content.replace(urlMatch[0],'').trim();
+      if(card.pageText)m.content=(m.content?m.content+'\n\n':'')+'[链接内容]\n'+card.pageText;
+      renderChat();saveConv();
+    }
   });
 }
+
   const toolDefs=getAllMcpToolDefs();
   if(toolDefs.length>0)await callAPIWithTools(toolDefs);
   else await callAPIStream();
@@ -1473,15 +1479,23 @@ async function loadKelivoMemories(){
 async function fetchLinkCard(url){
   try{
     const ctrl=new AbortController();
-    const timer=setTimeout(()=>ctrl.abort(),6000);
-    const res=await fetch('https://api.microlink.io/?url='+encodeURIComponent(url),{signal:ctrl.signal});
-    clearTimeout(timer);
+    setTimeout(()=>ctrl.abort(),8000);
+    const res=await fetch('https://r.jina.ai/'+url,{headers:{'Accept':'text/plain','X-Return-Format':'text'},signal:ctrl.signal});
     if(!res.ok)return null;
-    const d=await res.json();
-    if(d.status!=='success')return null;
-    return{title:d.data.title||'',desc:d.data.description||'',image:d.data.image?.url||'',url:d.data.url||url,domain:new URL(d.data.url||url).hostname.replace('www.','')};
+    const text=await res.text();
+    const titleMatch=text.match(/Title:\s*(.+)/);
+    const descMatch=text.match(/Description:\s*(.+)/);
+    const imgMatch=text.match(/Image:\s*(https?:\/\/[^\s]+)/);
+    const title=titleMatch?titleMatch[1].trim():'';
+    const desc=descMatch?descMatch[1].trim():'';
+    const image=imgMatch?imgMatch[1].trim():'';
+    let domain='';
+    try{domain=new URL(url).hostname.replace('www.','')}catch(e){}
+    const pageText=text.slice(0,2000);
+    return{title,desc,image,url,domain,pageText};
   }catch(e){return null}
 }
+
 function renderLinkCard(card){
   if(!card)return'';
   return`<a class="link-card" href="${esc(card.url)}" target="_blank" rel="noopener">${card.image?'<img class="link-card-img" src="'+esc(card.image)+'" onerror="this.style.display=\'none\'">':''}<div class="link-card-body"><div class="link-card-title">${esc(card.title)}</div>${card.desc?'<div class="link-card-desc">'+esc(card.desc)+'</div>':''}<div class="link-card-domain">${esc(card.domain)}</div></div></a>`;
