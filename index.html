@@ -2080,22 +2080,12 @@ async function loadGomokuState(){const d=await dbGet('cfg','_gomoku');if(d){gomo
 function saveGomokuMemory(result){const moves=gomokuBoard.flat().filter(c=>c!==0).length;addMemory(result==='win'?`五子棋：雯雯赢了！(${new Date().toLocaleDateString()}，共${moves}步)`:`五子棋：Eli赢了～(${new Date().toLocaleDateString()}，共${moves}步)`)}
 function processAICards(msgIdx){
   const m=cur?.msgs[msgIdx];if(!m||m.role!=='assistant'||!m.content)return;
-  const urls=[];
-  // [card:url] 标签
-  const tagReg=/\[card:(https?:\/\/[^\]]+)\]/g;let match;
-  while((match=tagReg.exec(m.content))!==null)urls.push(match[1]);
-  m.content=m.content.replace(/\[card:https?:\/\/[^\]]+\]/g,'').trim();
-  // 纯链接
-  const urlReg=/https?:\/\/[^\s）\]）]+/g;
-  while((match=urlReg.exec(m.content))!==null)urls.push(match[0]);
-  m.content=m.content.replace(/https?:\/\/[^\s）\]）]+/g,'').trim();
+  const regex=/\[card:(https?:\/\/[^\]]+)\]/g;let match;const urls=[];
+  while((match=regex.exec(m.content))!==null)urls.push(match[1]);
   if(urls.length===0)return;
+  for(const u of urls)m.content=m.content.replace('[card:'+u+']','').trim();
   renderChat();
-  for(const u of urls){
-    fetchLinkCard(u).then(card=>{
-      if(card){cur.msgs.push({role:'assistant',linkCard:card,content:'',ts:Date.now()});renderChat();saveConv()}
-    });
-  }
+  for(const u of urls){fetchLinkCard(u).then(card=>{if(card){cur.msgs.push({role:'assistant',linkCard:card,content:'',ts:Date.now()});renderChat();saveConv()}})}
 }
 function processAIGame(msgIdx){}
 
