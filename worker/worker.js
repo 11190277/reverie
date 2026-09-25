@@ -160,7 +160,7 @@ const html = new TextDecoder(charset === 'gbk' || charset === 'gb2312' || charse
         statusText: resp.statusText,
         headers: respHeaders
       });
-    }
+    } 
 
     return new Response('unknown path', {
       status: 400,
