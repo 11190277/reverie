@@ -1478,7 +1478,7 @@ async function loadKelivoMemories(){
   }catch(e){}
 }
 async function fetchLinkCard(url){
-if(/\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(url)){
+if(/\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(url)||/images\.unsplash\.com\//i.test(url)||/cdn\.pixabay\.com\//i.test(url)){
   let domain='';try{domain=new URL(url).hostname.replace('www.','')}catch(e){}
   return{title:'',desc:'',image:url,url,domain,pageText:''};
 }
