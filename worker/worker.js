@@ -74,8 +74,10 @@ export default {
         const desc = get(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
           || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i)
           || get(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
-        const image = get(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-          || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+const image = get(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+  || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+  || get(/<meta[^>]+property=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
+  || get(/<img[^>]+src=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i);
         return new Response(JSON.stringify({ title, desc, image }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
