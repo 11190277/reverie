@@ -66,7 +66,10 @@ export default {
           },
           redirect: 'follow'
         });
-        const html = await resp.text();
+        const buf = await resp.arrayBuffer();
+const ct = resp.headers.get('content-type') || '';
+const charset = ct.match(/charset=([^\s;]+)/i)?.[1]?.toLowerCase() || 'utf-8';
+const html = new TextDecoder(charset === 'gbk' || charset === 'gb2312' || charset === 'gb18030' ? 'gbk' : 'utf-8').decode(buf);
         const getMeta = (props) => {
           for (const prop of props) {
             const m = html.match(new RegExp('<meta[^>]+(?:property|name)=["\']' + prop + '["\'][^>]+content=["\']([^"\']+)["\']', 'i'))
