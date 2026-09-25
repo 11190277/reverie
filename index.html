@@ -1485,11 +1485,13 @@ async function fetchLinkCard(url){
     if(!res.ok)return null;
     const d=await res.json();
     if(!d.title&&!d.image)return null;
+    let image=d.image||'';
+    if(image&&!image.startsWith('http')){
+      try{image=new URL(image,url).href}catch(e){image=''}
+    }
     let domain='';
     try{domain=new URL(url).hostname.replace('www.','')}catch(e){}
-    let image=d.image||'';
-if(image&&!image.startsWith('http')){try{image=new URL(image,url).href}catch(e){image=''}}
-return{title:d.title||'',desc:d.desc||'',image,url,domain,pageText:d.title+(d.desc?'\n'+d.desc:'')};
+    return{title:d.title||'',desc:d.desc||'',image,url,domain,pageText:d.title+(d.desc?'\n'+d.desc:'')};
   }catch(e){return null}
 }
 
