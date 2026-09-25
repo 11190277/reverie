@@ -970,14 +970,14 @@ function getAvForMsg(m){
 function renderMsg(m,i){
   if(m.gameType==='gomoku'){
     const avSrc=getAvForMsg(m);
-    const avHtml=avSrc?'<img src="'+avSrc+'">':'';
+    const avHtml=avSrc?'<img src="'+avSrc+'">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#eee;color:#aaa;font-size:12px;font-weight:400">以</div>';
     let body=m.content?`<div class="bubble">${md(m.content)}</div>`:'';
     body+=renderGomoku();
     return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml}</div><div class="msg-body" style="max-width:95%">${body}<div class="msg-time">${m.ts?fmtTime(m.ts):''}</div></div></div>`;
   }
   if(m.type==='sticker'){
     const avSrc=getAvForMsg(m);
-    const avHtml=avSrc?'<img src="'+avSrc+'">':'';
+    const avHtml=avSrc?'<img src="'+avSrc+'">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#eee;color:#aaa;font-size:12px;font-weight:400">以</div>';
     return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml}</div>
 <div class="msg-body"><div class="sticker-bubble"><img src="${m.stickerUrl}" onerror="this.outerHTML='<div style=padding:8px;font-size:12px;color:#999>图片加载失败</div>'"></div><div class="msg-time">${m.ts?fmtTime(m.ts):''}</div></div></div>`;
   }
@@ -988,12 +988,17 @@ function renderMsg(m,i){
   }
   if(m.img)body+=`<div class="bubble"><img src="${m.img}"></div>`;
   if(m.file)body+=`<div class="file-bubble"><div class="file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="file-info"><div class="file-name">${esc(m.file.name)}</div><div class="file-size">${fmtSize(m.file.size)}</div></div></div>`;
-  if(m.content){let ct=m.content;if(!ttsAutoOn)ct=ct.replace(/「/g,'').replace(/」/g,'');body+=`<div class="bubble">${u?esc(ct):md(ct)}</div>`}
+  if(m.content){
+  let ct=m.content;
+  ct = ct.replace(/\[body:[^\]]*\]/g, '').trim(); // 强行把漏出的标签洗掉
+  if(!ttsAutoOn)ct=ct.replace(/「/g,'').replace(/」/g,'');
+  if(ct) body+=`<div class="bubble">${u?esc(ct):md(ct)}</div>`;
+}
   if(m._toolCalls&&m._toolCalls.length){body+=m._toolCalls.map(tc=>renderToolCallCard(tc)).join('')}
   if(m.voiceUrl)body+=renderVoice(m.voiceUrl,m.voiceDur||0,i);
   if(m.memorySaved&&m.memorySaved.length>0)body+=`<div class="mem-tag"><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/></svg>已记住 ${m.memorySaved.length} 条</div>`;
   const avSrc=getAvForMsg(m);
-  const avHtml=avSrc?'<img src="'+avSrc+'">':'';
+  const avHtml=avSrc?'<img src="'+avSrc+'">':'<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#eee;color:#aaa;font-size:12px;font-weight:400">以</div>';
   return `<div class="msg ${m.role}" data-i="${i}"><div class="msg-av">${avHtml}</div>
 <div class="msg-body">${body}<div class="msg-time">${m.ts?fmtTime(m.ts):''}</div></div></div>`;
 }
