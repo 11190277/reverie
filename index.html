@@ -1490,7 +1490,7 @@ if(/\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(url)||/images\.unsplash\.com\//i.te
     const res=await fetch('https://reverie.reverie-eli.workers.dev/preview/'+encodeURIComponent(url),{signal:ctrl.signal});
     if(!res.ok)return null;
     const d=await res.json();
-    if(!d.title&&!d.image)return null;
+    if(!d.title&&!d.image&&!d.desc)return null;
     let image=d.image||'';
     if(image&&!image.startsWith('http')){
       try{image=new URL(image,url).href}catch(e){image=''}
