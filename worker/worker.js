@@ -67,17 +67,28 @@ export default {
           redirect: 'follow'
         });
         const html = await resp.text();
-        const get = (pattern) => { const m = html.match(pattern); return m ? m[1].trim() : ''; };
-        const title = get(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i)
-          || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["']/i)
-          || get(/<title[^>]*>([^<]+)<\/title>/i);
-        const desc = get(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["']/i)
-          || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["']/i)
-          || get(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i);
-const image = get(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-  || get(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
-  || get(/<meta[^>]+property=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
-  || get(/<img[^>]+src=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i);
+        const getMeta = (props) => {
+          for (const prop of props) {
+            const m = html.match(new RegExp('<meta[^>]+(?:property|name)=["\']' + prop + '["\'][^>]+content=["\']([^"\']+)["\']', 'i'))
+              || html.match(new RegExp('<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name)=["\']' + prop + '["\']', 'i'));
+            if (m) return m[1].trim();
+          }
+          return '';
+        };
+        const title = getMeta(['og:title', 'twitter:title']) || (html.match(/<title[^>]*>([^<]+)<\/title>/i)||[])[1]?.trim() || '';
+        const desc = getMeta(['og:description', 'twitter:description', 'description']);
+        let image = getMeta(['og:image', 'twitter:image', 'og:image:url']);
+        if (!image) {
+          const imgM = html.match(/<img[^>]+src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i);
+          if (imgM) {
+            image = imgM[1];
+            if (image.startsWith('//')) image = 'https:' + image;
+            else if (image.startsWith('/')) {
+              const u = new URL(target);
+              image = u.origin + image;
+            }
+          }
+        }
         return new Response(JSON.stringify({ title, desc, image }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
@@ -87,6 +98,7 @@ const image = get(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)[
         });
       }
     }
+
     // 花园MCP中转
     if (url.pathname.startsWith('/garden/')) {
       const target = 'https://galatea.abysslumina.com' + url.pathname.slice(7) + url.search;
